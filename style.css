@@ -8,6 +8,24 @@
   --text: #e6f4f6;
   --muted: #8ca4ad;
   --orange: #ff9166;
+  --page: #020b12;
+  --header: #061c2b;
+  --border: #0d2a3a;
+  --card: #0b2233;
+}
+
+body.light-theme {
+  --bg: #eef5f6;
+  --panel: #ffffff;
+  --line: #087d88;
+  --cyan: #087d88;
+  --text: #10252b;
+  --muted: #52686e;
+  --orange: #c4512f;
+  --page: #dce8ea;
+  --header: #ffffff;
+  --border: #b9ced1;
+  --card: #ffffff;
 }
 
 * {
@@ -16,7 +34,7 @@
 
 body {
   margin: 0;
-  background: #020b12;
+  background: var(--page);
   color: var(--text);
   font-family: 'Space Mono', monospace;
   min-height: 100vh;
@@ -31,7 +49,7 @@ button {
   min-height: 100vh;
   margin: auto;
   background: var(--bg);
-  border-inline: 1px solid #0d2a3a;
+  border-inline: 1px solid var(--border);
 }
 
 header {
@@ -40,8 +58,9 @@ header {
   align-items: center;
   justify-content: space-between;
   padding: 0 42px;
-  border-bottom: 1px solid #0f3c4c;
-  background: #061c2b;
+  border-bottom: 1px solid var(--border);
+  background: var(--header);
+  position: relative;
 }
 
 .brand {
@@ -314,16 +333,19 @@ h3 {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
   gap: 14px;
+  min-width: 0;
 }
 
 .manual-video {
   min-height: 280px;
+  aspect-ratio: 16 / 9;
   border: 1px solid #1c6073;
   background: linear-gradient(135deg, #0b2b3e, #061a28);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
+  min-width: 0;
 }
 
 .manual-video:after {
@@ -344,6 +366,16 @@ h3 {
   left: 18px;
   color: var(--cyan);
   font-size: 10px;
+}
+
+body.light-theme .manual-video {
+  background: linear-gradient(135deg, #dceff0, #c7e0e2);
+}
+
+body.light-theme .card,
+body.light-theme .table-wrap,
+body.light-theme .info-box {
+  background: var(--card);
 }
 
 .spec {
@@ -428,6 +460,9 @@ td:last-child {
 .project-estimate {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
   padding: 18px 10px 6px;
   color: var(--muted);
   font-size: 10px;
@@ -527,6 +562,7 @@ footer {
     order: 3;
     width: 100%;
     overflow-x: auto;
+    scrollbar-width: thin;
   }
 
   nav button {
@@ -570,6 +606,32 @@ footer {
   }
 
   .section-title h2 {
+    font-size: 15px;
+  }
+
+  .section-title.compact {
+    align-items: stretch;
+  }
+
+  .section-title.compact .btn {
+    align-self: flex-start;
+  }
+
+  .table-wrap {
+    width: 100%;
+    padding: 6px;
+  }
+
+  table {
+    min-width: 620px;
+  }
+
+  .project-estimate {
+    align-items: flex-start;
+    padding: 14px 6px 6px;
+  }
+
+  .project-estimate strong {
     font-size: 15px;
   }
 
@@ -630,6 +692,25 @@ footer {
     padding: 16px 12px;
   }
 
+  .manual-video {
+    width: 100%;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .manual-video:after {
+    width: 44px;
+    height: 44px;
+  }
+
+  .video-badge {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
   .hero p {
     font-size: 9px;
     margin: 12px 0 16px;
@@ -646,6 +727,14 @@ footer {
 
   .section-title {
     margin: 24px 0 10px;
+  }
+
+  .section-title.compact {
+    gap: 10px;
+  }
+
+  .section-title.compact .btn {
+    width: 100%;
   }
 
   .section-title h2 {
@@ -679,5 +768,29 @@ footer {
 
   .info-box p {
     font-size: 10px;
+  }
+
+  .table-wrap {
+    margin-inline: 0;
+    padding: 4px;
+  }
+
+  table {
+    min-width: 570px;
+  }
+
+  th,
+  td {
+    padding: 9px 7px;
+  }
+
+  .project-estimate {
+    display: block;
+    line-height: 1.7;
+  }
+
+  .project-estimate strong {
+    display: block;
+    margin-top: 4px;
   }
 }
