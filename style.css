@@ -918,3 +918,175 @@ footer {
     margin-top: 4px;
   }
 }
+
+/* ==========================================================================
+   Parte 2: Páginas 4 (Quem Somos), 5 (Referências) e 6 (O Jogo)
+   ========================================================================== */
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.member-photo {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+  background: #001824;
+  display: block;
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+
+.card:hover .member-photo {
+  border-color: var(--cyan);
+}
+
+.member-role {
+  color: var(--cyan);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: block;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.social-links {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.social-link svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.social-link:hover {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  background: rgba(0, 253, 248, 0.08);
+  transform: translateY(-2px);
+}
+
+body.light-mode .social-link,
+body.light-theme .social-link {
+  color: var(--muted);
+  border-color: var(--border);
+}
+
+body.light-mode .social-link:hover,
+body.light-theme .social-link:hover {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  background: rgba(8, 125, 136, 0.1);
+}
+
+.contact-section {
+  margin-top: 36px;
+  padding: 24px;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: #031522;
+  border: 1px solid #23475a;
+  color: var(--text);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, background 0.25s ease;
+}
+
+.form-group textarea:focus {
+  border-color: var(--cyan);
+}
+
+body.light-mode .form-group textarea,
+body.light-theme .form-group textarea {
+  background: #f4fbfb;
+  border-color: var(--border);
+}
+
+body.light-mode .form-group textarea:focus,
+body.light-theme .form-group textarea:focus {
+  border-color: var(--cyan);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-status {
+  display: none;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  background: rgba(0, 253, 248, 0.08);
+}
+
+.ref-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: opacity 0.2s ease;
+}
+
+.ref-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 20px;
+  align-items: stretch;
+  margin-top: 18px;
+}
+
+@media (max-width: 800px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+}
