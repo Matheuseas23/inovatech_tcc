@@ -956,6 +956,36 @@ footer {
   margin-bottom: 8px;
 }
 
+.instagram-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  color: var(--cyan);
+  font-size: 11px;
+  text-decoration: none;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.instagram-link svg {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+}
+
+.instagram-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+  transform: translateX(2px);
+}
+
+body.light-mode .instagram-link,
+body.light-theme .instagram-link {
+  color: var(--cyan);
+}
+
 .social-links {
   display: flex;
   gap: 8px;
