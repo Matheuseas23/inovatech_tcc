@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Crop Logo Icon</title>
+</head>
+<body style="background:#222;color:#fff;font-family:sans-serif;padding:20px;">
+<h2>Cropping Icon from image.png</h2>
+<div id="status">Loading...</div>
+<canvas id="origCanvas" style="display:none;"></canvas>
+<canvas id="cropCanvas" style="border:1px solid #00fdf8;margin:10px 0;background:#031522;"></canvas>
+<br>
+<textarea id="resultDataUrl" style="width:100%;height:150px;font-size:10px;"></textarea>
+
+<script>
+const img = new Image();
+img.src = 'image.png';
+img.onload = () => {
+	const w = img.width;
+	const h = img.height;
+	const orig = document.getElementById('origCanvas');
+	orig.width = w;
+	orig.height = h;
+	const ctx = orig.getContext('2d');
+	ctx.drawImage(img, 0, 0);
+
+	const imgData = ctx.getImageData(0, 0, w, h);
+	const data = imgData.data;
+
+	// Find bounding box of the icon on the left half (x < w * 0.48)
+	let minX = w, minY = h, maxX = 0, maxY = 0;
+	const cutoffX = Math.floor(w * 0.48);
+
+	for (let y = 0; y < h; y++) {
+		for (let x = 0; x < cutoffX; x++) {
+			const idx = (y * w + x) * 4;
+			const alpha = data[idx + 3];
+			// Check if pixel is not fully transparent and not pure white background if non-alpha
+			if (alpha > 20) {
+				// Also check if it's not a white background artifact
+				const r = data[idx], g = data[idx + 1], b = data[idx + 2];
+				// Dark glasses or cyan pulse
+				if (x < minX) minX = x;
+				if (x > maxX) maxX = x;
+				if (y < minY) minY = y;
+				if (y > maxY) maxY = y;
+			}
+		}
+	}
+
+	const iconW = maxX - minX + 1;
+	const iconH = maxY - minY + 1;
+
+	// Make a square canvas with padding
+	const size = Math.max(iconW, iconH);
+	const padding = Math.round(size * 0.08);
+	const totalSize = size + padding * 2;
+
+	const cropCanvas = document.getElementById('cropCanvas');
+	cropCanvas.width = totalSize;
+	cropCanvas.height = totalSize;
+	const cropCtx = cropCanvas.getContext('2d');
+
+	// Center icon in the square
+	const destX = padding + (size - iconW) / 2;
+	const destY = padding + (size - iconH) / 2;
+
+	cropCtx.drawImage(orig, minX, minY, iconW, iconH, destX, destY, iconW, iconH);
+
+	const dataUrl = cropCanvas.toDataURL('image/png');
+	document.getElementById('resultDataUrl').value = dataUrl;
+	document.getElementById('status').innerText = `Done! Original: ${w}x${h}, BoundingBox: [${minX}, ${minY}, ${iconW}x${iconH}], Square: ${totalSize}x${totalSize}`;
+};
+img.onerror = (e) => {
+	document.getElementById('status').innerText = 'Error loading image.png';
+};
+</script>
+</body>
+</html>

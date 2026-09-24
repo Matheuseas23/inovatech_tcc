@@ -1105,22 +1105,169 @@ body.light-theme .form-group textarea:focus {
   background: rgba(0, 253, 248, 0.08);
 }
 
-.ref-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 14px;
+/* Seção de Referências (Página 5) */
+.refs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 22px;
+}
+
+@media (max-width: 820px) {
+  .refs-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ref-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid #1c6073;
+  background: linear-gradient(145deg, #123349, #071e2e);
+  padding: 22px;
+  border-radius: 4px;
+  position: relative;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+}
+
+.ref-card:hover {
+  border-color: var(--cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(8, 222, 235, 0.15);
+}
+
+body.light-mode .ref-card,
+body.light-theme .ref-card {
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: 0 2px 10px rgba(14, 34, 42, 0.05);
+}
+
+body.light-mode .ref-card:hover,
+body.light-theme .ref-card:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 6px 20px rgba(8, 125, 136, 0.15);
+}
+
+.ref-card-header {
+  margin-bottom: 12px;
+}
+
+.ref-card h3 {
+  margin: 8px 0 6px;
+  font-size: 19px;
+  color: var(--text);
+  letter-spacing: 0.5px;
+  line-height: 1.25;
+}
+
+.ref-card .ref-source {
   color: var(--cyan);
   font-size: 10px;
   letter-spacing: 1px;
-  text-decoration: none;
-  font-weight: bold;
-  transition: opacity 0.2s ease;
+  display: block;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.ref-link:hover {
-  opacity: 0.8;
-  text-decoration: underline;
+.ref-card p.ref-desc {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.85;
+  margin: 0 0 20px 0;
+  flex-grow: 1;
+}
+
+.ref-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid rgba(22, 73, 91, 0.6);
+  margin-top: auto;
+}
+
+body.light-mode .ref-buttons,
+body.light-theme .ref-buttons {
+  border-top-color: var(--border);
+}
+
+.btn-access {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #00181e;
+  background: var(--cyan);
+  border: 1px solid var(--cyan);
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-access:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(8, 222, 235, 0.35);
+  filter: brightness(1.08);
+}
+
+.btn-access svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.btn-access:hover svg {
+  transform: translate(2px, -2px);
+}
+
+body.light-mode .btn-access,
+body.light-theme .btn-access {
+  color: #ffffff;
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+
+body.light-mode .btn-access:hover,
+body.light-theme .btn-access:hover {
+  box-shadow: 0 4px 14px rgba(8, 125, 136, 0.25);
+}
+
+.btn-access.outline {
+  background: transparent;
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+}
+
+.btn-access.outline:hover {
+  background: rgba(8, 222, 235, 0.12);
+  color: var(--cyan);
+}
+
+body.light-mode .btn-access.outline,
+body.light-theme .btn-access.outline {
+  background: transparent;
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+
+body.light-mode .btn-access.outline:hover,
+body.light-theme .btn-access.outline:hover {
+  background: rgba(8, 125, 136, 0.08);
+  color: var(--cyan);
 }
 
 .game-layout {

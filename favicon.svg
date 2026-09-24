@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- Brilho Neon Ciano de alta intensidade -->
+    <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#020b12" />
+      <stop offset="100%" stop-color="#082233" />
+    </linearGradient>
+
+    <linearGradient id="frameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2c424f" />
+      <stop offset="100%" stop-color="#192831" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fundo do ícone para alto contraste na aba do navegador -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGrad)" stroke="#16495b" stroke-width="6" />
+
+  <!-- GRUPO DO ÍCONE CENTRALIZADO E MAXIMIZADO PARA MÁXIMA VISIBILIDADE EM 16px/32px -->
+  <g id="smartDriverIcon">
+    <!-- Hastes superiores dobradas para trás -->
+    <!-- Haste esquerda -->
+    <path d="M 125 240 
+             C 132 175 168 142 208 142 
+             C 218 142 222 150 214 155 
+             C 180 166 154 192 144 240 Z" 
+          fill="url(#frameGrad)" stroke="#678393" stroke-width="4" stroke-linejoin="round" />
+
+    <!-- Haste direita -->
+    <path d="M 387 240 
+             C 380 175 344 142 304 142 
+             C 294 142 290 150 298 155 
+             C 332 166 358 192 368 240 Z" 
+          fill="url(#frameGrad)" stroke="#678393" stroke-width="4" stroke-linejoin="round" />
+
+    <!-- Módulo da Câmera / Sensor no canto esquerdo -->
+    <rect x="42" y="240" width="34" height="48" rx="7" fill="url(#frameGrad)" stroke="#678393" stroke-width="4" />
+    <circle cx="59" cy="256" r="6" fill="#00fdf8" />
+    <path d="M 52 288 L 52 308 C 52 313 66 313 66 308 L 66 288 Z" fill="url(#frameGrad)" stroke="#678393" stroke-width="3" />
+
+    <!-- Estrutura principal dos óculos (Armação Frontal) -->
+    <path d="M 68 230 
+             C 130 226 210 228 256 235 
+             C 302 228 382 226 444 230 
+             C 456 230 462 238 462 250 
+             L 462 290 
+             C 462 302 454 310 444 312 
+             C 432 342 410 366 358 368 
+             C 318 370 286 352 274 300 
+             C 266 270 246 270 238 300 
+             C 226 352 194 370 154 368 
+             C 102 366 80 342 68 312 
+             C 58 310 50 302 50 290 
+             L 50 250 
+             C 50 238 56 230 68 230 Z" 
+          fill="url(#frameGrad)" stroke="#678393" stroke-width="5" stroke-linejoin="round" />
+
+    <!-- HUD Bracket (Canto ciano na lente esquerda) -->
+    <path d="M 175 258 L 94 258 C 86 258 80 264 80 272 L 80 318 C 80 326 86 332 94 332 L 175 332" 
+          fill="none" stroke="#00fdf8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)" />
+
+    <!-- Desenho do Olho Neon no centro da lente esquerda -->
+    <!-- Contorno do olho (pálpebras) -->
+    <path d="M 148 295 C 174 255 238 255 264 295 C 238 335 174 335 148 295 Z" 
+          fill="none" stroke="#00fdf8" stroke-width="11" stroke-linejoin="round" filter="url(#neonGlow)" />
+    <!-- Pupila interna -->
+    <circle cx="206" cy="295" r="16" fill="none" stroke="#00fdf8" stroke-width="9" filter="url(#neonGlow)" />
+    <circle cx="206" cy="295" r="6" fill="#00fdf8" filter="url(#neonGlow)" />
+
+    <!-- Linha de Pulso / Eletrocardiograma (ECG) Neon atravessando o olho e o visor -->
+    <path d="M 110 295 
+             L 264 295 
+             L 288 140 
+             L 316 415 
+             L 338 276 
+             L 354 314 
+             L 370 295 
+             L 448 295" 
+          fill="none" stroke="#00fdf8" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)" />
+  </g>
+</svg>

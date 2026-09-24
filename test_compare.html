@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Compare Logo Icon</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<style>
+body {
+  background: #031522;
+  color: #fff;
+  font-family: sans-serif;
+  padding: 30px;
+}
+.row {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  margin-bottom: 30px;
+}
+.box {
+  background: #0b2435;
+  border: 1px solid #16495b;
+  padding: 20px;
+  border-radius: 8px;
+}
+.orig-crop {
+  width: 260px;
+  height: 220px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid #00fdf8;
+}
+.orig-crop img {
+  position: absolute;
+  top: -65px;
+  left: -20px;
+  width: 650px;
+}
+.sizes {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 15px;
+}
+</style>
+</head>
+<body>
+<h1>Comparação: Logo Original vs Favicon SVG</h1>
+<div class="row">
+  <div class="box">
+    <h3>Ícone Original (image.png recortado)</h3>
+    <div class="orig-crop">
+      <img src="image.png" alt="Original Logo">
+    </div>
+  </div>
+  <div class="box">
+    <h3>Favicon SVG (Vetor Fiel)</h3>
+    <img src="favicon.svg" width="260" height="220" style="border: 1px solid #00fdf8; border-radius: 4px;">
+  </div>
+</div>
+<div class="box">
+  <h3>Simulação de Tamanhos na Aba do Navegador</h3>
+  <div class="sizes">
+    <div><span>16px: </span><img src="favicon.svg" width="16" height="16"></div>
+    <div><span>24px: </span><img src="favicon.svg" width="24" height="24"></div>
+    <div><span>32px: </span><img src="favicon.svg" width="32" height="32"></div>
+    <div><span>48px: </span><img src="favicon.svg" width="48" height="48"></div>
+    <div><span>64px: </span><img src="favicon.svg" width="64" height="64"></div>
+    <div><span>128px: </span><img src="favicon.svg" width="128" height="128"></div>
+  </div>
+</div>
+</body>
+</html>
