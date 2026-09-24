@@ -1493,13 +1493,79 @@ if (contactForm) {
 	contactForm.addEventListener('submit', function(e) {
 		e.preventDefault();
 		var status = document.getElementById('contactStatus');
-		if (status) {
-			status.style.display = 'block';
-			setTimeout(function() {
-				status.style.display = 'none';
-			}, 5000);
+		var submitBtn = document.getElementById('contactSubmitBtn');
+		var name = document.getElementById('contactName').value.trim();
+		var email = document.getElementById('contactEmail').value.trim();
+		var subject = document.getElementById('contactSubject').value.trim();
+		var message = document.getElementById('contactMessage').value.trim();
+
+		if (!name || !email || !message) {
+			return;
 		}
-		contactForm.reset();
+
+		if (submitBtn) {
+			submitBtn.disabled = true;
+			submitBtn.textContent = 'Enviando...';
+			submitBtn.style.opacity = '0.7';
+			submitBtn.style.cursor = 'not-allowed';
+		}
+
+		if (status) {
+			status.className = 'form-status loading';
+			status.innerHTML = '⌁ Enviando mensagem para a equipe InovaTech...';
+		}
+
+		fetch('https://formsubmit.co/ajax/matheusgarcia3346@gmail.com', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Accept': 'application/json'
+			},
+			body: JSON.stringify({
+				"Nome": name,
+				"E-mail": email,
+				"_subject": "[InovaTech Contato] " + (subject || "Nova mensagem"),
+				"Mensagem": message,
+				"_captcha": "false",
+				"_template": "table"
+			})
+		})
+		.then(function(response) {
+			if (response.ok) {
+				return response.json();
+			} else {
+				throw new Error('Falha no envio');
+			}
+		})
+		.then(function(data) {
+			if (status) {
+				status.className = 'form-status success';
+				status.innerHTML = '✓ Mensagem enviada com sucesso! A equipe InovaTech responderá em breve.';
+			}
+			contactForm.reset();
+		})
+		.catch(function(err) {
+			if (status) {
+				status.className = 'form-status error';
+				status.innerHTML = '✕ Não foi possível enviar automaticamente. Você também pode enviar diretamente para: <a href="mailto:matheusgarcia3346@gmail.com" style="color:var(--cyan);text-decoration:underline;">matheusgarcia3346@gmail.com</a>';
+			}
+		})
+		.finally(function() {
+			if (submitBtn) {
+				submitBtn.disabled = false;
+				submitBtn.textContent = 'Enviar mensagem';
+				submitBtn.style.opacity = '1';
+				submitBtn.style.cursor = 'pointer';
+			}
+			if (status) {
+				setTimeout(function() {
+					if (status.classList.contains('success')) {
+						status.className = 'form-status';
+						status.style.display = 'none';
+					}
+				}, 8000);
+			}
+		});
 	});
 }
 </script>
