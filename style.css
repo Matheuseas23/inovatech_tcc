@@ -137,24 +137,30 @@ main {
   }
 }
 
-/* Seção Home com Vídeo de Fundo Completo */
+/* Seção Home com Vídeo de Fundo Completo, margem superior preservada e fundo transparente */
 #home {
   position: relative;
-  min-height: calc(100vh - 170px);
-  border: 1px solid var(--border);
-  padding: 40px 30px;
-  overflow: hidden;
+  min-height: calc(100vh - 120px);
+  border: none !important;
+  outline: none !important;
+  padding: 0;
+  margin-top: 28px;
+  overflow: visible;
   background: transparent !important;
-  border-radius: 4px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  margin-top: 0;
+  box-shadow: none !important;
+}
+
+#home.view.active {
+  animation: none;
+  transform: none;
 }
 
 .home-video-wrapper {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   z-index: 0;
   pointer-events: none;
@@ -177,38 +183,40 @@ main {
 .home-video-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(3, 21, 34, 0.65) 0%, rgba(6, 27, 42, 0.78) 50%, rgba(3, 21, 34, 0.92) 100%);
+  background: linear-gradient(180deg, rgba(2, 11, 18, 0.40) 0%, rgba(3, 21, 34, 0.65) 45%, rgba(3, 21, 34, 0.90) 100%);
   z-index: 1;
   pointer-events: none;
   transition: background 0.25s ease;
 }
 
 body.light-mode .home-video-overlay {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(226, 240, 242, 0.88) 100%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.50) 0%, rgba(240, 248, 250, 0.80) 50%, rgba(229, 239, 241, 0.92) 100%);
 }
 
 .home-content-wrapper {
   position: relative;
   z-index: 2;
+  padding: 20px 0 40px;
 }
 
 .hero {
-  border: none;
+  border: none !important;
+  outline: none !important;
   min-height: auto;
-  padding: 20px 10px 28px;
+  padding: 30px 10px 28px;
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
   position: relative;
   background: transparent !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 body.light-mode .hero {
-  border-color: transparent;
+  border: none !important;
   background: transparent !important;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 #home .card {
@@ -225,11 +233,15 @@ body.light-mode #home .card {
   border: 1px solid rgba(191, 214, 220, 0.9);
 }
 
-/* Margem do topo e header transparentes sem cor de fundo exclusivamente na Home */
+/* Margem do topo, shell, main e header transparentes exclusivamente na Home */
+body[data-active-view="home"] .shell {
+  background: transparent !important;
+}
+
 body[data-active-view="home"] header,
 .shell:has(#home.active) header {
   background: transparent !important;
-  border-bottom-color: rgba(22, 73, 91, 0.35);
+  border-bottom: 1px solid rgba(22, 73, 91, 0.35);
   box-shadow: none !important;
 }
 
