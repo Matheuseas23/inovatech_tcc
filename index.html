@@ -244,7 +244,7 @@
 			}
 		}
 
-		/* Vídeo de Fundo Global do Site (Ativo em todas as páginas com Efeito Liquid Glass) */
+		/* Vídeo e Imagem de Fundo Global do Site (Ativo em todas as páginas) */
 		.site-bg-video-wrapper {
 			position: fixed;
 			top: 0;
@@ -259,6 +259,20 @@
 			transition: opacity 0.5s ease, visibility 0.5s ease;
 		}
 
+		.site-bg-image {
+			position: absolute;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+			background-size: cover;
+			background-position: center center;
+			background-repeat: no-repeat;
+			z-index: 1;
+			opacity: 1;
+			transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+			pointer-events: none;
+		}
+
 		.site-bg-video {
 			position: absolute;
 			top: 50%;
@@ -269,15 +283,17 @@
 			min-height: 100%;
 			transform: translate(-50%, -50%);
 			object-fit: cover;
-			z-index: 0;
+			z-index: 2;
 			pointer-events: none;
+			opacity: 1;
+			transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 		}
 
 		.site-bg-video-overlay {
 			position: absolute;
 			inset: 0;
 			background: radial-gradient(ellipse at 50% 30%, rgba(2, 11, 18, 0.38) 0%, rgba(3, 21, 34, 0.68) 50%, rgba(2, 11, 18, 0.90) 100%);
-			z-index: 1;
+			z-index: 3;
 			pointer-events: none;
 			transition: background 0.3s ease;
 		}
@@ -1573,9 +1589,10 @@
 	</style>
 </head>
 <body data-active-view="home">
-	<!-- Vídeo de Fundo Global do Site (Ativo na Home) -->
-	<div class="site-bg-video-wrapper" aria-hidden="true">
-		<video id="siteVideoBg" class="site-bg-video" autoplay muted loop playsinline poster="oculos.png">
+	<!-- Vídeo e Imagem de Fundo Global do Site -->
+	<div class="site-bg-video-wrapper" id="siteBgWrapper" aria-hidden="true">
+		<div id="siteBgImage" class="site-bg-image"></div>
+		<video id="siteVideoBg" class="site-bg-video" autoplay muted playsinline poster="oculos.png">
 			<source src="oculos.mp4" type="video/mp4">
 			<source src="oculos.mp4.mp4" type="video/mp4">
 		</video>
@@ -1662,26 +1679,166 @@
 		</main><div class="modal" id="addItemModal"><div class="modal-content"><h3>Adicionar novo item</h3><form id="addItemForm"><div class="form-group"><label for="itemName">Nome do produto</label><input type="text" id="itemName" required></div><div class="form-group"><label for="itemDescription">Descrição técnica</label><input type="text" id="itemDescription" required></div><div class="form-group"><label for="itemValue">Valor (R$)</label><input type="number" id="itemValue" step="0.01" required></div><div class="modal-actions"><button type="button" class="btn-cancel" onclick="document.getElementById('addItemModal').classList.remove('active')">Cancelar</button><button type="submit" class="btn-primary">Adicionar</button></div></form></div></div><footer><strong>INOVATECH SMART DRIVER</strong><span>Termos de uso　 Política de privacidade　 Suporte técnico</span><span>© 2024 INOVATECH · SISTEMA DE SEGURANÇA INDUSTRIAL</span></footer>
 	</div><script>
 document.body.dataset.activeView = 'home';
-var siteVideo = document.getElementById('siteVideoBg');
-function updateVideoState() {
-	if (!siteVideo) return;
-	siteVideo.play().catch(function () {});
-}
-document.querySelectorAll('[data-view]').forEach(function (control) { 
-	control.addEventListener('click', function () { 
-		var target = control.dataset.view; 
-		document.body.dataset.activeView = target;
-		updateVideoState();
-		document.querySelectorAll('.view').forEach(function (view) { 
-			view.classList.toggle('active', view.id === target); 
+
+(function() {
+	var siteVideo = document.getElementById('siteVideoBg');
+	var siteBgImage = document.getElementById('siteBgImage');
+	var currentContext = '';
+	var playCount = 0;
+	var maxPlays = 2;
+	var isFadedOut = false;
+
+	function checkIsMobile() {
+		return window.innerWidth <= 768 || window.matchMedia('(max-width: 768px)').matches;
+	}
+
+	function getTargetConfig(viewName) {
+		var isMobile = checkIsMobile();
+		if (isMobile) {
+			if (viewName === 'home') {
+				return {
+					context: 'mobile-home',
+					video: 'oculos2.mp4',
+					image: 'oculosmobile.png',
+					maxPlays: 1
+				};
+			} else {
+				return {
+					context: 'mobile-other',
+					video: 'oculos3.mp4',
+					image: 'oculosmobile.png',
+					maxPlays: 1
+				};
+			}
+		} else {
+			return {
+				context: 'pc',
+				video: 'oculos.mp4',
+				image: 'oculospc.jpg',
+				maxPlays: 2
+			};
+		}
+	}
+
+	function fadeVideoToImage() {
+		if (isFadedOut) return;
+		isFadedOut = true;
+		if (siteVideo) {
+			siteVideo.style.transition = 'opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1)';
+			siteVideo.style.opacity = '0';
+			setTimeout(function() {
+				if (isFadedOut && siteVideo) {
+					siteVideo.pause();
+				}
+			}, 1250);
+		}
+	}
+
+	function syncBackground(viewName, forceReload) {
+		if (!siteVideo || !siteBgImage) return;
+
+		var config = getTargetConfig(viewName);
+
+		// Atualiza a imagem de fundo estática que fica logo abaixo do vídeo
+		siteBgImage.style.backgroundImage = "url('" + config.image + "')";
+
+		// Se o contexto não mudou (ex: navegando entre abas no PC ou entre abas secundárias no celular)
+		if (!forceReload && currentContext === config.context) {
+			if (!isFadedOut && siteVideo.paused && playCount < maxPlays) {
+				siteVideo.play().catch(function() {});
+			}
+			return;
+		}
+
+		currentContext = config.context;
+		maxPlays = config.maxPlays;
+		playCount = 0;
+		isFadedOut = false;
+
+		var curSrc = siteVideo.currentSrc || siteVideo.src || '';
+		var isSameVideo = curSrc.indexOf(config.video) !== -1;
+
+		if (!isSameVideo || forceReload) {
+			siteVideo.style.transition = 'none';
+			siteVideo.style.opacity = '0';
+			siteVideo.src = config.video;
+			siteVideo.load();
+
+			var onPlayStart = function() {
+				siteVideo.removeEventListener('playing', onPlayStart);
+				siteVideo.style.transition = 'opacity 0.8s ease';
+				siteVideo.style.opacity = '1';
+			};
+			siteVideo.addEventListener('playing', onPlayStart);
+		} else {
+			siteVideo.currentTime = 0;
+			siteVideo.style.transition = 'opacity 0.8s ease';
+			siteVideo.style.opacity = '1';
+		}
+
+		var playPromise = siteVideo.play();
+		if (playPromise !== undefined) {
+			playPromise.catch(function() {
+				// Autoplay aguarda primeira interação se necessário
+			});
+		}
+	}
+
+	if (siteVideo) {
+		siteVideo.removeAttribute('loop');
+		siteVideo.muted = true;
+
+		siteVideo.addEventListener('ended', function() {
+			playCount++;
+			if (playCount < maxPlays) {
+				siteVideo.currentTime = 0;
+				var p = siteVideo.play();
+				if (p !== undefined) p.catch(function() {});
+			} else {
+				fadeVideoToImage();
+			}
+		});
+	}
+
+	// Garante reprodução caso navegadores mobile bloqueiem autoplay silencioso
+	function unlockAutoplay() {
+		if (siteVideo && siteVideo.paused && !isFadedOut && playCount < maxPlays) {
+			siteVideo.play().catch(function() {});
+		}
+	}
+	document.addEventListener('touchstart', unlockAutoplay, { once: true, passive: true });
+	document.addEventListener('click', unlockAutoplay, { once: true, passive: true });
+
+	// Ajuste caso a janela mude de dimensão (Desktop <-> Mobile)
+	var resizeTimer;
+	window.addEventListener('resize', function() {
+		clearTimeout(resizeTimer);
+		resizeTimer = setTimeout(function() {
+			var activeView = document.body.dataset.activeView || 'home';
+			syncBackground(activeView, false);
+		}, 250);
+	});
+
+	// Transição e navegação entre abas
+	document.querySelectorAll('[data-view]').forEach(function (control) { 
+		control.addEventListener('click', function () { 
+			var target = control.dataset.view; 
+			document.body.dataset.activeView = target;
+			syncBackground(target, false);
+			document.querySelectorAll('.view').forEach(function (view) { 
+				view.classList.toggle('active', view.id === target); 
+			}); 
+			document.querySelectorAll('nav button').forEach(function (button) { 
+				button.classList.toggle('active', button.dataset.view === target); 
+			}); 
+			window.scrollTo({ top: 0, behavior: 'smooth' }); 
 		}); 
-		document.querySelectorAll('nav button').forEach(function (button) { 
-			button.classList.toggle('active', button.dataset.view === target); 
-		}); 
-		window.scrollTo({ top:0, behavior:'smooth' }); 
-	}); 
-});
-updateVideoState();
+	});
+
+	// Disparo inicial
+	var initialView = document.body.dataset.activeView || 'home';
+	syncBackground(initialView, true);
+})();
 
 // Atualização contínua do relógio da página de Telemetria
 function updateTelemetryClock() {
