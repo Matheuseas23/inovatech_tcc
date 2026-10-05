@@ -80,36 +80,132 @@ nav {
   display: flex;
   gap: 8px;
   align-items: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(6, 28, 44, 0.45) 45%, rgba(2, 14, 24, 0.72) 100%);
+  padding: 6px 10px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  box-shadow: 
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1.5px 2px 0 rgba(8, 222, 235, 0.20),
+    0 10px 30px -4px rgba(0, 0, 0, 0.45),
+    0 0 20px rgba(8, 222, 235, 0.08);
+  backdrop-filter: blur(28px) saturate(200%) contrast(106%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) contrast(106%);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.light-mode nav {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(240, 248, 250, 0.60) 45%, rgba(225, 238, 241, 0.75) 100%);
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 
+    inset 0 1.5px 1px 0 #ffffff,
+    inset 0 -1px 2px 0 rgba(8, 125, 136, 0.15),
+    0 8px 24px rgba(14, 34, 42, 0.08);
 }
 
 nav button {
-  border: 0;
-  border-bottom: 2px solid transparent;
-  padding: 28px 18px 25px;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 9px 18px;
   color: var(--muted);
-  background: transparent;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.08) 0%, rgba(6, 28, 44, 0.25) 60%, rgba(2, 14, 24, 0.45) 100%);
   cursor: pointer;
   font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.30),
+    0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-nav button:hover,
+nav button:hover {
+  color: #ffffff;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.20) 0%, rgba(8, 222, 235, 0.16) 55%, rgba(4, 25, 40, 0.50) 100%);
+  border-color: rgba(255, 255, 255, 0.40);
+  box-shadow: 
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.60),
+    inset 0 0 12px 0 rgba(8, 222, 235, 0.25),
+    0 6px 18px rgba(0, 0, 0, 0.28),
+    0 0 16px rgba(8, 222, 235, 0.22);
+  transform: translateY(-1px);
+}
+
 nav button.active {
-  color: var(--cyan);
-  border-bottom-color: var(--cyan);
+  color: #ffffff !important;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(18, 243, 255, 0.58) 0%, rgba(8, 200, 215, 0.38) 55%, rgba(3, 35, 55, 0.70) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.90),
+    inset 0 0 12px 0 rgba(8, 222, 235, 0.45),
+    inset 0 -1.5px 2px 0 rgba(220, 130, 255, 0.30),
+    inset -1.5px 0 2px 0 rgba(8, 222, 235, 0.35),
+    0 6px 20px rgba(8, 222, 235, 0.42),
+    0 2px 8px rgba(0, 0, 0, 0.30) !important;
+  text-shadow: 0 0 10px rgba(8, 222, 235, 0.85);
+}
+
+body.light-mode nav button {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+body.light-mode nav button:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.75);
+  border-color: #ffffff;
+}
+
+body.light-mode nav button.active {
+  color: #087d88 !important;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(8, 125, 136, 0.28) 0%, rgba(8, 125, 136, 0.14) 60%, rgba(255, 255, 255, 0.85) 100%) !important;
+  border-color: rgba(8, 125, 136, 0.55) !important;
+  box-shadow: 
+    inset 0 1.5px 1px #ffffff,
+    inset 0 0 10px rgba(8, 125, 136, 0.2),
+    0 6px 18px rgba(8, 125, 136, 0.22) !important;
+  text-shadow: none;
 }
 
 .tools {
   display: flex;
   gap: 9px;
+  align-items: center;
 }
 
+.theme-toggle,
 .icon-btn {
-  width: 35px;
-  height: 35px;
-  border: 1px solid #176174;
-  color: var(--cyan);
-  background: #092638;
+  width: 38px;
+  height: 38px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.20) 0%, rgba(8, 222, 235, 0.16) 50%, rgba(4, 24, 38, 0.68) 100%);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1.5px 2px 0 rgba(220, 130, 255, 0.25),
+    0 6px 18px rgba(0, 0, 0, 0.32),
+    0 0 14px rgba(8, 222, 235, 0.22);
   cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font-size: 18px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.theme-toggle:hover,
+.icon-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  border-color: rgba(255, 255, 255, 0.70);
+  box-shadow: 
+    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.95),
+    0 8px 24px rgba(8, 222, 235, 0.40);
 }
 
 main {
@@ -239,9 +335,13 @@ body[data-active-view="home"] .shell {
 }
 
 body[data-active-view="home"] header,
-.shell:has(#home.active) header {
+.shell:has(#home.active) header,
+body.light-mode[data-active-view="home"] header,
+body.light-mode .shell:has(#home.active) header {
   background: transparent !important;
-  border-bottom: 1px solid rgba(22, 73, 91, 0.35);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: none !important;
   box-shadow: none !important;
 }
 
@@ -294,27 +394,138 @@ h3 {
   margin: 16px auto 25px;
 }
 
+/* Bandeja Flutuante (Dock Tray) da Home com Efeito Liquid Glass de iPhone no Fundo dos Botões */
 .actions {
-  display: flex;
+  display: inline-flex;
   justify-content: center;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
   flex-wrap: wrap;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(6, 28, 44, 0.45) 45%, rgba(2, 14, 24, 0.72) 100%);
+  padding: 7px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.48),
+    inset 0 -1.5px 2px 0 rgba(8, 222, 235, 0.22),
+    0 16px 36px -4px rgba(0, 0, 0, 0.50),
+    0 0 22px rgba(8, 222, 235, 0.12);
+  backdrop-filter: blur(28px) saturate(210%) contrast(106%);
+  -webkit-backdrop-filter: blur(28px) saturate(210%) contrast(106%);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  margin: 0 auto;
+  max-width: 100%;
 }
 
+body.light-mode .actions {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(240, 248, 250, 0.62) 45%, rgba(225, 238, 241, 0.78) 100%);
+  border-color: rgba(255, 255, 255, 0.90);
+  box-shadow: 
+    inset 0 1.5px 1px 0 #ffffff,
+    inset 0 -1px 2px 0 rgba(8, 125, 136, 0.16),
+    0 10px 28px rgba(14, 34, 42, 0.09);
+}
+
+/* Botão Principal da Home: Lente Liquid Glass 3D com Cor Ciano Vibrante Preservada */
 .btn {
-  border: 1px solid var(--cyan);
-  color: #00181e;
-  background: var(--cyan);
-  padding: 11px 22px;
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  color: #011b22 !important;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(18, 245, 255, 0.96) 0%, rgba(8, 215, 230, 0.85) 55%, rgba(2, 90, 110, 0.92) 100%) !important;
+  padding: 11px 24px;
   cursor: pointer;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 1px;
+  border-radius: 9999px !important;
+  backdrop-filter: blur(24px) saturate(210%);
+  -webkit-backdrop-filter: blur(24px) saturate(210%);
+  box-shadow: 
+    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 14px 0 rgba(8, 222, 235, 0.50),
+    inset 0 -2px 3px 0 rgba(220, 130, 255, 0.40),
+    inset -1.5px 0 2.5px 0 rgba(8, 222, 235, 0.45),
+    0 8px 24px rgba(8, 222, 235, 0.45),
+    0 3px 8px rgba(0, 0, 0, 0.35) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
+.btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  border-color: rgba(255, 255, 255, 0.90) !important;
+  box-shadow: 
+    inset 0 2.5px 2px 0 #ffffff,
+    inset 0 0 20px 0 rgba(8, 222, 235, 0.70),
+    inset 0 -2px 3px 0 rgba(220, 130, 255, 0.48),
+    0 12px 32px rgba(8, 222, 235, 0.65),
+    0 0 28px rgba(8, 222, 235, 0.45) !important;
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Botão Secundário da Home: Pílula Liquid Glass Translúcida estilo 'Focus' do iPhone */
 .btn.outline {
-  color: var(--cyan);
-  background: transparent;
+  color: #ffffff !important;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.22) 0%, rgba(8, 222, 235, 0.18) 50%, rgba(3, 24, 38, 0.65) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  backdrop-filter: blur(24px) saturate(210%);
+  -webkit-backdrop-filter: blur(24px) saturate(210%);
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1.5px 2px 0 rgba(220, 130, 255, 0.28),
+    inset -1.5px 0 2px 0 rgba(8, 222, 235, 0.30),
+    0 6px 20px rgba(0, 0, 0, 0.32),
+    0 0 14px rgba(8, 222, 235, 0.18) !important;
+  text-shadow: 0 0 8px rgba(8, 222, 235, 0.70);
+}
+
+.btn.outline:hover {
+  color: #ffffff !important;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.36) 0%, rgba(8, 222, 235, 0.32) 50%, rgba(4, 32, 50, 0.75) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 
+    inset 0 2px 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 16px 0 rgba(8, 222, 235, 0.45),
+    inset 0 -1.5px 2px 0 rgba(220, 130, 255, 0.35),
+    0 8px 26px rgba(8, 222, 235, 0.40),
+    0 0 20px rgba(8, 222, 235, 0.30) !important;
+  transform: translateY(-2px) scale(1.02);
+}
+
+body.light-mode .btn {
+  color: #ffffff !important;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(8, 145, 158, 0.96) 0%, rgba(6, 120, 130, 0.90) 60%, rgba(4, 95, 105, 0.96) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.75) !important;
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.90),
+    inset 0 0 12px rgba(8, 125, 136, 0.35),
+    0 8px 24px rgba(8, 125, 136, 0.35) !important;
+}
+
+body.light-mode .btn.outline {
+  color: #087d88 !important;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.92) 0%, rgba(230, 245, 248, 0.70) 60%, rgba(215, 235, 238, 0.85) 100%) !important;
+  border: 1px solid rgba(8, 125, 136, 0.45) !important;
+  box-shadow: 
+    inset 0 1.5px 1px 0 #ffffff,
+    0 4px 14px rgba(8, 125, 136, 0.12) !important;
+  text-shadow: none;
+}
+
+body.light-mode .btn.outline:hover {
+  background: radial-gradient(130% 130% at 50% 15%, #ffffff 0%, rgba(215, 240, 245, 0.85) 60%, rgba(195, 228, 234, 0.95) 100%) !important;
+  border-color: #087d88 !important;
+  color: #087d88 !important;
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 #ffffff,
+    0 6px 18px rgba(8, 125, 136, 0.22) !important;
 }
 
 .section-title {
@@ -1303,24 +1514,37 @@ body.light-theme .ref-buttons {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 18px;
+  padding: 9px 22px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: #00181e;
-  background: var(--cyan);
-  border: 1px solid var(--cyan);
-  border-radius: 4px;
+  color: #011b22;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(18, 245, 255, 0.96) 0%, rgba(8, 215, 230, 0.85) 55%, rgba(2, 90, 110, 0.92) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 9999px;
+  backdrop-filter: blur(24px) saturate(210%);
+  -webkit-backdrop-filter: blur(24px) saturate(210%);
+  box-shadow: 
+    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 14px 0 rgba(8, 222, 235, 0.50),
+    inset 0 -2px 3px 0 rgba(220, 130, 255, 0.40),
+    0 8px 24px rgba(8, 222, 235, 0.45),
+    0 3px 8px rgba(0, 0, 0, 0.35);
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-access:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(8, 222, 235, 0.35);
-  filter: brightness(1.08);
+  transform: translateY(-2px) scale(1.03);
+  border-color: rgba(255, 255, 255, 0.90);
+  box-shadow: 
+    inset 0 2.5px 2px 0 #ffffff,
+    inset 0 0 20px 0 rgba(8, 222, 235, 0.70),
+    inset 0 -2px 3px 0 rgba(220, 130, 255, 0.48),
+    0 12px 32px rgba(8, 222, 235, 0.65),
+    0 0 28px rgba(8, 222, 235, 0.45);
 }
 
 .btn-access svg {
@@ -1342,37 +1566,64 @@ body.light-theme .ref-buttons {
 body.light-mode .btn-access,
 body.light-theme .btn-access {
   color: #ffffff;
-  background: var(--cyan);
-  border-color: var(--cyan);
+  background: radial-gradient(130% 130% at 50% 15%, rgba(8, 145, 158, 0.96) 0%, rgba(6, 120, 130, 0.90) 60%, rgba(4, 95, 105, 0.96) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.90),
+    inset 0 0 12px rgba(8, 125, 136, 0.35),
+    0 8px 24px rgba(8, 125, 136, 0.35);
 }
 
 body.light-mode .btn-access:hover,
 body.light-theme .btn-access:hover {
-  box-shadow: 0 4px 14px rgba(8, 125, 136, 0.25);
+  box-shadow: 0 10px 28px rgba(8, 125, 136, 0.45);
 }
 
 .btn-access.outline {
-  background: transparent;
-  color: var(--cyan);
-  border: 1px solid var(--cyan);
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.22) 0%, rgba(8, 222, 235, 0.18) 50%, rgba(3, 24, 38, 0.65) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  backdrop-filter: blur(24px) saturate(210%);
+  -webkit-backdrop-filter: blur(24px) saturate(210%);
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1.5px 2px 0 rgba(220, 130, 255, 0.28),
+    inset -1.5px 0 2px 0 rgba(8, 222, 235, 0.30),
+    0 6px 20px rgba(0, 0, 0, 0.32),
+    0 0 14px rgba(8, 222, 235, 0.18);
+  text-shadow: 0 0 8px rgba(8, 222, 235, 0.70);
 }
 
 .btn-access.outline:hover {
-  background: rgba(8, 222, 235, 0.12);
-  color: var(--cyan);
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.36) 0%, rgba(8, 222, 235, 0.32) 50%, rgba(4, 32, 50, 0.75) 100%);
+  border-color: rgba(255, 255, 255, 0.65);
+  color: #ffffff;
+  box-shadow: 
+    inset 0 2px 2px 0 rgba(255, 255, 255, 0.95),
+    inset 0 0 16px 0 rgba(8, 222, 235, 0.45),
+    inset 0 -1.5px 2px 0 rgba(220, 130, 255, 0.35),
+    0 8px 26px rgba(8, 222, 235, 0.40),
+    0 0 20px rgba(8, 222, 235, 0.30);
+  transform: translateY(-2px) scale(1.02);
 }
 
 body.light-mode .btn-access.outline,
 body.light-theme .btn-access.outline {
-  background: transparent;
-  color: var(--cyan);
-  border-color: var(--cyan);
+  color: #087d88;
+  background: radial-gradient(130% 130% at 50% 15%, rgba(255, 255, 255, 0.92) 0%, rgba(230, 245, 248, 0.70) 60%, rgba(215, 235, 238, 0.85) 100%);
+  border-color: rgba(8, 125, 136, 0.45);
+  box-shadow: inset 0 1.5px 1px #ffffff, 0 4px 14px rgba(8, 125, 136, 0.12);
+  text-shadow: none;
 }
 
 body.light-mode .btn-access.outline:hover,
 body.light-theme .btn-access.outline:hover {
-  background: rgba(8, 125, 136, 0.08);
-  color: var(--cyan);
+  background: radial-gradient(130% 130% at 50% 15%, #ffffff 0%, rgba(215, 240, 245, 0.85) 60%, rgba(195, 228, 234, 0.95) 100%);
+  border-color: #087d88;
+  color: #087d88;
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 #ffffff,
+    0 6px 18px rgba(8, 125, 136, 0.22);
 }
 
 .game-layout {
@@ -1381,6 +1632,38 @@ body.light-theme .btn-access.outline:hover {
   gap: 20px;
   align-items: stretch;
   margin-top: 18px;
+}
+
+@media (max-width: 850px) {
+  header {
+    padding: 0 16px;
+    height: auto;
+    min-height: 70px;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  nav {
+    overflow-x: auto;
+    max-width: 100%;
+    padding: 4px 8px;
+  }
+  nav button {
+    padding: 7px 14px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .actions {
+    border-radius: 28px;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .btn {
+    padding: 10px 18px;
+    font-size: 9px;
+  }
 }
 
 @media (max-width: 800px) {
