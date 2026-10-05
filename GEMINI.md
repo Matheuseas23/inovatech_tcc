@@ -30,13 +30,12 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
   - Texto secundário (`--muted`): `#8ca4ad`
   - Cards e painéis (`--card`): `#0b2233` / linear gradient `(#123349, #071e2e)`
 - **Modo Claro (Light Theme)**:
-  - Fundo geral: `#dce8ea` / `#efefef`
-  - Contêiner: `#eef5f6` / `#f5f5f5`
-  - Cabeçalho: `#ffffff`
-  - Ciano contrastante: `#087d88` / `#0066cc`
-  - Texto: `#10252b` / `#1a1a1a`
-  - Muted: `#52686e` / `#666666`
-  - Cards: `#ffffff` com borda suave `#b9ced1`
+  - *Teste Atual Solicitado*: Fundo mantido idêntico ao Modo Escuro (`--page: #020b12`, `--bg: #031522`, `--header: #061c2b`, overlay escuro `.site-bg-video-overlay`), com cards em vidro claro/branco translúcido e tipografia adaptada para alto contraste.
+  - *Backup para Reversão*: Fundo geral original: `#e5eff1`, Contêiner: `#f4f8f9`, Cabeçalho: `#ffffff`, Overlay claro: `radial-gradient(ellipse at 50% 30%, rgba(244, 248, 249, 0.45) 0%, rgba(229, 239, 241, 0.75) 50%, rgba(220, 235, 238, 0.90) 100%)`.
+  - Ciano contrastante: `#087d88`
+  - Texto nos cards: `#0e222a`
+  - Muted nos cards: `#4a636c`
+  - Cards: `#ffffff` / vidro claro com borda suave `#bfd6dc`
 
 ### C. Tipografia & Hierarquia
 - **Títulos (`h1`, `h2`, `h3`, Marca)**: `'Barlow Condensed', sans-serif`, caixa alta (uppercase), tracking/letter-spacing amplo.
