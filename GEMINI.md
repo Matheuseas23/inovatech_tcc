@@ -138,39 +138,19 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
     - Broadcast instantâneo de cada novo pacote para todos os navegadores conectados no painel.
 - `backend/test-esp32-sim.js`: Script de teste automatizado para validar o painel sem necessidade da placa física plugada.
 
-### B. Hardware ESP32 & Lógica Temporal
-- **Sensor IR de Obstáculo (GPIO 32)**: Fixado na haste dos óculos apontado para a região do queixo/peito.
-  - `LOW` = Proximidade detectada (Cabeça baixa).
-  - `HIGH` = Postura normalizada (Cabeça erguida).
-- **Filtro de Segurança Temporal (2500 ms)**:
-  - Contagem contínua via `millis()` no ESP32.
-  - Se a cabeça permanecer baixa por < 2500ms: Estado `PRE_ALERTA`, sem atuar relé.
-  - Ao atingir >= 2500ms: Estado `ALARME_ATIVADO`, acionamento instantâneo do Buzzer Ativo (GPIO 25) e Módulo Relé Veicular (GPIO 18).
-  - Ao erguer a cabeça: Interrupção imediata dos atuadores e retorno para `NORMAL`.
-- **Acelerômetro I2C (GPIO 21/22 - SDA/SCL)**: Monitoramento inercial angular (Pitch/Roll) para detecção de solavancos/pescadas de sono.
-
----
-
-## 6. Planejamento da Apresentação — Semana do TI (Outubro/2026)
-- **Turma**: 31C TI (Apresentação na Quarta-feira).
-- **Ambiente**: Sala de aula sorteada com Computador da escola conectado a uma TV de grande porte.
-- **Cronograma Real da Banca (Áudio Oficial do Professor)**:
-  - **09h00 da manhã**: Chegada e abertura da sala para montagem e testes (1 hora de preparação).
-  - ⚠️ **10h00 da manhã**: Início da passagem da **BANCA AVALIADORA DOS PROFESSORES** para nota do TCC.
-  - **13h30 às 18h00**: Visitação dos alunos dos 1º e 2º anos nas salas.
-  - **Sexta-feira (CIPIC)**: 07h00 no Salão Nobre, 08h00 no CENAP com estandes. Obrigatório levar **1 extensão de tomada por grupo**.
-- **Rede Wi-Fi**: Solicitação de liberação enviada ao TI da escola + Hotspot Móvel de Contingência.
-- **Estratégia de Execução**:
-  1. **Modo Nuvem (Render + Vercel)**:
-     - Frontend na Vercel: `https://inovatech-tcc.vercel.app/`
-     - Backend no Render: `https://inovatech-tcc.onrender.com` (Deploy `Live`, porta 10000, WebSockets em `wss://`).
-     - ESP32 com `WiFiClientSecure` e `setInsecure()` para envio contínuo HTTPS sem falha de certificado.
-  2. **Modo Local de Contingência (Infalível)**:
-     - Se o Wi-Fi da escola oscilar ou o firewall barrar, o backend roda diretamente no PC da sala (`npm start`), servindo o painel em `http://localhost:3001` na TV com zero lag e sem necessidade de conexão externa.
-  3. **Demonstração Prática na TV**:
-     - Painel em tela cheia na TV.
-     - Janela do app Linklemo capturada ao vivo na cabine.
-     - Integrante usando os óculos: ao abaixar a cabeça por 2,5s, o buzzer apita, o relé comuta, a TV pulsa em vermelho neon e a câmera do motorista é destacada com o alerta `⚠️ VERIFICAR MOTORISTA AGORA!`.
+- **Firmware Dual-Core FreeRTOS**:
+  - **Core 1 (Tempo Real Estrito a 100 Hz)**: Sensor IR (GPIO 32), Buzzer (GPIO 25), Relé (GPIO 18) e filtro de segurança (2500 ms). Totalmente independente de rede, imune a quedas de Wi-Fi ou lag.
+  - **Core 0 (Telemetria IoT em Background)**: Conexão Wi-Fi com auto-reconnect e envio periódico de telemetria para Render (HTTPS com `WiFiClientSecure` e `setInsecure()`) ou servidor Local (HTTP).
+- **Lançador Local de Contingência (`iniciar-painel.bat`)**:
+  - Script com duplo clique que detecta o IP local, inicia o Node.js e abre o frontend na TV em `http://localhost:3001` com zero latência.
+- **Entregas Solicitadas pelo Professor**:
+  - 2 cópias em PDF do artigo científico (1 com nomes, 1 cópia cega sem nomes).
+  - Lista de domínios para liberação no firewall da escola (Vercel, Render, GitHub, APIs Google).
+  - Levar 1 extensão elétrica com régua de tomadas por grupo.
+- **Demonstração Prática na TV**:
+  - Painel em tela cheia na TV.
+  - Janela do app Linklemo capturada ao vivo na cabine.
+  - Integrante usando os óculos: ao abaixar a cabeça por 2,5s, o buzzer apita, o relé comuta, a TV pulsa em vermelho neon e a câmera do motorista é destacada com o alerta `⚠️ VERIFICAR MOTORISTA AGORA!`.
 
 ---
 
