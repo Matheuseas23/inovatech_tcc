@@ -4,58 +4,77 @@
 #include <HTTPClient.h>
 
 // ==============================================================================
-// INOVA TECH — SMART DRIVER (FIRMWARE ESP32 COM TELEMETRIA IOT)
+// INOVA TECH — SMART DRIVER (FIRMWARE ESP32 DUAL-CORE DE ALTA PRECISÃO)
 // ==============================================================================
-// Monitoramento biométrico de postura e detecção de fadiga / queda de cabeça.
-// Integração instantânea com o Backend Node.js e Painel de Controle HUD.
+// Monitoramento biométrico de postura e combate à fadiga / sono ao volante.
+// Arquitetura Dual-Core (FreeRTOS):
+// - CORE 1: Sensor IR, Buzzer e Relé (Tempo real estrito a 100 Hz, zero delay).
+// - CORE 0: Conectividade Wi-Fi e Telemetria IoT (Nuvem Render ou Servidor Local).
 // ==============================================================================
 
 // ------------------------------------------------------------------------------
-// CONFIGURAÇÃO DE REDE WI-FI & BACKEND
+// 1. CONFIGURAÇÃO DE REDE WI-FI & SERVIDOR
 // ------------------------------------------------------------------------------
-// IMPORTANTE: Na quarta-feira, coloque aqui o nome e a senha exata da rede
-// da sala (ou do seu celular roteando 4G):
+// IMPORTANTE: Na quarta-feira (Semana do TI), altere aqui para o nome e senha
+// do Wi-Fi da sala de aula ou do 4G roteado do celular:
 const char* WIFI_SSID     = "NOME_DO_WIFI";
 const char* WIFI_PASSWORD = "SENHA_DO_WIFI";
 
 // Endereço do Servidor de Telemetria:
-// - Modo Nuvem (Render): "https://inovatech-tcc.onrender.com/api/telemetry"
-// - Modo Local (PC da sala): "http://<IP_DO_PC>:3001/api/telemetry"
+// Opção A (Nuvem Render HTTPS): "https://inovatech-tcc.onrender.com/api/telemetry"
+// Opção B (Modo Local PC HTTP): "http://192.168.1.218:3001/api/telemetry" (Zero latência, < 5ms)
 const char* BACKEND_URL   = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
-// MAPEAMENTO DOS PINOS DE HARDWARE
+// 2. MAPEAMENTO DOS PINOS DE HARDWARE
 // ------------------------------------------------------------------------------
-const uint8_t PINO_SENSOR_IR = 32; // GPIO 32 - Sensor IR de obstáculo (queixo/peito)
+const uint8_t PINO_SENSOR_IR = 32; // GPIO 32 - Sensor IR de obstáculo (haste dos óculos -> queixo/peito)
 const uint8_t PINO_BUZZER    = 25; // GPIO 25 - Buzzer sonoro ativo nos óculos
-const uint8_t PINO_RELE      = 18; // GPIO 18 - Módulo Relé de segurança veicular
+const uint8_t PINO_RELE      = 18; // GPIO 18 - Módulo Relé veicular de segurança
 
-// Lógica de níveis
-const int NIVEL_CABECA_BAIXA     = LOW;
-const int NIVEL_BUZZER_LIGADO    = HIGH;
+// Níveis Lógicos
+const int NIVEL_CABECA_BAIXA     = LOW;  // Sensor IR detecta aproximação (cabeça baixa)
+const int NIVEL_BUZZER_LIGADO    = HIGH; // Ativa o buzzer sonoro 3.3V
 const int NIVEL_BUZZER_DESLIGADO = LOW;
-const int NIVEL_RELE_LIGADO      = HIGH;
+const int NIVEL_RELE_LIGADO      = HIGH; // Comuta o módulo relé
 const int NIVEL_RELE_DESLIGADO   = LOW;
 
-// Filtro Temporal de Segurança (2.500 ms)
+// Filtro Temporal de Segurança (2.500 ms ininterruptos)
 const unsigned long LIMIAR_CABECA_BAIXA_MS = 2500;
-const unsigned long INTERVALO_TELEMETRIA_MS = 250; // 4 transmissões por segundo
+const unsigned long INTERVALO_TELEMETRIA_MS = 250; // 4 pacotes por segundo
 
-// Variáveis de Estado
+// ------------------------------------------------------------------------------
+// 3. ESTRUTURA DE TELEMETRIA COMPARTILHADA ENTRE OS CORES
+// ------------------------------------------------------------------------------
+struct DadosTelemetria {
+  int sensorIr;
+  unsigned long tempoCabecaBaixaMs;
+  int buzzer;
+  int rele;
+  char estado[24];
+  bool alarmeAtivo;
+};
+
+DadosTelemetria dadosGlobais = {1, 0, 0, 0, "NORMAL", false};
+portMUX_TYPE mutexDados = portMUX_INITIALIZER_UNLOCKED;
+
+// Variáveis de Estado no Core 1 (Sensor)
 unsigned long tempoInicioCabecaBaixa = 0;
-unsigned long ultimoEnvioTelemetria  = 0;
 bool cabecaEstavaBaixa               = false;
 bool alarmeAtivo                     = false;
 
-// Protótipos de funções
+// Protótipos de Funções
 void ativarAlarmes();
 void desativarAlarmes();
-void conectarWiFi();
-void enviarTelemetria(int irValor, unsigned long tempoBaixaMs, int buzzerVal, int releVal, const char* estadoTexto);
+void taskTelemetria(void *pvParameters);
 
+// ------------------------------------------------------------------------------
+// 4. SETUP INICIAL
+// ------------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
 
+  // Configuração dos pinos com pull-up interno no sensor
   pinMode(PINO_SENSOR_IR, INPUT_PULLUP);
   pinMode(PINO_BUZZER, OUTPUT);
   pinMode(PINO_RELE, OUTPUT);
@@ -64,14 +83,41 @@ void setup() {
 
   Serial.println(F("\n=================================================="));
   Serial.println(F("     INOVA TECH - SMART DRIVER (SISTEMA ATIVO)    "));
-  Serial.println(F("  Monitorizacao de Postura e Queda de Cabeca (Sono) "));
+  Serial.println(F("   Monitoramento de Postura e Fadiga Veicular     "));
   Serial.println(F("=================================================="));
+  Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25 | Relé: GPIO 18"));
+  Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 2500 ms (2,5s)"));
 
-  conectarWiFi();
+  // Inicia conexão Wi-Fi se não for o placeholder
+  if (String(WIFI_SSID) != "NOME_DO_WIFI") {
+    Serial.print(F("[WIFI] Conectando a "));
+    Serial.println(WIFI_SSID);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  } else {
+    Serial.println(F("[WIFI] Modo offline ativo. Configure WIFI_SSID para telemetria em nuvem."));
+  }
 
-  Serial.println(F("Sistema pronto. A monitorizar inclinacao da cabeca...\n"));
+  // Cria tarefa de Telemetria no Core 0 (Background IoT)
+  // Stack de 8192 bytes para suportar TLS/HTTPS do Render
+  xTaskCreatePinnedToCore(
+    taskTelemetria,
+    "TaskTelemetria",
+    8192,
+    NULL,
+    1,
+    NULL,
+    0 // Executa exclusivamente no Core 0
+  );
+
+  Serial.println(F("[FREERTOS] Core 1: Sensor IR & Atuadores (100 Hz, tempo real)."));
+  Serial.println(F("[FREERTOS] Core 0: Telemetria IoT e Wi-Fi em background."));
+  Serial.println(F("Pronto para operação.\n"));
 }
 
+// ------------------------------------------------------------------------------
+// 5. LOOP DE SEGURANÇA E SENSOR (CORE 1 — NUNCA TRAVA NEM ATRASA)
+// ------------------------------------------------------------------------------
 void loop() {
   int estadoLeitura = digitalRead(PINO_SENSOR_IR);
   bool cabecaBaixaAgora = (estadoLeitura == NIVEL_CABECA_BAIXA);
@@ -83,7 +129,7 @@ void loop() {
     if (!cabecaEstavaBaixa) {
       cabecaEstavaBaixa = true;
       tempoInicioCabecaBaixa = tempoAtual;
-      Serial.println(F("Aviso: Cabeca Baixa Detectada (A iniciar contagem)..."));
+      Serial.println(F("Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)..."));
     } 
 
     tempoDecorridoMs = tempoAtual - tempoInicioCabecaBaixa;
@@ -93,7 +139,7 @@ void loop() {
         alarmeAtivo = true;
         ativarAlarmes();
         estadoAtualTexto = "ALARME_ATIVADO";
-        Serial.println(F("ALARME ATIVADO: MOTORISTA ADORMECEU COM A CABECA BAIXA!"));
+        Serial.println(F("PERIGO: MOTORISTA ADORMECEU! BUZZER E RELE ACIONADOS!"));
       } else {
         estadoAtualTexto = "PRE_ALERTA";
       }
@@ -107,21 +153,29 @@ void loop() {
       alarmeAtivo = false;
       cabecaEstavaBaixa = false;
       tempoInicioCabecaBaixa = 0;
-      Serial.println(F("Postura Normalizada: Cabeca Erguida"));
+      Serial.println(F("Postura Normalizada: Cabeça Erguida (Alarmes cessados)."));
     }
     estadoAtualTexto = "NORMAL";
     tempoDecorridoMs = 0;
   }
 
-  // Transmissão periódica da telemetria para a Central
-  if (tempoAtual - ultimoEnvioTelemetria >= INTERVALO_TELEMETRIA_MS) {
-    ultimoEnvioTelemetria = tempoAtual;
-    int bVal = alarmeAtivo ? 1 : 0;
-    int rVal = alarmeAtivo ? 1 : 0;
-    enviarTelemetria(estadoLeitura, tempoDecorridoMs, bVal, rVal, estadoAtualTexto);
-  }
+  // Atualiza os dados compartilhados com o Core 0 de forma atômica
+  portENTER_CRITICAL(&mutexDados);
+  dadosGlobais.sensorIr = estadoLeitura;
+  dadosGlobais.tempoCabecaBaixaMs = tempoDecorridoMs;
+  dadosGlobais.buzzer = alarmeAtivo ? 1 : 0;
+  dadosGlobais.rele = alarmeAtivo ? 1 : 0;
+  dadosGlobais.alarmeAtivo = alarmeAtivo;
+  strncpy(dadosGlobais.estado, estadoAtualTexto, sizeof(dadosGlobais.estado) - 1);
+  portEXIT_CRITICAL(&mutexDados);
+
+  // Amostragem constante a 100 Hz (10 ms) no Core 1
+  delay(10);
 }
 
+// ------------------------------------------------------------------------------
+// 6. ATUADORES DE SEGURANÇA
+// ------------------------------------------------------------------------------
 void ativarAlarmes() {
   digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
   digitalWrite(PINO_RELE, NIVEL_RELE_LIGADO);
@@ -132,71 +186,63 @@ void desativarAlarmes() {
   digitalWrite(PINO_RELE, NIVEL_RELE_DESLIGADO);
 }
 
-void conectarWiFi() {
-  Serial.print(F("[INOVATECH] Conectando ao Wi-Fi: "));
-  Serial.println(WIFI_SSID);
+// ------------------------------------------------------------------------------
+// 7. TAREFA DE TELEMETRIA EM NUVEM E REDE (CORE 0 — EXECUTA EM SEGUNDO PLANO)
+// ------------------------------------------------------------------------------
+void taskTelemetria(void *pvParameters) {
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  WiFiClient plainClient;
+  WiFiClientSecure secureClient;
+  secureClient.setInsecure(); // Pula validação de certificado CA para garantir comunicação com o Render
 
-  // Tenta conectar por 10 segundos para não travar o loop físico
-  unsigned long inicioConexao = millis();
-  while (WiFi.status() != WL_CONNECTED && (millis() - inicioConexao < 10000)) {
-    delay(500);
-    Serial.print(F("."));
-  }
+  HTTPClient http;
+  bool isHttps = String(BACKEND_URL).startsWith("https://");
 
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println(F("\n[INOVATECH] Wi-Fi Conectado com sucesso!"));
-    Serial.print(F("[INOVATECH] IP do ESP32: "));
-    Serial.println(WiFi.localIP());
-  } else {
-    Serial.println(F("\n[AVISO] Nao foi possivel conectar ao Wi-Fi. Operando em modo offline de seguranca."));
-  }
-}
+  for (;;) {
+    // Se Wi-Fi estiver desconectado, tenta reconectar silenciosamente a cada 4 segundos
+    if (WiFi.status() != WL_CONNECTED) {
+      if (String(WIFI_SSID) != "NOME_DO_WIFI") {
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+      }
+      vTaskDelay(pdMS_TO_TICKS(4000));
+      continue;
+    }
 
-void enviarTelemetria(int irValor, unsigned long tempoBaixaMs, int buzzerVal, int releVal, const char* estadoTexto) {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    bool isHttps = String(BACKEND_URL).startsWith("https://");
+    // Obtém snapshot instantâneo dos dados do motorista protegidos por mutex
+    DadosTelemetria snap;
+    portENTER_CRITICAL(&mutexDados);
+    snap = dadosGlobais;
+    portEXIT_CRITICAL(&mutexDados);
 
+    // Monta o payload JSON formatado
+    String payload = "{";
+    payload += "\"dispositivo\":\"ESP32_SMART_DRIVER_01\",";
+    payload += "\"sensor_ir\":" + String(snap.sensorIr) + ",";
+    payload += "\"tempo_cabeca_baixa_ms\":" + String(snap.tempoCabecaBaixaMs) + ",";
+    payload += "\"buzzer\":" + String(snap.buzzer) + ",";
+    payload += "\"rele\":" + String(snap.rele) + ",";
+    payload += "\"estado\":\"" + String(snap.estado) + "\",";
+    payload += "\"acelerometro\":{\"pitch\":0.0,\"roll\":0.0,\"pescada_detectada\":" + String(snap.alarmeAtivo ? "true" : "false") + "}";
+    payload += "}";
+
+    bool beginOk = false;
     if (isHttps) {
-      WiFiClientSecure secureClient;
-      secureClient.setInsecure(); // Pula checagem de certificado CA para garantir conexão sem falhas com o Render
-      http.begin(secureClient, BACKEND_URL);
-      http.addHeader("Content-Type", "application/json");
-      http.setTimeout(200);
-
-      String payload = "{";
-      payload += "\"dispositivo\":\"ESP32_SMART_DRIVER_01\",";
-      payload += "\"sensor_ir\":" + String(irValor) + ",";
-      payload += "\"tempo_cabeca_baixa_ms\":" + String(tempoBaixaMs) + ",";
-      payload += "\"buzzer\":" + String(buzzerVal) + ",";
-      payload += "\"rele\":" + String(releVal) + ",";
-      payload += "\"estado\":\"" + String(estadoTexto) + "\",";
-      payload += "\"acelerometro\":{\"pitch\":0.0,\"roll\":0.0,\"pescada_detectada\":" + String(alarmeAtivo ? "true" : "false") + "}";
-      payload += "}";
-
-      http.POST(payload);
-      http.end();
+      http.setTimeout(2500); // 2.5s seguro para handshake TLS com o Render
+      beginOk = http.begin(secureClient, BACKEND_URL);
     } else {
-      WiFiClient plainClient;
-      http.begin(plainClient, BACKEND_URL);
+      http.setTimeout(400); // 400ms ultra-rápido para servidor local HTTP
+      beginOk = http.begin(plainClient, BACKEND_URL);
+    }
+
+    if (beginOk) {
       http.addHeader("Content-Type", "application/json");
-      http.setTimeout(150);
-
-      String payload = "{";
-      payload += "\"dispositivo\":\"ESP32_SMART_DRIVER_01\",";
-      payload += "\"sensor_ir\":" + String(irValor) + ",";
-      payload += "\"tempo_cabeca_baixa_ms\":" + String(tempoBaixaMs) + ",";
-      payload += "\"buzzer\":" + String(buzzerVal) + ",";
-      payload += "\"rele\":" + String(releVal) + ",";
-      payload += "\"estado\":\"" + String(estadoTexto) + "\",";
-      payload += "\"acelerometro\":{\"pitch\":0.0,\"roll\":0.0,\"pescada_detectada\":" + String(alarmeAtivo ? "true" : "false") + "}";
-      payload += "}";
-
       http.POST(payload);
       http.end();
     }
+
+    // Intervalo de transmissão contínua (250 ms = 4 vezes por segundo)
+    vTaskDelay(pdMS_TO_TICKS(INTERVALO_TELEMETRIA_MS));
   }
 }

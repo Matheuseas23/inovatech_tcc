@@ -154,15 +154,19 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 ## 6. Planejamento da Apresentação — Semana do TI (Outubro/2026)
 - **Turma**: 31C TI (Apresentação na Quarta-feira).
 - **Ambiente**: Sala de aula sorteada com Computador da escola conectado a uma TV de grande porte.
-- **Janela de Preparação**: Chegada às 9h00 da manhã; Início da visitação dos alunos e banca às 13h00 (4 horas para montagem, configuração e testes).
-- **Rede Wi-Fi**: Cada sala terá um Wi-Fi dedicado fornecido pelo departamento de TI da escola.
+- **Cronograma Real da Banca (Áudio Oficial do Professor)**:
+  - **09h00 da manhã**: Chegada e abertura da sala para montagem e testes (1 hora de preparação).
+  - ⚠️ **10h00 da manhã**: Início da passagem da **BANCA AVALIADORA DOS PROFESSORES** para nota do TCC.
+  - **13h30 às 18h00**: Visitação dos alunos dos 1º e 2º anos nas salas.
+  - **Sexta-feira (CIPIC)**: 07h00 no Salão Nobre, 08h00 no CENAP com estandes. Obrigatório levar **1 extensão de tomada por grupo**.
+- **Rede Wi-Fi**: Solicitação de liberação enviada ao TI da escola + Hotspot Móvel de Contingência.
 - **Estratégia de Execução**:
   1. **Modo Nuvem (Render + Vercel)**:
      - Frontend na Vercel: `https://inovatech-tcc.vercel.app/`
-     - Backend no Render: Web Service Node configurado a partir do repositório `Matheuseas23/inovatech_tcc` (Root Directory: `backend`, Build: `npm install`, Start: `npm start`, Plano Free).
-     - Permite que a banca e os alunos acompanhem a telemetria pelo próprio celular.
+     - Backend no Render: `https://inovatech-tcc.onrender.com` (Deploy `Live`, porta 10000, WebSockets em `wss://`).
+     - ESP32 com `WiFiClientSecure` e `setInsecure()` para envio contínuo HTTPS sem falha de certificado.
   2. **Modo Local de Contingência (Infalível)**:
-     - Se a internet da escola estiver instável, o backend roda diretamente no PC da sala (`npm start`), servindo o painel em `http://localhost:3001` na TV com zero lag e sem necessidade de conexão externa.
+     - Se o Wi-Fi da escola oscilar ou o firewall barrar, o backend roda diretamente no PC da sala (`npm start`), servindo o painel em `http://localhost:3001` na TV com zero lag e sem necessidade de conexão externa.
   3. **Demonstração Prática na TV**:
      - Painel em tela cheia na TV.
      - Janela do app Linklemo capturada ao vivo na cabine.

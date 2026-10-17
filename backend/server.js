@@ -15,6 +15,8 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -30,6 +32,12 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Servir frontend estático para apresentação local e contingência
+const frontendRoot = path.join(__dirname, '..');
+if (fs.existsSync(path.join(frontendRoot, 'index.html'))) {
+  app.use(express.static(frontendRoot));
+}
 
 // Criação do servidor HTTP integrado
 const server = http.createServer(app);
@@ -139,8 +147,13 @@ setInterval(() => {
 // ROTAS HTTP (REST API)
 // ------------------------------------------------------------------------------
 
-// Rota raiz informativa
-app.get('/', (req, res) => {
+// Rota raiz inteligente: serve o frontend para navegadores ou JSON descritivo para APIs
+app.get(['/', '/api'], (req, res) => {
+  const wantsHtml = req.accepts(['html', 'json']) === 'html';
+  const indexPath = path.join(frontendRoot, 'index.html');
+  if (wantsHtml && fs.existsSync(indexPath) && req.path === '/') {
+    return res.sendFile(indexPath);
+  }
   res.json({
     projeto: 'INOVATECH SMART DRIVER — BACKEND API',
     status: 'OPERACIONAL',
