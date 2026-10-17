@@ -20,6 +20,9 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Configuração para suporte a proxies reversos do Render / Nginx
+app.set('trust proxy', 1);
+
 // Configuração de Middlewares
 app.use(cors({
   origin: '*', // Permite Vercel, localhost e qualquer origem autorizada
@@ -320,9 +323,9 @@ app.post('/api/events/clear', (req, res) => {
   res.json({ sucesso: true, mensagem: 'Histórico limpo' });
 });
 
-// Endpoint de saúde do servidor
-app.get('/api/health', (req, res) => {
-  res.json({
+// Endpoints de saúde do servidor (compatíveis com Render e Monitoramento)
+app.get(['/health', '/api/health'], (req, res) => {
+  res.status(200).json({
     status: 'ONLINE',
     uptime_segundos: Math.floor(process.uptime()),
     clientes_conectados: wss.clients.size,
@@ -393,18 +396,33 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-// Inicia escuta na porta configurada
-server.listen(PORT, () => {
+// Inicia escuta na porta e host configurados (0.0.0.0 é obrigatório para Render e Docker)
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`
   ===================================================================
     INOVA TECH SMART DRIVER — BACKEND ATIVO
   ===================================================================
   ✔ Servidor HTTP & WebSocket iniciado na porta: ${PORT}
-  ✔ Endpoint Local:        http://localhost:${PORT}
-  ✔ WebSocket URL:         ws://localhost:${PORT}/ws
-  ✔ REST Telemetria (POST): http://localhost:${PORT}/api/telemetry
-  ✔ REST Comandos (POST):   http://localhost:${PORT}/api/command
-  ✔ Health Check:          http://localhost:${PORT}/api/health
+  ✔ Endpoint Local / Cloud: http://0.0.0.0:${PORT}
+  ✔ WebSocket URL:         ws://0.0.0.0:${PORT}/ws
+  ✔ REST Telemetria (POST): http://0.0.0.0:${PORT}/api/telemetry
+  ✔ REST Comandos (POST):   http://0.0.0.0:${PORT}/api/command
+  ✔ Health Check:          http://0.0.0.0:${PORT}/health
   ===================================================================
   `);
 });
+
+// Encerramento gracioso para orquestradores de nuvem (Render, Docker, Kubernetes)
+function encerrarGraciosamente(sinal) {
+  console.log(`[SERVER] Sinal ${sinal} recebido. Encerrando conexões graciosamente...`);
+  wss.clients.forEach(client => {
+    try { client.close(1001, 'Servidor reiniciando'); } catch (e) {}
+  });
+  server.close(() => {
+    console.log('[SERVER] Servidor HTTP e WebSocket finalizados com sucesso.');
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', () => encerrarGraciosamente('SIGTERM'));
+process.on('SIGINT', () => encerrarGraciosamente('SIGINT'));
