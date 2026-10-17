@@ -1,0 +1,26 @@
+{
+  "name": "inovatech-backend",
+  "version": "1.0.0",
+  "description": "Backend API e WebSocket em tempo real para o InovaTech Smart Driver (ESP32 + Central de Controle)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "simulate": "node test-esp32-sim.js"
+  },
+  "keywords": [
+    "esp32",
+    "iot",
+    "smart-driver",
+    "telemetria",
+    "websocket"
+  ],
+  "author": "Equipe InovaTech",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

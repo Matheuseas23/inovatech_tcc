@@ -1809,6 +1809,463 @@
 				grid-template-columns: 1fr;
 			}
 		}
+
+		/* ==============================================================================
+		   PAINEL DE CONTROLE DA CENTRAL — ESTILOS DARK-TECH COCKPIT
+		   ============================================================================== */
+		.painel-container {
+			display: flex;
+			flex-direction: column;
+			gap: 22px;
+			width: 100%;
+		}
+
+		.painel-header-bar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			flex-wrap: wrap;
+			gap: 14px;
+			padding: 14px 20px;
+			background: rgba(11, 36, 53, 0.45);
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			backdrop-filter: blur(16px);
+		}
+
+		.painel-header-info {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			flex-wrap: wrap;
+		}
+
+		.painel-chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 6px 14px;
+			border-radius: 9999px;
+			font-size: 11px;
+			font-family: 'Space Mono', monospace;
+			background: rgba(3, 21, 34, 0.65);
+			border: 1px solid var(--border);
+		}
+
+		.painel-chip.online {
+			border-color: rgba(8, 222, 235, 0.45);
+			color: var(--cyan);
+		}
+
+		.painel-chip.offline {
+			border-color: rgba(255, 75, 75, 0.45);
+			color: #ff6b6b;
+		}
+
+		.pulse-dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background: var(--cyan);
+			box-shadow: 0 0 8px var(--cyan);
+			animation: pulseDot 1.5s infinite alternate;
+		}
+
+		.pulse-dot.danger {
+			background: #ff2a55;
+			box-shadow: 0 0 10px #ff2a55;
+			animation: pulseDanger 0.8s infinite alternate;
+		}
+
+		.pulse-dot.warning {
+			background: #ffaa00;
+			box-shadow: 0 0 8px #ffaa00;
+		}
+
+		@keyframes pulseDot {
+			0% { transform: scale(0.85); opacity: 0.6; }
+			100% { transform: scale(1.25); opacity: 1; }
+		}
+
+		@keyframes pulseDanger {
+			0% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 6px #ff2a55; }
+			100% { transform: scale(1.4); opacity: 1; box-shadow: 0 0 18px #ff2a55; }
+		}
+
+		.painel-grid {
+			display: grid;
+			grid-template-columns: 1.15fr 0.85fr;
+			gap: 20px;
+		}
+
+		@media (max-width: 980px) {
+			.painel-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		.card-alerta-principal {
+			position: relative;
+			overflow: hidden;
+			border-width: 2px !important;
+			transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		.card-alerta-principal.estado-normal {
+			border-color: #0052ff !important;
+			background: linear-gradient(135deg, rgba(0, 82, 255, 0.12) 0%, rgba(11, 34, 51, 0.85) 100%) !important;
+			box-shadow: 0 8px 24px rgba(0, 82, 255, 0.15);
+		}
+
+		.card-alerta-principal.estado-pre-alerta {
+			border-color: #ffaa00 !important;
+			background: linear-gradient(135deg, rgba(255, 170, 0, 0.18) 0%, rgba(11, 34, 51, 0.85) 100%) !important;
+			box-shadow: 0 8px 30px rgba(255, 170, 0, 0.25);
+		}
+
+		.card-alerta-principal.estado-alarme {
+			border-color: #ff2a55 !important;
+			background: linear-gradient(135deg, rgba(255, 42, 85, 0.25) 0%, rgba(20, 5, 10, 0.95) 100%) !important;
+			box-shadow: 0 0 40px rgba(255, 42, 85, 0.5);
+			animation: bordaNeonAlarme 0.9s infinite alternate;
+		}
+
+		@keyframes bordaNeonAlarme {
+			0% { box-shadow: 0 0 20px rgba(255, 42, 85, 0.35); border-color: #ff2a55; }
+			100% { box-shadow: 0 0 50px rgba(255, 42, 85, 0.9); border-color: #ff607f; }
+		}
+
+		.alerta-display-large {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			margin-top: 14px;
+			padding: 16px 20px;
+			background: rgba(3, 21, 34, 0.7);
+			border-radius: 10px;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+		}
+
+		.alerta-status-text {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 26px;
+			font-weight: 700;
+			letter-spacing: 1.5px;
+			text-transform: uppercase;
+		}
+
+		.alerta-timer-count {
+			font-family: 'Space Mono', monospace;
+			font-size: 24px;
+			font-weight: 700;
+			letter-spacing: 1px;
+		}
+
+		.progresso-tempo-container {
+			margin-top: 14px;
+		}
+
+		.progresso-bar-bg {
+			width: 100%;
+			height: 12px;
+			background: rgba(255, 255, 255, 0.08);
+			border-radius: 9999px;
+			overflow: hidden;
+			position: relative;
+			border: 1px solid rgba(255, 255, 255, 0.1);
+		}
+
+		.progresso-bar-fill {
+			height: 100%;
+			width: 0%;
+			border-radius: 9999px;
+			background: var(--cyan);
+			transition: width 0.1s linear, background-color 0.2s ease;
+		}
+
+		.progresso-bar-fill.warning {
+			background: #ffaa00;
+		}
+
+		.progresso-bar-fill.danger {
+			background: #ff2a55;
+			box-shadow: 0 0 12px #ff2a55;
+		}
+
+		.camera-card {
+			position: relative;
+			transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		.camera-card.camera-alerta-critico {
+			border-color: #ff2a55 !important;
+			box-shadow: 0 0 50px rgba(255, 42, 85, 0.85) !important;
+			transform: scale(1.015);
+			animation: pulsoCameraAlarme 0.9s infinite alternate;
+		}
+
+		@keyframes pulsoCameraAlarme {
+			0% { box-shadow: 0 0 25px rgba(255, 42, 85, 0.6); }
+			100% { box-shadow: 0 0 55px rgba(255, 42, 85, 0.95); }
+		}
+
+		.camera-alerta-banner {
+			display: none;
+			background: #ff2a55;
+			color: #ffffff;
+			padding: 8px 14px;
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 14px;
+			font-weight: 700;
+			letter-spacing: 1.5px;
+			text-align: center;
+			border-radius: 6px;
+			margin-bottom: 12px;
+			animation: piscarBanner 0.6s infinite alternate;
+		}
+
+		.camera-card.camera-alerta-critico .camera-alerta-banner {
+			display: block;
+		}
+
+		@keyframes piscarBanner {
+			0% { opacity: 0.8; }
+			100% { opacity: 1; filter: brightness(1.2); }
+		}
+
+		.camera-viewport {
+			position: relative;
+			width: 100%;
+			aspect-ratio: 16 / 9;
+			background: #02080d;
+			border-radius: 8px;
+			border: 1px solid var(--border);
+			overflow: hidden;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.camera-viewport video {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+		.camera-overlay-hud {
+			position: absolute;
+			inset: 0;
+			pointer-events: none;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			padding: 12px 14px;
+			background: radial-gradient(circle at center, transparent 60%, rgba(2, 11, 18, 0.65) 100%);
+		}
+
+		.camera-hud-top {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.camera-live-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			background: rgba(255, 42, 85, 0.2);
+			border: 1px solid rgba(255, 42, 85, 0.5);
+			color: #ff5577;
+			font-size: 10px;
+			padding: 3px 8px;
+			border-radius: 4px;
+			font-family: 'Space Mono', monospace;
+			font-weight: 700;
+		}
+
+		.camera-reticle {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			width: 90px;
+			height: 90px;
+			border: 1px dashed rgba(8, 222, 235, 0.4);
+			border-radius: 50%;
+			pointer-events: none;
+		}
+
+		.camera-reticle::before,
+		.camera-reticle::after {
+			content: '';
+			position: absolute;
+			background: rgba(8, 222, 235, 0.6);
+		}
+
+		.camera-reticle::before {
+			top: 50%;
+			left: -12px;
+			right: -12px;
+			height: 1px;
+		}
+
+		.camera-reticle::after {
+			left: 50%;
+			top: -12px;
+			bottom: -12px;
+			width: 1px;
+		}
+
+		.camera-controls-bar {
+			display: flex;
+			gap: 10px;
+			margin-top: 12px;
+			flex-wrap: wrap;
+		}
+
+		.btn-tactical {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 8px 16px;
+			background: rgba(8, 222, 235, 0.1);
+			border: 1px solid var(--cyan);
+			color: var(--cyan);
+			border-radius: 6px;
+			font-size: 11px;
+			font-family: 'Space Mono', monospace;
+			cursor: pointer;
+			transition: all 0.2s ease;
+		}
+
+		.btn-tactical:hover {
+			background: rgba(8, 222, 235, 0.22);
+			box-shadow: 0 0 12px rgba(8, 222, 235, 0.3);
+		}
+
+		.btn-tactical.danger {
+			border-color: #ff2a55;
+			color: #ff5577;
+			background: rgba(255, 42, 85, 0.1);
+		}
+
+		.btn-tactical.danger:hover {
+			background: rgba(255, 42, 85, 0.25);
+			box-shadow: 0 0 14px rgba(255, 42, 85, 0.4);
+		}
+
+		.axes-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 10px;
+			margin-top: 14px;
+		}
+
+		.axis-item {
+			background: rgba(3, 21, 34, 0.65);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 10px;
+			text-align: center;
+		}
+
+		.axis-label {
+			font-size: 10px;
+			color: var(--muted);
+			font-family: 'Space Mono', monospace;
+		}
+
+		.axis-val {
+			font-size: 18px;
+			font-weight: 700;
+			color: var(--text);
+			font-family: 'Space Mono', monospace;
+			margin-top: 4px;
+		}
+
+		.terminal-log-box {
+			background: #02080d;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 12px;
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			max-height: 180px;
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.log-entry {
+			display: flex;
+			gap: 10px;
+			align-items: flex-start;
+			padding: 4px 6px;
+			border-radius: 4px;
+			background: rgba(255, 255, 255, 0.02);
+		}
+
+		.log-time {
+			color: var(--muted);
+			white-space: nowrap;
+		}
+
+		.log-entry.NORMAL .log-msg { color: #55ee77; }
+		.log-entry.PRE_ALERTA .log-msg { color: #ffbb33; }
+		.log-entry.ALARME_ATIVADO .log-msg { color: #ff4466; font-weight: bold; }
+		.log-entry.COMANDO_CENTRAL .log-msg { color: var(--cyan); }
+
+		.painel-gate-modal {
+			position: fixed;
+			inset: 0;
+			z-index: 99999;
+			background: rgba(2, 11, 18, 0.88);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			display: none;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+		}
+
+		.painel-gate-modal.active {
+			display: flex;
+		}
+
+		.painel-gate-card {
+			width: 100%;
+			max-width: 440px;
+			background: linear-gradient(180deg, #071f30 0%, #031422 100%);
+			border: 1px solid var(--border);
+			border-radius: 16px;
+			padding: 32px 28px;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+			text-align: center;
+		}
+
+		.painel-gate-card.shake {
+			animation: shakeCard 0.4s ease-in-out;
+		}
+
+		@keyframes shakeCard {
+			0%, 100% { transform: translateX(0); }
+			20%, 60% { transform: translateX(-10px); }
+			40%, 80% { transform: translateX(10px); }
+		}
+
+		.painel-gate-icon {
+			width: 60px;
+			height: 60px;
+			margin: 0 auto 16px;
+			border-radius: 50%;
+			background: rgba(8, 222, 235, 0.1);
+			border: 1px solid var(--cyan);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--cyan);
+		}
 	</style>
 </head>
 <body data-active-view="home">
@@ -1821,10 +2278,226 @@
 		</video>
 		<div class="site-bg-video-overlay"></div>
 	</div>
-	<div class="shell"><header><div class="brand"><img id="brandLogo" src="image.png" alt="INOVA TECH"><div>INOVA TECH<small>SMART DRIVER</small></div></div><nav aria-label="Navegação principal"><button class="active" data-view="home">HOME</button><button data-view="telemetry">TELEMETRIA</button><button data-view="manual">MANUAL DE OPERAÇÕES</button><button data-view="ecosystem">ECOSSISTEMA DE SEGURANÇA</button><button data-view="about">QUEM SOMOS</button><button data-view="references">REFERÊNCIAS</button><button data-view="game">O JOGO</button></nav><div class="tools"><button class="theme-toggle" id="themeToggle" aria-label="Alternar tema"><img id="themeIcon" src="moon.svg" alt="Modo escuro"></button></div></header>
+	<div class="shell"><header><div class="brand"><img id="brandLogo" src="image.png" alt="INOVA TECH"><div>INOVA TECH<small>SMART DRIVER</small></div></div><nav aria-label="Navegação principal"><button class="active" data-view="home">HOME</button><button data-view="painel" id="navPainel">🔒 PAINEL DE CONTROLE</button><button data-view="manual">MANUAL DE OPERAÇÕES</button><button data-view="ecosystem">ECOSSISTEMA DE SEGURANÇA</button><button data-view="about">QUEM SOMOS</button><button data-view="references">REFERÊNCIAS</button><button data-view="game">O JOGO</button></nav><div class="tools"><button class="theme-toggle" id="themeToggle" aria-label="Alternar tema"><img id="themeIcon" src="moon.svg" alt="Modo escuro"></button></div></header>
 		<main>
-			<section id="home" class="view active"><div class="home-content-wrapper"><div class="hero"><div class="hero-content"><div class="eyebrow">Monitoramento inteligente em movimento</div><h1>Monitoramento biométrico de<br><span style="color:var(--cyan)">alta performance</span></h1><p>Segurança em tempo real para operações industriais. Antecipe riscos, otimize eficiência e garanta um ambiente operacional protegido através de telemetria avançada e resposta imediata.</p><div class="actions"><button class="btn" data-view="telemetry">Acessar Telemetria Ao Vivo</button><button class="btn outline" data-view="manual">Ver manual completo</button><button class="btn outline" data-view="ecosystem">Conheça o ecossistema</button></div></div></div><div class="grid" style="margin-top:34px"><article class="card"><div class="card-label">◉ PÚBLICO-ALVO</div><h3>Para quem dirige e opera</h3><p>Motoristas profissionais, operadores industriais e empresas de transporte que precisam reduzir riscos durante a operação.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">ϟ DIFERENCIAL</div><h3>Biometria em tempo real</h3><p>O Smart Driver integra wearable, sensores e veículo para transformar sinais do condutor em alertas imediatos.</p></article><article class="card"><div class="card-label">⌁ OBJETIVO</div><h3>Prevenir antes do risco</h3><p>Identificar fadiga, perda de atenção e alterações físicas para apoiar decisões rápidas e tornar a operação mais segura.</p></article></div></div></section>
-			<section id="telemetry" class="view"><div class="eyebrow">INOVA TECH / CENTRAL DE MONITORAMENTO OPERACIONAL</div><div class="section-title" style="margin-top:8px"><h2>Telemetria Biométrica</h2><span class="eyebrow" id="telemetryClock">AO VIVO · 08:42:16</span></div><p style="color:var(--muted);font-size:11px;max-width:680px;line-height:1.8">Painel dedicado de monitoramento biométrico e cognitivo do operador em tempo real. Os dados são coletados continuamente através dos sensores no óculos Smart Driver e processados localmente pela unidade central do cockpit.</p><div class="metrics" style="margin-top:24px"><article class="card metric"><div class="card-label">Frequência cardíaca <span>♡</span></div><div class="value">NORMAL</div><div class="bar"><span style="width:47%"></span></div><p>72 BPM · estabilidade dentro dos parâmetros</p></article><article class="card metric"><div class="card-label">Presença cognitiva <span>⌁</span></div><div class="value">ESTÁVEL</div><div class="bar"><span style="width:78%"></span></div><p>98% de foco operacional detectado</p></article><article class="card metric"><div class="card-label">Índice de fadiga (PERCLOS) <span>◉</span></div><div class="value">BAIXO</div><div class="bar"><span style="width:26%"></span></div><p>0.4 índice de risco · zona segura</p></article></div><div class="grid" style="margin-top:28px"><article class="card"><div class="card-label">⚡ TRANSMISSÃO BLE</div><h3>Sincronização Contínua</h3><p>Pacotes de telemetria emitidos por segundo via Bluetooth Low Energy de ultrabaixo consumo do wearable para a central.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">◉ ALGORITMO PERCLOS</div><h3>Predição de Microsonos</h3><p>Taxa de fechamento ocular monitorada por sensores ópticos infravermelhos imunes a mudanças bruscas de iluminação.</p></article><article class="card"><div class="card-label">⌁ RESPOSTA HÁPTICA & SONORA</div><h3>Alerta Multissensorial</h3><p>Acionamento de sinais acústicos e vibração na armação quando o limiar de fadiga ultrapassa a faixa operacional segura.</p></article></div></section>
+			<section id="home" class="view active"><div class="home-content-wrapper"><div class="hero"><div class="hero-content"><div class="eyebrow">Monitoramento inteligente em movimento</div><h1>Monitoramento biométrico de<br><span style="color:var(--cyan)">alta performance</span></h1><p>Segurança em tempo real para operações industriais. Antecipe riscos, otimize eficiência e garanta um ambiente operacional protegido através de telemetria avançada e resposta imediata.</p><div class="actions"><button class="btn" data-view="painel">Acessar Painel de Controle</button><button class="btn outline" data-view="manual">Ver manual completo</button><button class="btn outline" data-view="ecosystem">Conheça o ecossistema</button></div></div></div><div class="grid" style="margin-top:34px"><article class="card"><div class="card-label">◉ PÚBLICO-ALVO</div><h3>Para quem dirige e opera</h3><p>Motoristas profissionais, operadores industriais e empresas de transporte que precisam reduzir riscos durante a operação.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">ϟ DIFERENCIAL</div><h3>Biometria em tempo real</h3><p>O Smart Driver integra wearable, sensores e veículo para transformar sinais do condutor em alertas imediatos.</p></article><article class="card"><div class="card-label">⌁ OBJETIVO</div><h3>Prevenir antes do risco</h3><p>Identificar fadiga, perda de atenção e alterações físicas para apoiar decisões rápidas e tornar a operação mais segura.</p></article></div></div></section>
+			<section id="painel" class="view">
+				<div class="painel-container">
+					<!-- Barra Superior de Status da Central -->
+					<div class="painel-header-bar">
+						<div class="painel-header-info">
+							<span class="eyebrow" style="margin:0;letter-spacing:1.5px">CENTRAL INOVATECH · MONITORAMENTO OPERACIONAL</span>
+							<div class="painel-chip online" id="esp32StatusChip">
+								<span class="pulse-dot" id="esp32PulseDot"></span>
+								<span id="esp32StatusLabel">ESP32: CONECTANDO...</span>
+							</div>
+							<div class="painel-chip" id="backendStatusChip">
+								<span style="color:var(--cyan)">⚡</span>
+								<span id="backendStatusLabel">BACKEND: ws://localhost:3001</span>
+							</div>
+						</div>
+						<div style="display:flex;align-items:center;gap:12px">
+							<span class="eyebrow" id="painelClock" style="margin:0;color:var(--cyan);font-weight:700">AO VIVO · 00:00:00</span>
+							<button class="btn-tactical" id="btnLockPainel" title="Bloquear acesso à Central">
+								<span>🔒 Bloquear Painel</span>
+							</button>
+						</div>
+					</div>
+
+					<!-- Grid Principal: Coluna Esquerda e Coluna Direita -->
+					<div class="painel-grid">
+						<!-- COLUNA ESQUERDA -->
+						<div style="display:flex;flex-direction:column;gap:20px">
+							<!-- Card 1: Destaque Principal — Status Geral do Motorista & Alerta Crítico -->
+							<article class="card card-alerta-principal estado-normal" id="cardStatusGeral">
+								<div class="card-label">◉ ESTADO DO CONDUTOR & ANÁLISE DE FADIGA EM TEMPO REAL</div>
+								<div class="alerta-display-large">
+									<div>
+										<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CLASSIFICAÇÃO OPERACIONAL</span>
+										<div class="alerta-status-text" id="statusMotoristaTexto" style="color:#08deeb">NORMAL: CABEÇA ERGUIDA</div>
+									</div>
+									<div style="text-align:right">
+										<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">FILTRO TEMPORAL (2,5s)</span>
+										<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.0s / 2.5s</div>
+									</div>
+								</div>
+
+								<!-- Barra de Progresso do Filtro de Segurança -->
+								<div class="progresso-tempo-container">
+									<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px">
+										<span>TOLERÂNCIA INSTRUMENTOS (0.0s - 1.5s)</span>
+										<span>PRÉ-ALERTA (1.5s - 2.4s)</span>
+										<span style="color:#ff4b72;font-weight:700">LIMIAR DE DISPARO (2.5s)</span>
+									</div>
+									<div class="progresso-bar-bg">
+										<div class="progresso-bar-fill" id="barraProgressoTempo"></div>
+									</div>
+								</div>
+
+								<p id="descricaoEstadoCondutor" style="margin-top:14px;font-size:11px;line-height:1.6">
+									Condutor em postura ereta e campo de visão direcionado à pista. Nenhuma anomalia postural detectada pelos óculos.
+								</p>
+							</article>
+
+							<!-- Card 2: Monitoramento Ao Vivo da Cabine (Câmera Wi-Fi Linklemo) -->
+							<article class="card camera-card" id="cardCameraLinklemo">
+								<div class="camera-alerta-banner" id="bannerAlertaCamera">
+									⚠️ ATENÇÃO OPERADOR: MOTORISTA ADORMECEU! VERIFIQUE A CABINE IMEDIATAMENTE!
+								</div>
+								<div class="card-label">ϟ CÂMERA WI-FI LINKLEMO · MONITORAMENTO DE CABINE 24/7</div>
+								<h3 style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+									<span>Feed de Vídeo da Cabine</span>
+									<span class="camera-live-badge"><span class="pulse-dot danger"></span> AO VIVO 24/7</span>
+								</h3>
+								<p style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:12px">
+									Transmissão contínua da cabine e face do condutor. Em caso de 2,5s de cabeça baixa, esta tela recebe foco imediato com alerta visual vermelho neon.
+								</p>
+
+								<!-- Visualizador da Câmera com HUD Tático -->
+								<div class="camera-viewport" id="cameraViewport">
+									<video id="liveCabineVideo" autoplay playsinline muted></video>
+									<canvas id="cameraSimCanvas" style="position:absolute;inset:0;width:100%;height:100%;display:none;object-fit:cover;"></canvas>
+									<div class="camera-overlay-hud">
+										<div class="camera-hud-top">
+											<span style="color:var(--cyan);font-size:10px;letter-spacing:1px;font-family:'Space Mono'">LINKLEMO STREAM · CABINE #01</span>
+											<span id="cameraFpsLabel" style="color:var(--muted);font-size:10px;font-family:'Space Mono'">30 FPS · 1080p</span>
+										</div>
+										<div class="camera-reticle"></div>
+										<div style="display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--cyan);font-family:'Space Mono'">
+											<span id="hudTimestampCam">00:00:00</span>
+											<span id="hudFaceStatus">RECONHECIMENTO POSTURAL ATIVO</span>
+										</div>
+									</div>
+								</div>
+
+								<!-- Controles da Câmera -->
+								<div class="camera-controls-bar">
+									<button class="btn-tactical" id="btnCapturarLinklemo">
+										<span>📡 Capturar Janela Linklemo</span>
+									</button>
+									<button class="btn-tactical" id="btnAlternarCameraSim">
+										<span>▶ Modo Simulação Cabine</span>
+									</button>
+									<button class="btn-tactical" id="btnTelaCheiaCam">
+										<span>⛶ Tela Cheia</span>
+									</button>
+								</div>
+							</article>
+						</div>
+
+						<!-- COLUNA DIREITA -->
+						<div style="display:flex;flex-direction:column;gap:20px">
+							<!-- Card 3: Telemetria do Sensor Infravermelho (GPIO 32 / D32) -->
+							<article class="card">
+								<div class="card-label">⌁ SENSOR DE OBSTÁCULO INFRAVERMELHO · GPIO 32</div>
+								<h3>Telemetria Óptica de Queixo/Peito</h3>
+								<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+									<div class="axis-item">
+										<div class="axis-label">NÍVEL LÓGICO D32</div>
+										<div class="axis-val" id="irNivelLogico" style="color:var(--cyan)">HIGH (1)</div>
+										<span style="font-size:10px;color:var(--muted)" id="irNivelSub">Postura Erguida</span>
+									</div>
+									<div class="axis-item">
+										<div class="axis-label">TEMPO DE REFLEXÃO</div>
+										<div class="axis-val" id="irTempoMs">0 ms</div>
+										<span style="font-size:10px;color:var(--muted)">Limite: 2500 ms</span>
+									</div>
+								</div>
+								<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
+									O sensor na haste do óculos emite feixe IR para o tronco. Quando o condutor adormece e tomba a cabeça, a saída vai para nível LOW iniciando a contagem assíncrona.
+								</div>
+							</article>
+
+							<!-- Card 4: Acelerômetro I2C (GPIO 21 SDA / GPIO 22 SCL) -->
+							<article class="card">
+								<div class="card-label">⚡ ACELERÔMETRO I2C · GPIO 21 / 22</div>
+								<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+									<h3>Inércia & Inclinação da Cabeça</h3>
+									<span class="painel-chip" id="chipAcelerometroStatus" style="font-size:9px;padding:3px 8px">Simulação / Em trânsito</span>
+								</div>
+								<div class="axes-grid">
+									<div class="axis-item">
+										<div class="axis-label">EIXO X (PITCH)</div>
+										<div class="axis-val" id="accPitchVal">0.0°</div>
+										<span style="font-size:9px;color:var(--muted)">Inclinação Frontal</span>
+									</div>
+									<div class="axis-item">
+										<div class="axis-label">EIXO Y (ROLL)</div>
+										<div class="axis-val" id="accRollVal">0.0°</div>
+										<span style="font-size:9px;color:var(--muted)">Inclinação Lateral</span>
+									</div>
+									<div class="axis-item">
+										<div class="axis-label">PESCADA DE SONO</div>
+										<div class="axis-val" id="accPescadaVal" style="color:#55ee77">NÃO</div>
+										<span style="font-size:9px;color:var(--muted)">Solavanco G</span>
+									</div>
+								</div>
+								<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
+									Mapeamento angular para detecção rápida de perda de tônus muscular cervical ("pescadas") durante turnos noturnos.
+								</div>
+							</article>
+
+							<!-- Card 5: Atuadores de Segurança & Comandos da Central -->
+							<article class="card">
+								<div class="card-label">◫ ATUADORES DE SEGURANÇA & CONTROLE REMOTO</div>
+								<h3>Estado dos Dispositivos & Ações</h3>
+								<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+									<div class="axis-item">
+										<div class="axis-label">BUZZER NOS ÓCULOS (GPIO 25)</div>
+										<div class="axis-val" id="buzzerStatusBadge" style="color:#55ee77">DESLIGADO</div>
+										<span style="font-size:9px;color:var(--muted)">Alarme Acústico 3.3V</span>
+									</div>
+									<div class="axis-item">
+										<div class="axis-label">MÓDULO RELÉ (GPIO 18)</div>
+										<div class="axis-val" id="releStatusBadge" style="color:#55ee77">EM ESPERA</div>
+										<span style="font-size:9px;color:var(--muted)">Proteção Veicular</span>
+									</div>
+								</div>
+
+								<!-- Comandos Interativos da Central -->
+								<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+									<button class="btn-tactical danger" id="btnDispararTesteRemoto" style="flex:1">
+										<span>⚡ Disparar Alerta / Teste</span>
+									</button>
+									<button class="btn-tactical" id="btnSilenciarRemoto" style="flex:1">
+										<span>🔇 Silenciar / Normalizar</span>
+									</button>
+								</div>
+							</article>
+
+							<!-- Card 6: Conectividade, Histórico e Configuração -->
+							<article class="card">
+								<div class="card-label">◉ CONECTIVIDADE & LOGS EM TEMPO REAL</div>
+								<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+									<h3>Registro Cronológico de Eventos</h3>
+									<span style="font-family:'Space Mono';font-size:11px;color:var(--cyan)">TOTAL ALARMES: <b id="contadorTotalAlarmes" style="font-size:14px">0</b></span>
+								</div>
+
+								<!-- Terminal de Log -->
+								<div class="terminal-log-box" id="terminalLogBox" style="margin-top:12px">
+									<div class="log-entry NORMAL">
+										<span class="log-time">[00:00:00]</span>
+										<span class="log-msg">Central InovaTech pronta. Aguardando pacotes do ESP32 ou simulador.</span>
+									</div>
+								</div>
+
+								<!-- Configuração do Endpoint do Backend & Simulação Local -->
+								<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+									<div style="display:flex;gap:8px;align-items:center">
+										<input type="text" id="inputBackendUrl" value="http://localhost:3001" placeholder="URL do Backend (ex: http://localhost:3001)" style="flex:1;background:rgba(2,11,18,0.7);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'Space Mono';font-size:11px">
+										<button class="btn-tactical" id="btnReconectarBackend">Conectar</button>
+									</div>
+									<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+										<span style="font-size:10px;color:var(--muted)">TESTE RÁPIDO:</span>
+										<button class="btn-tactical" id="btnSimularCabecaBaixa" style="padding:4px 10px;font-size:10px">Simular Cabeça Baixa (2,5s)</button>
+										<button class="btn-tactical" id="btnSimularCabecaErguida" style="padding:4px 10px;font-size:10px">Erguer Cabeça</button>
+									</div>
+								</div>
+							</article>
+						</div>
+					</div>
+				</div>
+			</section>
 			<section id="manual" class="view"><div class="eyebrow">INOVA TECH SMART DRIVER / DOCUMENTAÇÃO</div><h2>Manual de operações</h2><p style="color:var(--muted);font-size:11px;max-width:570px;line-height:1.8">Guia técnico passo a passo para instalação e operação do sistema InovaTech Smart Driver.</p><div class="manual-top"><div class="manual-video"><div style="position:absolute;bottom:16px;left:18px;color:var(--cyan);font-size:10px">▶ EXPLICAÇÃO VISUAL · 04:28</div></div><article class="card spec"><strong>◫ INOVA TECH-500</strong><h3>Unidade central</h3><p>Processamento biométrico de alta precisão, conectado ao wearable e aos sensores do veículo.</p><p><span style="color:var(--muted)">STATUS DO SISTEMA</span><br><span style="color:var(--cyan)">● OPERACIONAL</span></p></article></div><div class="steps"><article class="card step"><b class="step-number">01</b><div><h3>Conexão do wearable</h3><p>Insira o dispositivo, verifique o LED de conexão e aguarde a sincronização.</p></div></article><article class="card step"><b class="step-number">02</b><div><h3>Configuração da unidade central</h3><p>Conecte a unidade à rede e confirme o pareamento com os sensores.</p></div></article><article class="card step"><b class="step-number">03</b><div><h3>Calibração</h3><p>Execute o teste de calibração para iniciar o monitoramento preciso.</p></div></article><article class="card step"><b class="step-number">04</b><div><h3>Monitoramento HUD</h3><p>Confira os indicadores vitais e o mapa de risco no painel do veículo.</p></div></article></div></section>
 			<section id="ecosystem" class="view"><div class="eyebrow">INOVA TECH / INVENTÁRIO</div><div class="section-title" style="margin-top:8px"><h2>Ecossistema de segurança</h2><button class="btn" onclick="document.getElementById('addItemModal').classList.add('active')">+ Adicionar item</button></div><div class="product-layout"><article class="product-result"><div class="eyebrow">RESULTADO FINAL DO PROJETO</div><h3>Smart Driver montado</h3><div class="prototype" aria-label="Representação visual do protótipo Smart Driver"></div><p>Protótipo integrado para leitura biométrica, processamento central e visualização dos alertas de segurança no veículo.</p></article><div class="table-wrap"><table><thead><tr><th>Módulo</th><th>Descrição técnica</th><th>Quantidade</th><th>Custo unitário</th><th></th></tr></thead><tbody><tr><td>Óculos</td><td>Armação com componentes do Smart Driver</td><td>01</td><td>R$ 160,00</td><td><button class="delete-btn" onclick="deleteRow(this)" title="Excluir"><svg viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg></button></td></tr><tr><td>Arduino pequeno</td><td>Processamento e controle dos componentes</td><td>01</td><td>R$ 150,00</td><td><button class="delete-btn" onclick="deleteRow(this)" title="Excluir"><svg viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg></button></td></tr><tr><td>Webcam</td><td>Captura de imagem em tempo real</td><td>01</td><td>R$ 110,00</td><td><button class="delete-btn" onclick="deleteRow(this)" title="Excluir"><svg viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg></button></td></tr><tr><td>Sensor ultrassônico</td><td>Detecção de distância</td><td>01</td><td>R$ 60,00</td><td><button class="delete-btn" onclick="deleteRow(this)" title="Excluir"><svg viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg></button></td></tr><tr><td>Fios</td><td>Conexão dos componentes</td><td>01</td><td>R$ 60,00</td><td><button class="delete-btn" onclick="deleteRow(this)" title="Excluir"><svg viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg></button></td></tr><tr><td>Microfone/alto-falante</td><td>Alertas sonoros do sistema</td><td>01</td><td>R$ 60,00</td><td><button class="delete-btn" onclick="deleteRow(this)" title="Excluir"><svg viewBox="0 -960 960 960"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg></button></td></tr></tbody></table><div style="display:flex;justify-content:space-between;padding:18px 10px 6px;color:var(--muted);font-size:10px">ESTIMATIVA DO PROJETO <strong style="color:var(--cyan);font-size:17px">CUSTO TOTAL: R$ 600,00</strong></div></div></div></section>
 			<section id="about" class="view"><div class="eyebrow">INOVATECH / TIME DO PROJETO</div><h2>Quem somos</h2><p style="color:var(--muted);font-size:11px;max-width:620px;line-height:1.8">Equipe multidisciplinar de desenvolvimento e pesquisa responsável pela engenharia de hardware, visão computacional e inteligência de borda do InovaTech Smart Driver.</p><div class="team-grid"><article class="card"><img src="membro1.png" alt="Matheus Souza - InovaTech" class="member-photo"><div class="card-label">◉ MATHEUS SOUZA</div><h3>Matheus Souza</h3><span class="member-role">Hardware & Firmware</span><p>Integração dos microcontroladores ESP32-S3, barramentos de alimentação e transmissão contínua via Bluetooth Low Energy (BLE).</p><a href="https://www.instagram.com/m.souzavl/?utm_source=ig_web_button_share_sheet" target="_blank" rel="noopener noreferrer" class="btn-instagram" title="Acessar Instagram de Matheus Souza"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg> <span>Instagram</span></a></article><article class="card"><img src="membro2.jpg" alt="Matheus Novaes - InovaTech" class="member-photo"><div class="card-label">◉ MATHEUS NOVAES</div><h3>Matheus Novaes</h3><span class="member-role">Visão Computacional & IR</span><p>Algoritmos de cálculo de PERCLOS em tempo real, calibração infravermelha e rastreamento ocular periocular.</p><a href="https://www.instagram.com/matheusoliveira__17/?utm_source=ig_web_button_share_sheet" target="_blank" rel="noopener noreferrer" class="btn-instagram" title="Acessar Instagram de Matheus Novaes"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg> <span>Instagram</span></a></article><article class="card"><img src="membro3.jpg" alt="Otávio Lima - InovaTech" class="member-photo"><div class="card-label">◉ OTÁVIO LIMA</div><h3>Otávio Lima</h3><span class="member-role">Biometria & Sinais Vitais</span><p>Filtros digitais PPG/ECG, análise contínua de Variabilidade da Frequência Cardíaca (HRV) e métricas fisiológicas.</p><a href="https://www.instagram.com/_otxxvio/?utm_source=ig_web_button_share_sheet" target="_blank" rel="noopener noreferrer" class="btn-instagram" title="Acessar Instagram de Otávio Lima"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg> <span>Instagram</span></a></article><article class="card"><img src="membro4.png" alt="Thiago Tivium - InovaTech" class="member-photo"><div class="card-label">◉ THIAGO TIVIUM</div><h3>Thiago Tivium</h3><span class="member-role">Engenharia Mecânica & 3D</span><p>Design biomecânico e ergonomia da armação em manufatura aditiva (PETG), alojamento dos barramentos e bateria.</p><a href="https://www.instagram.com/t.tivium/?utm_source=ig_web_button_share_sheet" target="_blank" rel="noopener noreferrer" class="btn-instagram" title="Acessar Instagram de Thiago Tivium"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg> <span>Instagram</span></a></article><article class="card"><img src="membro5.png" alt="Matheus Garcia - InovaTech" class="member-photo"><div class="card-label">◉ MATHEUS GARCIA</div><h3>Matheus Garcia</h3><span class="member-role">Sistemas Embarcados & HUD</span><p>Arquitetura da central veicular Raspberry Pi 4, telemetria em tempo real, painel HUD e interface do usuário.</p><a href="https://www.instagram.com/_mth.garcia/" target="_blank" rel="noopener noreferrer" class="btn-instagram" title="Acessar Instagram de Matheus Garcia"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg> <span>Instagram</span></a></article><article class="card"><img src="membro6.png" alt="Nathan Arkhanjo - InovaTech" class="member-photo"><div class="card-label">◉ NATHAN ARKHANJO</div><h3>Nathan Arkhanjo</h3><span class="member-role">Telemetria IoT & Cloud</span><p>Pipeline de telemetria em nuvem, transmissão segura de alertas críticos e integração analítica do ecossistema.</p><a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="btn-instagram" title="Acessar Instagram de Nathan Arkhanjo"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a3.999 3.999 0 1 1 0-7.998 3.999 3.999 0 0 1 0 7.998zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg> <span>Instagram</span></a></article></div><article class="card contact-section"><div class="card-label">✉ FALE COM A EQUIPE</div><h3>Formulário de contato</h3><p style="color:var(--muted);margin-bottom:18px">Dúvidas sobre o projeto InovaTech Smart Driver, propostas de parcerias industriais ou sugestões técnicas? Preencha o formulário abaixo:</p><form id="contactForm" action="https://formsubmit.co/matheusgarcia3346@gmail.com" method="POST"><input type="hidden" name="_captcha" value="false"><input type="hidden" name="_template" value="table"><div class="form-row"><div class="form-group"><label for="contactName">Nome completo</label><input type="text" id="contactName" name="name" required placeholder="Ex.: Matheus Garcia"></div><div class="form-group"><label for="contactEmail">E-mail corporativo / acadêmico</label><input type="email" id="contactEmail" name="email" required placeholder="seu.email@empresa.com"></div></div><div class="form-group" style="margin-top:12px"><label for="contactSubject">Assunto</label><input type="text" id="contactSubject" name="_subject" required placeholder="Ex.: Parceria industrial, dúvida técnica ou validação"></div><div class="form-group" style="margin-top:12px"><label for="contactMessage">Mensagem</label><textarea id="contactMessage" name="message" rows="4" required placeholder="Descreva sua mensagem ou dúvida técnica..."></textarea></div><div style="margin-top:18px"><button type="submit" id="contactSubmitBtn" class="btn">Enviar mensagem</button></div><div id="contactStatus" class="form-status"></div></form></article></section>
@@ -1899,7 +2572,36 @@
 				</div>
 			</section>
 			<section id="game" class="view"><div class="eyebrow">INOVA TECH / SIMULADOR INTERATIVO</div><h2>Smart Driver: O Jogo</h2><p style="color:var(--muted);font-size:11px;max-width:620px;line-height:1.8">Uma experiência interativa desenvolvida na plataforma GDevelop para vivenciar os desafios da fadiga na estrada e comprovar como o sistema InovaTech protege a vida do operador.</p><div class="game-layout"><div class="manual-video" style="min-height:300px"><div style="position:absolute;bottom:16px;left:18px;color:var(--cyan);font-size:10px">▶ VÍDEO DEMO DO JOGO · 00:38</div></div><article class="card" style="display:flex;flex-direction:column;justify-content:space-between"><div><div class="card-label">◉ CONTEXTO & HISTÓRIA</div><h3>A Jornada Noturna: Sobreviva ao Turno</h3><p style="margin-top:12px;line-height:1.8">Assuma o controle de um veículo pesado em uma rota rodoviária noturna. Conforme o turno avança, a fadiga se acumula: a visão embaça, microsonos começam a fechar os olhos do condutor e o caminhão desvia da faixa.</p><p style="margin-top:12px;line-height:1.8">Equipado com o óculos <strong>InovaTech Smart Driver</strong>, o jogador recebe alertas sonoros milissegundos antes do perigo se tornar um acidente. Sua missão: manter o foco e chegar seguro ao destino!</p></div><div style="margin-top:24px"><a href="https://gdevelop.io" target="_blank" rel="noopener noreferrer" class="btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:8px"><span>▶ JOGAR NO GDEVELOP</span></a></div></article></div><div class="grid" style="margin-top:24px"><article class="card"><div class="card-label">ϟ MECÂNICA DO SIMULADOR</div><h3>Telemetria de Fadiga</h3><p>Simulação da barra de PERCLOS e monitor de BPM em tempo real durante a pilotagem na estrada.</p></article><article class="card"><div class="card-label">⌁ CONTROLES DO JOGO</div><h3>Teclado & Dispositivos</h3><p>Setas direcionais (ou A/D) para manter a faixa de rolagem; Barra de espaço para responder ao alerta de atenção do óculos.</p></article><article class="card"><div class="card-label">◫ PLATAFORMA GDEVELOP</div><h3>Execução Web Instantânea</h3><p>Desenvolvido com o motor 2D/3D leve do GDevelop em HTML5, rodando direto no navegador sem necessidade de instalação.</p></article></div></section>
-		</main><div class="modal" id="addItemModal"><div class="modal-content"><h3>Adicionar novo item</h3><form id="addItemForm"><div class="form-group"><label for="itemName">Nome do produto</label><input type="text" id="itemName" required></div><div class="form-group"><label for="itemDescription">Descrição técnica</label><input type="text" id="itemDescription" required></div><div class="form-group"><label for="itemValue">Valor (R$)</label><input type="number" id="itemValue" step="0.01" required></div><div class="modal-actions"><button type="button" class="btn-cancel" onclick="document.getElementById('addItemModal').classList.remove('active')">Cancelar</button><button type="submit" class="btn-primary">Adicionar</button></div></form></div></div><footer><strong>INOVATECH SMART DRIVER</strong><span>Termos de uso　 Política de privacidade　 Suporte técnico</span><span>© 2024 INOVATECH · SISTEMA DE SEGURANÇA INDUSTRIAL</span></footer>
+		</main><div class="modal" id="addItemModal"><div class="modal-content"><h3>Adicionar novo item</h3><form id="addItemForm"><div class="form-group"><label for="itemName">Nome do produto</label><input type="text" id="itemName" required></div><div class="form-group"><label for="itemDescription">Descrição técnica</label><input type="text" id="itemDescription" required></div><div class="form-group"><label for="itemValue">Valor (R$)</label><input type="number" id="itemValue" step="0.01" required></div><div class="modal-actions"><button type="button" class="btn-cancel" onclick="document.getElementById('addItemModal').classList.remove('active')">Cancelar</button><button type="submit" class="btn-primary">Adicionar</button></div></form></div></div>
+
+	<!-- MODAL DE AUTENTICAÇÃO MILITAR / COCKPIT DO PAINEL DE CONTROLE (Inovatech266) -->
+	<div class="painel-gate-modal" id="painelPasswordModal">
+		<div class="painel-gate-card" id="painelGateCard">
+			<div class="painel-gate-icon">
+				<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+					<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+				</svg>
+			</div>
+			<div class="eyebrow" style="color:var(--cyan);letter-spacing:2px">ACESSO RESTRITO · CENTRAL DE CONTROLE</div>
+			<h2 style="margin:8px 0 10px;font-size:24px">Identificação Operacional</h2>
+			<p style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:20px">
+				O acesso ao Painel de Controle e telemetria da cabine é protegido por chave de segurança. Insira a senha autorizada para prosseguir.
+			</p>
+			<form id="painelAuthForm">
+				<div style="position:relative;margin-bottom:16px">
+					<input type="password" id="painelKeyInput" required placeholder="Digite a chave de acesso..." style="width:100%;padding:14px 16px;background:rgba(2,11,18,0.85);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Space Mono';font-size:14px;letter-spacing:2px;outline:none;text-align:center;transition:border-color 0.25s">
+				</div>
+				<div id="painelAuthMsg" style="font-size:11px;font-family:'Space Mono';min-height:20px;margin-bottom:16px;display:none"></div>
+				<div style="display:flex;gap:10px">
+					<button type="button" class="btn outline" style="flex:1" onclick="fecharModalSenha()">Cancelar</button>
+					<button type="submit" class="btn" style="flex:1.2">Desbloquear Painel</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<footer><strong>INOVATECH SMART DRIVER</strong><span>Termos de uso　 Política de privacidade　 Suporte técnico</span><span>© 2024 INOVATECH · SISTEMA DE SEGURANÇA INDUSTRIAL</span></footer>
 	</div><script>
 document.body.dataset.activeView = 'home';
 
@@ -2042,10 +2744,16 @@ document.body.dataset.activeView = 'home';
 		}, 250);
 	});
 
-	// Transição e navegação entre abas
+	// Transição e navegação entre abas protegidas por senha
 	document.querySelectorAll('[data-view]').forEach(function (control) { 
 		control.addEventListener('click', function () { 
 			var target = control.dataset.view; 
+			if (target === 'painel') {
+				if (!isPainelAutenticado()) {
+					abrirModalSenha();
+					return;
+				}
+			}
 			document.body.dataset.activeView = target;
 			syncBackground(target, false);
 			document.querySelectorAll('.view').forEach(function (view) { 
@@ -2216,8 +2924,596 @@ if (contactForm) {
 				}, 8000);
 			}
 		});
+}
+
+// ==============================================================================
+// GESTÃO DE ACESSO DO PAINEL DE CONTROLE (SENHA: Inovatech266)
+// ==============================================================================
+var SENHA_PAINEL = "Inovatech266";
+var painelModal = document.getElementById('painelPasswordModal');
+var painelGateCard = document.getElementById('painelGateCard');
+var painelKeyInput = document.getElementById('painelKeyInput');
+var painelAuthMsg = document.getElementById('painelAuthMsg');
+
+function isPainelAutenticado() {
+	return sessionStorage.getItem('inovatech_painel_auth') === 'granted';
+}
+
+function abrirModalSenha() {
+	if (painelModal) {
+		painelModal.classList.add('active');
+		if (painelKeyInput) {
+			painelKeyInput.value = '';
+			painelKeyInput.focus();
+		}
+		if (painelAuthMsg) {
+			painelAuthMsg.style.display = 'none';
+		}
+	}
+}
+
+function fecharModalSenha() {
+	if (painelModal) {
+		painelModal.classList.remove('active');
+	}
+}
+
+function navegarParaView(target) {
+	if (target === 'painel') {
+		if (!isPainelAutenticado()) {
+			abrirModalSenha();
+			return;
+		}
+	}
+	document.body.dataset.activeView = target;
+	if (typeof window.syncBackgroundFn === 'function') {
+		window.syncBackgroundFn(target, false);
+	}
+	document.querySelectorAll('.view').forEach(function (view) { 
+		view.classList.toggle('active', view.id === target); 
+	}); 
+	document.querySelectorAll('nav button').forEach(function (button) { 
+		button.classList.toggle('active', button.dataset.view === target); 
+	}); 
+	window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Botão Bloquear Painel (Logout)
+var btnLockPainel = document.getElementById('btnLockPainel');
+if (btnLockPainel) {
+	btnLockPainel.addEventListener('click', function() {
+		sessionStorage.removeItem('inovatech_painel_auth');
+		navegarParaView('home');
+		alert('Painel de Controle bloqueado com sucesso.');
 	});
 }
+
+// Submissão da Senha
+var painelAuthForm = document.getElementById('painelAuthForm');
+if (painelAuthForm) {
+	painelAuthForm.addEventListener('submit', function(e) {
+		e.preventDefault();
+		var digitado = (painelKeyInput.value || '').trim();
+		if (digitado === SENHA_PAINEL) {
+			sessionStorage.setItem('inovatech_painel_auth', 'granted');
+			if (painelAuthMsg) {
+				painelAuthMsg.style.display = 'block';
+				painelAuthMsg.style.color = '#55ee77';
+				painelAuthMsg.textContent = '✓ AUTORIZADO. ACESSANDO CENTRAL...';
+			}
+			setTimeout(function() {
+				fecharModalSenha();
+				navegarParaView('painel');
+			}, 350);
+		} else {
+			if (painelGateCard) {
+				painelGateCard.classList.remove('shake');
+				void painelGateCard.offsetWidth; // Força reflow da animação
+				painelGateCard.classList.add('shake');
+			}
+			if (painelAuthMsg) {
+				painelAuthMsg.style.display = 'block';
+				painelAuthMsg.style.color = '#ff4466';
+				painelAuthMsg.textContent = '✕ CHAVE INVÁLIDA. ACESSO NEGADO.';
+			}
+			if (painelKeyInput) {
+				painelKeyInput.select();
+			}
+		}
+	});
+}
+
+// ==============================================================================
+// TELEMETRIA EM TEMPO REAL — CLIENTE WEBSOCKET & REST DO PAINEL
+// ==============================================================================
+var backendBaseUrl = 'http://localhost:3001';
+var wsClient = null;
+var pollingTimer = null;
+var audioCtx = null;
+
+// Elementos da interface
+var statusMotoristaTexto = document.getElementById('statusMotoristaTexto');
+var cardStatusGeral = document.getElementById('cardStatusGeral');
+var tempoInclinacaoDisplay = document.getElementById('tempoInclinacaoDisplay');
+var barraProgressoTempo = document.getElementById('barraProgressoTempo');
+var descricaoEstadoCondutor = document.getElementById('descricaoEstadoCondutor');
+var cardCameraLinklemo = document.getElementById('cardCameraLinklemo');
+var irNivelLogico = document.getElementById('irNivelLogico');
+var irNivelSub = document.getElementById('irNivelSub');
+var irTempoMs = document.getElementById('irTempoMs');
+var accPitchVal = document.getElementById('accPitchVal');
+var accRollVal = document.getElementById('accRollVal');
+var accPescadaVal = document.getElementById('accPescadaVal');
+var buzzerStatusBadge = document.getElementById('buzzerStatusBadge');
+var releStatusBadge = document.getElementById('releStatusBadge');
+var esp32StatusLabel = document.getElementById('esp32StatusLabel');
+var esp32StatusChip = document.getElementById('esp32StatusChip');
+var esp32PulseDot = document.getElementById('esp32PulseDot');
+var contadorTotalAlarmes = document.getElementById('contadorTotalAlarmes');
+var terminalLogBox = document.getElementById('terminalLogBox');
+var inputBackendUrl = document.getElementById('inputBackendUrl');
+
+// Tocar alerta sonoro tático discreto
+function tocarAlertaSonoro() {
+	try {
+		if (!audioCtx) {
+			audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+		}
+		if (audioCtx.state === 'suspended') {
+			audioCtx.resume();
+		}
+		var osc = audioCtx.createOscillator();
+		var gain = audioCtx.createGain();
+		osc.type = 'sawtooth';
+		osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Tom de alerta
+		gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+		gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+		osc.connect(gain);
+		gain.connect(audioCtx.destination);
+		osc.start();
+		osc.stop(audioCtx.currentTime + 0.35);
+	} catch(e) {}
+}
+
+function adicionarLogLocal(tipo, msg) {
+	if (!terminalLogBox) return;
+	var now = new Date().toLocaleTimeString('pt-BR');
+	var entry = document.createElement('div');
+	entry.className = 'log-entry ' + tipo;
+	entry.innerHTML = '<span class="log-time">[' + now + ']</span><span class="log-msg">' + msg + '</span>';
+	terminalLogBox.insertBefore(entry, terminalLogBox.firstChild);
+	if (terminalLogBox.children.length > 50) {
+		terminalLogBox.removeChild(terminalLogBox.lastChild);
+	}
+}
+
+// Atualizar toda a tela com base no estado de telemetria
+var ultimoEstadoRegistrado = 'NORMAL';
+function atualizarPainelComEstado(estado) {
+	if (!estado) return;
+
+	// Atualiza conexão
+	if (esp32StatusLabel && esp32StatusChip && esp32PulseDot) {
+		if (estado.online) {
+			esp32StatusLabel.textContent = 'ESP32: CONECTADO (ONLINE)';
+			esp32StatusChip.className = 'painel-chip online';
+			esp32PulseDot.className = 'pulse-dot';
+		} else {
+			esp32StatusLabel.textContent = 'ESP32: OFFLINE / AGUARDANDO';
+			esp32StatusChip.className = 'painel-chip offline';
+			esp32PulseDot.className = 'pulse-dot danger';
+		}
+	}
+
+	// 1. Status Geral e Alerta Crítico
+	var status = estado.estado || 'NORMAL';
+	var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
+	var segDecorridos = (tempoMs / 1000).toFixed(1);
+	var perc = Math.min(100, (tempoMs / 2500) * 100);
+
+	if (tempoInclinacaoDisplay) {
+		tempoInclinacaoDisplay.textContent = segDecorridos + 's / 2.5s';
+	}
+	if (barraProgressoTempo) {
+		barraProgressoTempo.style.width = perc + '%';
+	}
+
+	if (status === 'NORMAL') {
+		if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-normal';
+		if (statusMotoristaTexto) {
+			statusMotoristaTexto.style.color = '#08deeb';
+			statusMotoristaTexto.textContent = 'NORMAL: CABEÇA ERGUIDA';
+		}
+		if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill';
+		if (descricaoEstadoCondutor) {
+			descricaoEstadoCondutor.textContent = 'Condutor em postura ereta e campo de visão direcionado à pista. Nenhuma anomalia postural detectada pelos óculos.';
+		}
+		if (cardCameraLinklemo) {
+			cardCameraLinklemo.classList.remove('camera-alerta-critico');
+		}
+	} else if (status === 'PRE_ALERTA') {
+		if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-pre-alerta';
+		if (statusMotoristaTexto) {
+			statusMotoristaTexto.style.color = '#ffaa00';
+			statusMotoristaTexto.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA DETECTADA';
+		}
+		if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill warning';
+		if (descricaoEstadoCondutor) {
+			descricaoEstadoCondutor.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + 'ms). Contagem do filtro de segurança em andamento antes do acionamento de emergência.';
+		}
+		if (cardCameraLinklemo) {
+			cardCameraLinklemo.classList.remove('camera-alerta-critico');
+		}
+	} else if (status === 'ALARME_ATIVADO') {
+		if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-alarme';
+		if (statusMotoristaTexto) {
+			statusMotoristaTexto.style.color = '#ff2a55';
+			statusMotoristaTexto.textContent = 'PERIGO: ALARME ATIVADO (FADIGA DETECTADA)';
+		}
+		if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill danger';
+		if (descricaoEstadoCondutor) {
+			descricaoEstadoCondutor.textContent = 'CRÍTICO: O motorista permaneceu mais de 2,5 segundos com a cabeça baixa! Buzzer ativo e relé veicular acionados. Olhe imediatamente para a câmera!';
+		}
+		// Destaque Automático da Câmera Linklemo
+		if (cardCameraLinklemo) {
+			cardCameraLinklemo.classList.add('camera-alerta-critico');
+		}
+		if (ultimoEstadoRegistrado !== 'ALARME_ATIVADO') {
+			tocarAlertaSonoro();
+		}
+	}
+
+	if (ultimoEstadoRegistrado !== status) {
+		if (status === 'ALARME_ATIVADO') {
+			adicionarLogLocal('ALARME_ATIVADO', '⚠️ PERIGO: Motorista adormeceu com a cabeça baixa! Alarme disparado.');
+		} else if (status === 'PRE_ALERTA') {
+			adicionarLogLocal('PRE_ALERTA', '⚡ Aviso: Cabeça baixa detectada nos óculos. Contando 2,5s...');
+		} else if (status === 'NORMAL') {
+			adicionarLogLocal('NORMAL', '✓ Postura Normalizada: Cabeça erguida. Alarme cancelado.');
+		}
+		ultimoEstadoRegistrado = status;
+	}
+
+	// 2. Sensor IR (GPIO 32)
+	var ir = (estado.sensor_ir !== undefined) ? estado.sensor_ir : 1;
+	if (irNivelLogico && irNivelSub) {
+		if (ir === 1) {
+			irNivelLogico.textContent = 'HIGH (1)';
+			irNivelLogico.style.color = '#08deeb';
+			irNivelSub.textContent = 'Postura Erguida';
+		} else {
+			irNivelLogico.textContent = 'LOW (0)';
+			irNivelLogico.style.color = '#ffaa00';
+			irNivelSub.textContent = 'Obstáculo / Queixo Próximo';
+		}
+	}
+	if (irTempoMs) {
+		irTempoMs.textContent = tempoMs + ' ms';
+	}
+
+	// 3. Acelerômetro
+	if (estado.acelerometro) {
+		if (accPitchVal) accPitchVal.textContent = (estado.acelerometro.pitch || 0).toFixed(1) + '°';
+		if (accRollVal) accRollVal.textContent = (estado.acelerometro.roll || 0).toFixed(1) + '°';
+		if (accPescadaVal) {
+			if (estado.acelerometro.pescada_detectada) {
+				accPescadaVal.textContent = 'SIM (ALERTA)';
+				accPescadaVal.style.color = '#ff2a55';
+			} else {
+				accPescadaVal.textContent = 'NÃO';
+				accPescadaVal.style.color = '#55ee77';
+			}
+		}
+	}
+
+	// 4. Atuadores
+	if (buzzerStatusBadge) {
+		if (estado.buzzer === 1) {
+			buzzerStatusBadge.textContent = 'LIGADO (3.3V)';
+			buzzerStatusBadge.style.color = '#ff2a55';
+		} else {
+			buzzerStatusBadge.textContent = 'DESLIGADO';
+			buzzerStatusBadge.style.color = '#55ee77';
+		}
+	}
+	if (releStatusBadge) {
+		if (estado.rele === 1) {
+			releStatusBadge.textContent = 'ACIONADO';
+			releStatusBadge.style.color = '#ff2a55';
+		} else {
+			releStatusBadge.textContent = 'EM ESPERA';
+			releStatusBadge.style.color = '#55ee77';
+		}
+	}
+
+	// 5. Contadores
+	if (contadorTotalAlarmes && estado.contadores) {
+		contadorTotalAlarmes.textContent = estado.contadores.totalAlarmesSessao || 0;
+	}
+}
+
+// Conectar ao Backend via WebSocket com fallback para Polling REST
+function conectarBackend() {
+	if (inputBackendUrl) {
+		backendBaseUrl = inputBackendUrl.value.trim().replace(/\/$/, '') || 'http://localhost:3001';
+	}
+
+	var wsUrl = backendBaseUrl.replace(/^http/, 'ws') + '/ws';
+	var backendStatusChip = document.getElementById('backendStatusChip');
+	var backendStatusLabel = document.getElementById('backendStatusLabel');
+
+	if (backendStatusLabel) {
+		backendStatusLabel.textContent = 'BACKEND: CONECTANDO...';
+	}
+
+	if (wsClient) {
+		try { wsClient.close(); } catch(e) {}
+	}
+
+	try {
+		wsClient = new WebSocket(wsUrl);
+
+		wsClient.onopen = function() {
+			if (backendStatusLabel) backendStatusLabel.textContent = 'BACKEND: WS CONECTADO';
+			if (backendStatusChip) backendStatusChip.className = 'painel-chip online';
+			adicionarLogLocal('NORMAL', 'Link WebSocket estabelecido com ' + wsUrl);
+			if (pollingTimer) clearInterval(pollingTimer);
+		};
+
+		wsClient.onmessage = function(event) {
+			try {
+				var msg = JSON.parse(event.data);
+				if (msg.estado) {
+					atualizarPainelComEstado(msg.estado);
+				}
+			} catch(e) {}
+		};
+
+		wsClient.onerror = function() {
+			iniciarPollingRestFallback();
+		};
+
+		wsClient.onclose = function() {
+			iniciarPollingRestFallback();
+		};
+	} catch(e) {
+		iniciarPollingRestFallback();
+	}
+}
+
+function iniciarPollingRestFallback() {
+	var backendStatusLabel = document.getElementById('backendStatusLabel');
+	var backendStatusChip = document.getElementById('backendStatusChip');
+	if (backendStatusLabel) backendStatusLabel.textContent = 'BACKEND: REST POLLING';
+	if (backendStatusChip) backendStatusChip.className = 'painel-chip';
+
+	if (pollingTimer) clearInterval(pollingTimer);
+	pollingTimer = setInterval(function() {
+		fetch(backendBaseUrl + '/api/telemetry')
+			.then(function(res) { return res.json(); })
+			.then(function(data) {
+				if (data && data.estado) {
+					atualizarPainelComEstado(data.estado);
+				}
+			})
+			.catch(function(err) {});
+	}, 800);
+}
+
+// Botões de comando da Central
+var btnDispararTesteRemoto = document.getElementById('btnDispararTesteRemoto');
+if (btnDispararTesteRemoto) {
+	btnDispararTesteRemoto.addEventListener('click', function() {
+		enviarComandoParaBackend('DISPARAR_TESTE');
+	});
+}
+
+var btnSilenciarRemoto = document.getElementById('btnSilenciarRemoto');
+if (btnSilenciarRemoto) {
+	btnSilenciarRemoto.addEventListener('click', function() {
+		enviarComandoParaBackend('SILENCIAR_ALARME');
+	});
+}
+
+function enviarComandoParaBackend(cmd) {
+	if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+		wsClient.send(JSON.stringify({ tipo: 'COMANDO', comando: cmd }));
+	} else {
+		fetch(backendBaseUrl + '/api/command', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ comando: cmd, origem: 'CENTRAL_WEB' })
+		}).catch(function(e) {
+			// Executa localmente se backend não estiver rodando
+			if (cmd === 'DISPARAR_TESTE') {
+				atualizarPainelComEstado({
+					online: true,
+					estado: 'ALARME_ATIVADO',
+					sensor_ir: 0,
+					tempo_cabeca_baixa_ms: 2500,
+					buzzer: 1,
+					rele: 1,
+					acelerometro: { pitch: -25, roll: 0, pescada_detectada: true },
+					contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent)||0) + 1 }
+				});
+			} else {
+				atualizarPainelComEstado({
+					online: true,
+					estado: 'NORMAL',
+					sensor_ir: 1,
+					tempo_cabeca_baixa_ms: 0,
+					buzzer: 0,
+					rele: 0,
+					acelerometro: { pitch: 2, roll: 0, pescada_detectada: false },
+					contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent)||0 }
+				});
+			}
+		});
+	}
+}
+
+// Botão Reconectar
+var btnReconectarBackend = document.getElementById('btnReconectarBackend');
+if (btnReconectarBackend) {
+	btnReconectarBackend.addEventListener('click', conectarBackend);
+}
+
+// Simulação Local no Navegador
+var simTimer = null;
+var btnSimularCabecaBaixa = document.getElementById('btnSimularCabecaBaixa');
+if (btnSimularCabecaBaixa) {
+	btnSimularCabecaBaixa.addEventListener('click', function() {
+		if (simTimer) clearInterval(simTimer);
+		var ms = 0;
+		simTimer = setInterval(function() {
+			ms += 200;
+			var est = (ms >= 2500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
+			atualizarPainelComEstado({
+				online: true,
+				estado: est,
+				sensor_ir: 0,
+				tempo_cabeca_baixa_ms: ms,
+				buzzer: ms >= 2500 ? 1 : 0,
+				rele: ms >= 2500 ? 1 : 0,
+				acelerometro: { pitch: -22, roll: -3, pescada_detectada: ms >= 2500 },
+				contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent) + (ms === 2600 ? 1 : 0) }
+			});
+			if (ms >= 3000) clearInterval(simTimer);
+		}, 200);
+	});
+}
+
+var btnSimularCabecaErguida = document.getElementById('btnSimularCabecaErguida');
+if (btnSimularCabecaErguida) {
+	btnSimularCabecaErguida.addEventListener('click', function() {
+		if (simTimer) clearInterval(simTimer);
+		atualizarPainelComEstado({
+			online: true,
+			estado: 'NORMAL',
+			sensor_ir: 1,
+			tempo_cabeca_baixa_ms: 0,
+			buzzer: 0,
+			rele: 0,
+			acelerometro: { pitch: 2.5, roll: 0.5, pescada_detectada: false },
+			contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent)||0 }
+		});
+	});
+}
+
+// ------------------------------------------------------------------------------
+// CÂMERA WI-FI LINKLEMO (CAPTURA DE TELA / STREAM / SIMULAÇÃO)
+// ------------------------------------------------------------------------------
+var liveCabineVideo = document.getElementById('liveCabineVideo');
+var cameraSimCanvas = document.getElementById('cameraSimCanvas');
+var btnCapturarLinklemo = document.getElementById('btnCapturarLinklemo');
+var btnAlternarCameraSim = document.getElementById('btnAlternarCameraSim');
+var btnTelaCheiaCam = document.getElementById('btnTelaCheiaCam');
+var cameraStream = null;
+
+if (btnCapturarLinklemo) {
+	btnCapturarLinklemo.addEventListener('click', function() {
+		if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+			navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+				.then(function(stream) {
+					cameraStream = stream;
+					if (liveCabineVideo) {
+						liveCabineVideo.style.display = 'block';
+						if (cameraSimCanvas) cameraSimCanvas.style.display = 'none';
+						liveCabineVideo.srcObject = stream;
+						liveCabineVideo.play();
+					}
+					adicionarLogLocal('NORMAL', 'Transmissão do app Linklemo vinculada com sucesso.');
+				})
+				.catch(function(err) {
+					console.warn('Captura cancelada ou não suportada:', err);
+				});
+		} else {
+			alert('Seu navegador não suporta captura direta de janela. Use o modo simulação ou um navegador compatível (Chrome/Edge).');
+		}
+	});
+}
+
+// Canvas animado simulando cabine
+var canvasAnimId = null;
+function iniciarCanvasSimulacao() {
+	if (!cameraSimCanvas) return;
+	cameraSimCanvas.style.display = 'block';
+	if (liveCabineVideo) liveCabineVideo.style.display = 'none';
+
+	var ctx = cameraSimCanvas.getContext('2d');
+	cameraSimCanvas.width = 640;
+	cameraSimCanvas.height = 360;
+
+	var frame = 0;
+	function desenharCabine() {
+		frame++;
+		ctx.fillStyle = '#05141e';
+		ctx.fillRect(0, 0, 640, 360);
+
+		// Volante estilizado
+		ctx.strokeStyle = 'rgba(8, 222, 235, 0.25)';
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.arc(320, 280, 110, 0, Math.PI * 2);
+		ctx.stroke();
+
+		// Rosto do motorista estilizado
+		var headY = 140 + (cardCameraLinklemo && cardCameraLinklemo.classList.contains('camera-alerta-critico') ? 45 : Math.sin(frame * 0.05) * 4);
+		ctx.fillStyle = 'rgba(8, 222, 235, 0.15)';
+		ctx.strokeStyle = (cardCameraLinklemo && cardCameraLinklemo.classList.contains('camera-alerta-critico') ? '#ff2a55' : 'rgba(8, 222, 235, 0.6)');
+		ctx.beginPath();
+		ctx.arc(320, headY, 52, 0, Math.PI * 2);
+		ctx.fill();
+		ctx.stroke();
+
+		// Óculos Smart Driver
+		ctx.fillStyle = (cardCameraLinklemo && cardCameraLinklemo.classList.contains('camera-alerta-critico') ? '#ff2a55' : '#08deeb');
+		ctx.fillRect(290, headY - 8, 24, 12);
+		ctx.fillRect(326, headY - 8, 24, 12);
+		ctx.fillRect(314, headY - 4, 12, 4);
+
+		canvasAnimId = requestAnimationFrame(desenharCabine);
+	}
+	desenharCabine();
+}
+
+if (btnAlternarCameraSim) {
+	btnAlternarCameraSim.addEventListener('click', function() {
+		iniciarCanvasSimulacao();
+		adicionarLogLocal('NORMAL', 'Simulação visual de cabine iniciada.');
+	});
+}
+
+// Inicia simulação visual da cabine por padrão
+iniciarCanvasSimulacao();
+
+if (btnTelaCheiaCam) {
+	btnTelaCheiaCam.addEventListener('click', function() {
+		var vp = document.getElementById('cameraViewport');
+		if (vp) {
+			if (!document.fullscreenElement) {
+				vp.requestFullscreen().catch(function(e) {});
+			} else {
+				document.exitFullscreen().catch(function(e) {});
+			}
+		}
+	});
+}
+
+// Atualização contínua do relógio da Central
+function atualizarRelogiosPainel() {
+	var now = new Date();
+	var str = 'AO VIVO · ' + now.toLocaleTimeString('pt-BR');
+	var pClock = document.getElementById('painelClock');
+	if (pClock) pClock.textContent = str;
+	var hudTime = document.getElementById('hudTimestampCam');
+	if (hudTime) hudTime.textContent = now.toLocaleTimeString('pt-BR');
+}
+setInterval(atualizarRelogiosPainel, 1000);
+atualizarRelogiosPainel();
+
+// Inicia tentativa de conexão com backend ao carregar
+conectarBackend();
 </script>
 </body>
 </html>

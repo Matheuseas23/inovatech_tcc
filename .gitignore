@@ -1,0 +1,19 @@
+# Dependências do Node (o Render instala sozinho via npm install)
+node_modules/
+backend/node_modules/
+
+# Variáveis de ambiente secretas
+.env
+backend/.env
+
+# Arquivos temporários do sistema
+Thumbs.db
+.DS_Store
+
+# PlatformIO build e caches do firmware ESP32
+**/.pio/
+**/.pio/**
+**/.vscode/
+
+# Áudios internos e arquivos temporários
+audios_professor/
