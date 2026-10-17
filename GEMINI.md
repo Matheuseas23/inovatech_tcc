@@ -137,6 +137,10 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
   - Servidor WebSocket:
     - Broadcast instantâneo de cada novo pacote para todos os navegadores conectados no painel.
 - `backend/test-esp32-sim.js`: Script de teste automatizado para validar o painel sem necessidade da placa física plugada.
+- **Persistência Integral de Dados**:
+  - **No Servidor**: Todos os eventos e telemetrias são gravados em `backend/data/historico_eventos.json` e `backend/data/ultimo_estado.json` de forma contínua, sobrevivendo a reinicializações.
+  - **No Site (Navegador)**: Eventos, logs e contadores de alarmes são persistidos no `localStorage` do navegador, com sincronização bidirecional WebSocket/REST e botão de exportação oficial (.JSON).
+  - **Privacidade Operacional**: Painel restrito ao grupo via chave `inovatech26`.
 
 - **Firmware Dual-Core FreeRTOS**:
   - **Core 1 (Tempo Real Estrito a 100 Hz)**: Sensor IR (GPIO 32), Buzzer (GPIO 25), Relé (GPIO 18) e filtro de segurança (2500 ms). Totalmente independente de rede, imune a quedas de Wi-Fi ou lag.

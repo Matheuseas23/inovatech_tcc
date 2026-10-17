@@ -2481,6 +2481,15 @@
 									</div>
 								</div>
 
+								<!-- Ações de Persistência e Exportação de Relatório -->
+								<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;flex-wrap:wrap">
+									<div style="display:flex;gap:6px">
+										<button class="btn-tactical" id="btnExportarLogs" style="padding:4px 10px;font-size:10px" title="Baixar relatório completo da sessão em formato JSON">💾 Baixar Relatório (.JSON)</button>
+										<button class="btn-tactical" id="btnLimparLogs" style="padding:4px 8px;font-size:10px;opacity:0.75" title="Limpar histórico de eventos">🗑️ Limpar</button>
+									</div>
+									<span style="font-size:9.5px;color:#55ee77;font-family:'Space Mono'">● Histórico Salvo (Local + Nuvem)</span>
+								</div>
+
 								<!-- Configuração do Endpoint do Backend & Simulação Local -->
 								<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
 									<div style="display:flex;gap:8px;align-items:center">
@@ -2939,7 +2948,7 @@ var painelKeyInput = document.getElementById('painelKeyInput');
 var painelAuthMsg = document.getElementById('painelAuthMsg');
 
 function isPainelAutenticado() {
-	return sessionStorage.getItem('inovatech_painel_auth') === 'granted';
+	return sessionStorage.getItem('inovatech_painel_auth') === 'granted' || localStorage.getItem('inovatech_painel_auth') === 'granted';
 }
 
 function abrirModalSenha() {
@@ -2986,6 +2995,7 @@ var btnLockPainel = document.getElementById('btnLockPainel');
 if (btnLockPainel) {
 	btnLockPainel.addEventListener('click', function() {
 		sessionStorage.removeItem('inovatech_painel_auth');
+		localStorage.removeItem('inovatech_painel_auth');
 		navegarParaView('home');
 		alert('Painel de Controle bloqueado com sucesso.');
 	});
@@ -2999,6 +3009,7 @@ if (painelAuthForm) {
 		var digitado = (painelKeyInput.value || '').trim().toLowerCase();
 		if (digitado === SENHA_PAINEL) {
 			sessionStorage.setItem('inovatech_painel_auth', 'granted');
+			localStorage.setItem('inovatech_painel_auth', 'granted');
 			if (painelAuthMsg) {
 				painelAuthMsg.style.display = 'block';
 				painelAuthMsg.style.color = '#55ee77';
@@ -3078,15 +3089,60 @@ function tocarAlertaSonoro() {
 	} catch(e) {}
 }
 
-function adicionarLogLocal(tipo, msg) {
+// ------------------------------------------------------------------------------
+// PERSISTÊNCIA LOCAL DE EVENTOS & MONITORAMENTO (LOCALSTORAGE)
+// ------------------------------------------------------------------------------
+var STORAGE_LOGS_KEY = 'inovatech_historico_logs';
+var STORAGE_ALARMES_KEY = 'inovatech_total_alarmes';
+var STORAGE_ULTIMO_ESTADO_KEY = 'inovatech_ultimo_estado';
+
+function obterLogsPersistidos() {
+	try {
+		var raw = localStorage.getItem(STORAGE_LOGS_KEY);
+		return raw ? JSON.parse(raw) : [];
+	} catch(e) { return []; }
+}
+
+function salvarLogsPersistidos(logs) {
+	try {
+		localStorage.setItem(STORAGE_LOGS_KEY, JSON.stringify(logs.slice(0, 100)));
+	} catch(e) {}
+}
+
+function adicionarLogLocal(tipo, msg, horaCustom) {
 	if (!terminalLogBox) return;
-	var now = new Date().toLocaleTimeString('pt-BR');
+	var now = horaCustom || new Date().toLocaleTimeString('pt-BR');
 	var entry = document.createElement('div');
 	entry.className = 'log-entry ' + tipo;
 	entry.innerHTML = '<span class="log-time">[' + now + ']</span><span class="log-msg">' + msg + '</span>';
 	terminalLogBox.insertBefore(entry, terminalLogBox.firstChild);
-	if (terminalLogBox.children.length > 50) {
+	if (terminalLogBox.children.length > 80) {
 		terminalLogBox.removeChild(terminalLogBox.lastChild);
+	}
+	// Salva no localStorage para persistir entre recarregamentos
+	if (!horaCustom) {
+		var logs = obterLogsPersistidos();
+		logs.unshift({ id: 'log_' + Date.now(), tipo: tipo, mensagem: msg, hora: now, timestamp: new Date().toISOString() });
+		salvarLogsPersistidos(logs);
+	}
+}
+
+function restaurarLogsDoStorage() {
+	if (!terminalLogBox) return;
+	var logs = obterLogsPersistidos();
+	if (logs && logs.length > 0) {
+		terminalLogBox.innerHTML = '';
+		for (var i = logs.length - 1; i >= 0; i--) {
+			var l = logs[i];
+			var entry = document.createElement('div');
+			entry.className = 'log-entry ' + (l.tipo || 'NORMAL');
+			entry.innerHTML = '<span class="log-time">[' + (l.hora || '00:00:00') + ']</span><span class="log-msg">' + (l.mensagem || '') + '</span>';
+			terminalLogBox.insertBefore(entry, terminalLogBox.firstChild);
+		}
+	}
+	var totalSalvo = localStorage.getItem(STORAGE_ALARMES_KEY);
+	if (totalSalvo && contadorTotalAlarmes) {
+		contadorTotalAlarmes.textContent = totalSalvo;
 	}
 }
 
@@ -3231,8 +3287,12 @@ function atualizarPainelComEstado(estado) {
 
 	// 5. Contadores
 	if (contadorTotalAlarmes && estado.contadores) {
-		contadorTotalAlarmes.textContent = estado.contadores.totalAlarmesSessao || 0;
+		var totalAlarmes = estado.contadores.totalAlarmesSessao || 0;
+		contadorTotalAlarmes.textContent = totalAlarmes;
+		try { localStorage.setItem(STORAGE_ALARMES_KEY, totalAlarmes); } catch(e) {}
 	}
+	// Salva snapshot do último estado no localStorage
+	try { localStorage.setItem(STORAGE_ULTIMO_ESTADO_KEY, JSON.stringify(estado)); } catch(e) {}
 }
 
 // Conectar ao Backend via WebSocket com fallback para Polling REST
@@ -3269,6 +3329,20 @@ function conectarBackend() {
 				if (msg.estado) {
 					atualizarPainelComEstado(msg.estado);
 				}
+				if (msg.tipo === 'NOVO_EVENTO' && msg.evento) {
+					adicionarLogLocal(msg.evento.tipo, msg.evento.mensagem, msg.evento.horaFormatada);
+				}
+				if (msg.tipo === 'ESTADO_INICIAL' && msg.eventos && Array.isArray(msg.eventos)) {
+					var logsAtuais = obterLogsPersistidos();
+					if (logsAtuais.length <= 1) {
+						msg.eventos.slice().reverse().forEach(function(ev) {
+							adicionarLogLocal(ev.tipo, ev.mensagem, ev.horaFormatada);
+						});
+					}
+				}
+				if (msg.tipo === 'COMANDO_EXECUTADO' && msg.comando) {
+					adicionarLogLocal('COMANDO_CENTRAL', 'Comando Remoto executado: ' + (msg.comando.comando || msg.comando));
+				}
 			} catch(e) {}
 		};
 
@@ -3297,6 +3371,14 @@ function iniciarPollingRestFallback() {
 			.then(function(data) {
 				if (data && data.estado) {
 					atualizarPainelComEstado(data.estado);
+				}
+				if (data && data.eventosRecentes && Array.isArray(data.eventosRecentes)) {
+					var logsAtuais = obterLogsPersistidos();
+					if (logsAtuais.length <= 1) {
+						data.eventosRecentes.slice().reverse().forEach(function(ev) {
+							adicionarLogLocal(ev.tipo, ev.mensagem, ev.horaFormatada);
+						});
+					}
 				}
 			})
 			.catch(function(err) {});
@@ -3514,6 +3596,50 @@ function atualizarRelogiosPainel() {
 }
 setInterval(atualizarRelogiosPainel, 1000);
 atualizarRelogiosPainel();
+
+// Ações de Exportação e Limpeza de Logs Persistidos
+var btnExportarLogs = document.getElementById('btnExportarLogs');
+if (btnExportarLogs) {
+	btnExportarLogs.addEventListener('click', function() {
+		var logs = obterLogsPersistidos();
+		var total = parseInt(contadorTotalAlarmes ? contadorTotalAlarmes.textContent : '0') || 0;
+		var relatorio = {
+			projeto: "INOVATECH SMART DRIVER — RELATÓRIO OFICIAL DE MONITORAMENTO",
+			data_exportacao: new Date().toLocaleString('pt-BR'),
+			dispositivo: "ESP32_SMART_DRIVER_01",
+			status_sistema: statusMotoristaTexto ? statusMotoristaTexto.textContent : 'NORMAL',
+			total_alarmes_sessao: total,
+			total_eventos_registrados: logs.length,
+			historico_detalhado: logs
+		};
+		var blob = new Blob([JSON.stringify(relatorio, null, 2)], { type: 'application/json' });
+		var url = URL.createObjectURL(blob);
+		var a = document.createElement('a');
+		a.href = url;
+		a.download = 'relatorio_inovatech_' + Date.now() + '.json';
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+		adicionarLogLocal('COMANDO_CENTRAL', 'Relatório oficial exportado com sucesso.');
+	});
+}
+
+var btnLimparLogs = document.getElementById('btnLimparLogs');
+if (btnLimparLogs) {
+	btnLimparLogs.addEventListener('click', function() {
+		if (confirm('Deseja realmente limpar o histórico de eventos?')) {
+			localStorage.removeItem(STORAGE_LOGS_KEY);
+			if (terminalLogBox) {
+				terminalLogBox.innerHTML = '<div class="log-entry NORMAL"><span class="log-time">[' + new Date().toLocaleTimeString('pt-BR') + ']</span><span class="log-msg">Histórico local reinicializado pelo operador.</span></div>';
+			}
+			fetch(backendBaseUrl + '/api/events/clear', { method: 'POST' }).catch(function(){});
+		}
+	});
+}
+
+// Restaura logs e contadores salvos no navegador
+restaurarLogsDoStorage();
 
 // Inicia tentativa de conexão com backend ao carregar
 conectarBackend();

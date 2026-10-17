@@ -88,6 +88,65 @@ let historicoEventos = [
 let comandosPendentes = [];
 
 // ------------------------------------------------------------------------------
+// PERSISTÊNCIA DE DADOS EM DISCO (STORAGE LOCAL & NUVEM)
+// ------------------------------------------------------------------------------
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
+}
+const EVENTOS_FILE = path.join(DATA_DIR, 'historico_eventos.json');
+const ESTADO_FILE = path.join(DATA_DIR, 'ultimo_estado.json');
+
+// Carregar histórico prévio do disco
+try {
+  if (fs.existsSync(EVENTOS_FILE)) {
+    const raw = fs.readFileSync(EVENTOS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      historicoEventos = parsed;
+      console.log(`[STORAGE] Carregados ${historicoEventos.length} eventos persistidos do disco.`);
+    }
+  }
+} catch (e) {
+  console.warn('[STORAGE] Falha ao ler historico_eventos.json:', e.message);
+}
+
+// Carregar contadores e estado prévio do disco
+try {
+  if (fs.existsSync(ESTADO_FILE)) {
+    const rawEst = fs.readFileSync(ESTADO_FILE, 'utf8');
+    const parsedEst = JSON.parse(rawEst);
+    if (parsedEst && typeof parsedEst === 'object') {
+      if (parsedEst.contadores && parsedEst.contadores.totalAlarmesSessao !== undefined) {
+        estado.contadores.totalAlarmesSessao = parsedEst.contadores.totalAlarmesSessao;
+      }
+      if (parsedEst.estado) estado.estado = parsedEst.estado;
+      console.log(`[STORAGE] Estado persistido carregado. Total acumulado de alarmes: ${estado.contadores.totalAlarmesSessao}`);
+    }
+  }
+} catch (e) {
+  console.warn('[STORAGE] Falha ao ler ultimo_estado.json:', e.message);
+}
+
+// Função para salvar alterações no disco com debounce
+let salvarTimer = null;
+function persistirEmDisco() {
+  clearTimeout(salvarTimer);
+  salvarTimer = setTimeout(() => {
+    try {
+      fs.writeFile(EVENTOS_FILE, JSON.stringify(historicoEventos, null, 2), (err) => {
+        if (err) console.error('[STORAGE ERROR] Ao salvar eventos:', err.message);
+      });
+      fs.writeFile(ESTADO_FILE, JSON.stringify(estado, null, 2), (err) => {
+        if (err) console.error('[STORAGE ERROR] Ao salvar estado:', err.message);
+      });
+    } catch (e) {
+      console.error('[STORAGE] Erro crítico de persistência:', e.message);
+    }
+  }, 100);
+}
+
+// ------------------------------------------------------------------------------
 // FUNÇÕES AUXILIARES DE TELEMETRIA
 // ------------------------------------------------------------------------------
 function registrarEvento(tipo, mensagem, detalhes = '') {
@@ -104,6 +163,9 @@ function registrarEvento(tipo, mensagem, detalhes = '') {
   if (historicoEventos.length > MAX_HISTORICO) {
     historicoEventos.pop();
   }
+
+  // Persiste no arquivo JSON em disco
+  persistirEmDisco();
 
   // Notifica todos os clientes conectados via WebSocket
   broadcast({
@@ -246,6 +308,9 @@ app.post('/api/telemetry', (req, res) => {
     estado,
     comandosPendentesParaESP32: comandosPendentes.length
   });
+
+  // Salva no disco
+  persistirEmDisco();
 
   return res.status(200).json({
     sucesso: true,

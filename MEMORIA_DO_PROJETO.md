@@ -32,6 +32,9 @@
   * `GET /api/telemetry`: Estado consolidado em tempo real.
   * `POST /api/command`: Disparo de testes e reset remoto.
   * `GET /ws`: Servidor WebSocket com broadcast instantâneo.
+* **Persistência Completa em Disco:** Arquivos `backend/data/historico_eventos.json` e `backend/data/ultimo_estado.json` salvam automaticamente cada transição, contadores de alarmes e telemetria, mantendo os dados preservados mesmo se o servidor for reiniciado.
+* **Persistência no Frontend (localStorage):** Todos os eventos, alarmes e estado do condutor ficam salvos no navegador (`localStorage`), restaurando o histórico instantaneamente ao recarregar a página.
+* **Exportação Oficial:** Botão "💾 Baixar Relatório (.JSON)" no Card 6 para download do relatório auditado da sessão.
 * **Servidor Híbrido:** Rota inteligente no `server.js` que serve tanto o JSON de telemetria quanto o frontend estático completo se aberto pelo navegador em `http://localhost:3001`.
 * **Script de Inicialização:** `iniciar-painel.bat` criado na raiz para ligar o servidor local e abrir a TV com 1 duplo clique.
 
