@@ -162,3 +162,17 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 - **Idioma**: Português do Brasil estritamente.
 - **Execução de Comandos**: Manter comandos ao mínimo necessário, priorizando orientações claras e edições diretas nos arquivos.
 - **Preservação de Contexto**: Todas as alterações, senhas e requisitos descritos neste documento são a verdade canônica do projeto.
+
+---
+
+## 8. Status Atual de Hardware & Gravação da ESP32 (Outubro/2026)
+- **Status do Código & Frontend**: 100% revisado, polido, validado no navegador e commitado no GitHub (`origin/main`).
+- **Autenticação**: Senha do painel `inovatech26` (minúsculo).
+- **Diagnóstico USB Realizado**:
+  - Testado diretamente na USB do notebook: a placa ESP32 recebe energia e acende o LED perfeitamente.
+  - O Windows não tocou o som de conexão USB e nenhuma porta COM apareceu porque o cabo utilizado é **apenas de carga** (sem os fios internos de dados D+/D-).
+- **Próximo Passo Imediato (ao religar o PC)**:
+  1. Conectar a ESP32 no notebook usando um cabo USB de dados (ex: cabo de celular que passa fotos/arquivos).
+  2. Ouvir o som de conexão do Windows (*"turu-tum"*).
+  3. Assistente detectará a porta COM ativa (ex: `COM3`, `COM4`) e executará o upload do firmware pelo PlatformIO (`Smart Driver/src/main.cpp`).
+
