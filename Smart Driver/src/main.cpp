@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 
 // ==============================================================================
@@ -12,13 +13,14 @@
 // ------------------------------------------------------------------------------
 // CONFIGURAÇÃO DE REDE WI-FI & BACKEND
 // ------------------------------------------------------------------------------
-// Altere para a rede Wi-Fi da sala da apresentação ou do seu celular 4G:
+// IMPORTANTE: Na quarta-feira, coloque aqui o nome e a senha exata da rede
+// da sala (ou do seu celular roteando 4G):
 const char* WIFI_SSID     = "NOME_DO_WIFI";
 const char* WIFI_PASSWORD = "SENHA_DO_WIFI";
 
 // Endereço do Servidor de Telemetria:
-// - Apresentação Local (PC da sala): "http://<IP_DO_PC>:3001/api/telemetry"
-// - Nuvem (Render):                  "https://inovatech-tcc.onrender.com/api/telemetry"
+// - Modo Nuvem (Render): "https://inovatech-tcc.onrender.com/api/telemetry"
+// - Modo Local (PC da sala): "http://<IP_DO_PC>:3001/api/telemetry"
 const char* BACKEND_URL   = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
@@ -156,21 +158,45 @@ void conectarWiFi() {
 void enviarTelemetria(int irValor, unsigned long tempoBaixaMs, int buzzerVal, int releVal, const char* estadoTexto) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    http.begin(BACKEND_URL);
-    http.addHeader("Content-Type", "application/json");
-    http.setTimeout(150); // Timeout rápido: nunca atrasa os sensores físicos dos óculos
+    bool isHttps = String(BACKEND_URL).startsWith("https://");
 
-    String payload = "{";
-    payload += "\"dispositivo\":\"ESP32_SMART_DRIVER_01\",";
-    payload += "\"sensor_ir\":" + String(irValor) + ",";
-    payload += "\"tempo_cabeca_baixa_ms\":" + String(tempoBaixaMs) + ",";
-    payload += "\"buzzer\":" + String(buzzerVal) + ",";
-    payload += "\"rele\":" + String(releVal) + ",";
-    payload += "\"estado\":\"" + String(estadoTexto) + "\",";
-    payload += "\"acelerometro\":{\"pitch\":0.0,\"roll\":0.0,\"pescada_detectada\":" + String(alarmeAtivo ? "true" : "false") + "}";
-    payload += "}";
+    if (isHttps) {
+      WiFiClientSecure secureClient;
+      secureClient.setInsecure(); // Pula checagem de certificado CA para garantir conexão sem falhas com o Render
+      http.begin(secureClient, BACKEND_URL);
+      http.addHeader("Content-Type", "application/json");
+      http.setTimeout(200);
 
-    http.POST(payload);
-    http.end();
+      String payload = "{";
+      payload += "\"dispositivo\":\"ESP32_SMART_DRIVER_01\",";
+      payload += "\"sensor_ir\":" + String(irValor) + ",";
+      payload += "\"tempo_cabeca_baixa_ms\":" + String(tempoBaixaMs) + ",";
+      payload += "\"buzzer\":" + String(buzzerVal) + ",";
+      payload += "\"rele\":" + String(releVal) + ",";
+      payload += "\"estado\":\"" + String(estadoTexto) + "\",";
+      payload += "\"acelerometro\":{\"pitch\":0.0,\"roll\":0.0,\"pescada_detectada\":" + String(alarmeAtivo ? "true" : "false") + "}";
+      payload += "}";
+
+      http.POST(payload);
+      http.end();
+    } else {
+      WiFiClient plainClient;
+      http.begin(plainClient, BACKEND_URL);
+      http.addHeader("Content-Type", "application/json");
+      http.setTimeout(150);
+
+      String payload = "{";
+      payload += "\"dispositivo\":\"ESP32_SMART_DRIVER_01\",";
+      payload += "\"sensor_ir\":" + String(irValor) + ",";
+      payload += "\"tempo_cabeca_baixa_ms\":" + String(tempoBaixaMs) + ",";
+      payload += "\"buzzer\":" + String(buzzerVal) + ",";
+      payload += "\"rele\":" + String(releVal) + ",";
+      payload += "\"estado\":\"" + String(estadoTexto) + "\",";
+      payload += "\"acelerometro\":{\"pitch\":0.0,\"roll\":0.0,\"pescada_detectada\":" + String(alarmeAtivo ? "true" : "false") + "}";
+      payload += "}";
+
+      http.POST(payload);
+      http.end();
+    }
   }
 }
