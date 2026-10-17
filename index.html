@@ -2709,6 +2709,8 @@ document.body.dataset.activeView = 'home';
 		}
 	}
 
+	window.syncBackgroundFn = syncBackground;
+
 	if (siteVideo) {
 		siteVideo.removeAttribute('loop');
 		siteVideo.muted = true;
