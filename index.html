@@ -2484,7 +2484,7 @@
 								<!-- Configuração do Endpoint do Backend & Simulação Local -->
 								<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
 									<div style="display:flex;gap:8px;align-items:center">
-										<input type="text" id="inputBackendUrl" value="http://localhost:3001" placeholder="URL do Backend (ex: http://localhost:3001)" style="flex:1;background:rgba(2,11,18,0.7);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'Space Mono';font-size:11px">
+										<input type="text" id="inputBackendUrl" value="https://inovatech-tcc.onrender.com" placeholder="URL do Backend (ex: https://inovatech-tcc.onrender.com ou http://localhost:3001)" style="flex:1;background:rgba(2,11,18,0.7);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'Space Mono';font-size:11px">
 										<button class="btn-tactical" id="btnReconectarBackend">Conectar</button>
 									</div>
 									<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
@@ -3026,7 +3026,7 @@ if (painelAuthForm) {
 // ==============================================================================
 // TELEMETRIA EM TEMPO REAL — CLIENTE WEBSOCKET & REST DO PAINEL
 // ==============================================================================
-var backendBaseUrl = 'http://localhost:3001';
+var backendBaseUrl = 'https://inovatech-tcc.onrender.com';
 var wsClient = null;
 var pollingTimer = null;
 var audioCtx = null;

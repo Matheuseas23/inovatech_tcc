@@ -19,7 +19,7 @@ const char* WIFI_PASSWORD = "SENHA_DO_WIFI";
 // Endereço do Servidor de Telemetria:
 // - Apresentação Local (PC da sala): "http://<IP_DO_PC>:3001/api/telemetry"
 // - Nuvem (Render):                  "https://inovatech-tcc.onrender.com/api/telemetry"
-const char* BACKEND_URL   = "http://192.168.1.100:3001/api/telemetry";
+const char* BACKEND_URL   = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
 // MAPEAMENTO DOS PINOS DE HARDWARE
