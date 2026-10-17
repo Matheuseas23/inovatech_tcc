@@ -72,7 +72,7 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
    - Grid de 3 cards em acabamento vidro fosco (`backdrop-filter: blur(8px)`): Público-Alvo, Diferencial e Objetivo.
 2. **`#painel` (Painel de Controle da Central — Antiga Telemetria)**:
    - Aba restrita no menu de navegação: `🔒 PAINEL DE CONTROLE` (`data-view="painel"`).
-   - **Senha de Acesso Operacional**: `Inovatech266` com persistência em `sessionStorage` e modal de autenticação estilizado com animação de shake em caso de erro.
+   - **Senha de Acesso Operacional**: `inovatech26` com persistência em `sessionStorage` e modal de autenticação estilizado com animação de shake em caso de erro.
    - **Os 6 Cards de Controle Operacional**:
      1. **Status Geral do Motorista & Alerta Crítico**:
         - `NORMAL`: Postura erguida, azul elétrico suave (`#0052ff` / `#08deeb`).

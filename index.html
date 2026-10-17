@@ -2574,7 +2574,7 @@
 			<section id="game" class="view"><div class="eyebrow">INOVA TECH / SIMULADOR INTERATIVO</div><h2>Smart Driver: O Jogo</h2><p style="color:var(--muted);font-size:11px;max-width:620px;line-height:1.8">Uma experiência interativa desenvolvida na plataforma GDevelop para vivenciar os desafios da fadiga na estrada e comprovar como o sistema InovaTech protege a vida do operador.</p><div class="game-layout"><div class="manual-video" style="min-height:300px"><div style="position:absolute;bottom:16px;left:18px;color:var(--cyan);font-size:10px">▶ VÍDEO DEMO DO JOGO · 00:38</div></div><article class="card" style="display:flex;flex-direction:column;justify-content:space-between"><div><div class="card-label">◉ CONTEXTO & HISTÓRIA</div><h3>A Jornada Noturna: Sobreviva ao Turno</h3><p style="margin-top:12px;line-height:1.8">Assuma o controle de um veículo pesado em uma rota rodoviária noturna. Conforme o turno avança, a fadiga se acumula: a visão embaça, microsonos começam a fechar os olhos do condutor e o caminhão desvia da faixa.</p><p style="margin-top:12px;line-height:1.8">Equipado com o óculos <strong>InovaTech Smart Driver</strong>, o jogador recebe alertas sonoros milissegundos antes do perigo se tornar um acidente. Sua missão: manter o foco e chegar seguro ao destino!</p></div><div style="margin-top:24px"><a href="https://gdevelop.io" target="_blank" rel="noopener noreferrer" class="btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:8px"><span>▶ JOGAR NO GDEVELOP</span></a></div></article></div><div class="grid" style="margin-top:24px"><article class="card"><div class="card-label">ϟ MECÂNICA DO SIMULADOR</div><h3>Telemetria de Fadiga</h3><p>Simulação da barra de PERCLOS e monitor de BPM em tempo real durante a pilotagem na estrada.</p></article><article class="card"><div class="card-label">⌁ CONTROLES DO JOGO</div><h3>Teclado & Dispositivos</h3><p>Setas direcionais (ou A/D) para manter a faixa de rolagem; Barra de espaço para responder ao alerta de atenção do óculos.</p></article><article class="card"><div class="card-label">◫ PLATAFORMA GDEVELOP</div><h3>Execução Web Instantânea</h3><p>Desenvolvido com o motor 2D/3D leve do GDevelop em HTML5, rodando direto no navegador sem necessidade de instalação.</p></article></div></section>
 		</main><div class="modal" id="addItemModal"><div class="modal-content"><h3>Adicionar novo item</h3><form id="addItemForm"><div class="form-group"><label for="itemName">Nome do produto</label><input type="text" id="itemName" required></div><div class="form-group"><label for="itemDescription">Descrição técnica</label><input type="text" id="itemDescription" required></div><div class="form-group"><label for="itemValue">Valor (R$)</label><input type="number" id="itemValue" step="0.01" required></div><div class="modal-actions"><button type="button" class="btn-cancel" onclick="document.getElementById('addItemModal').classList.remove('active')">Cancelar</button><button type="submit" class="btn-primary">Adicionar</button></div></form></div></div>
 
-	<!-- MODAL DE AUTENTICAÇÃO MILITAR / COCKPIT DO PAINEL DE CONTROLE (Inovatech266) -->
+	<!-- MODAL DE AUTENTICAÇÃO MILITAR / COCKPIT DO PAINEL DE CONTROLE (inovatech26) -->
 	<div class="painel-gate-modal" id="painelPasswordModal">
 		<div class="painel-gate-card" id="painelGateCard">
 			<div class="painel-gate-icon">
@@ -2930,9 +2930,9 @@ if (contactForm) {
 }
 
 // ==============================================================================
-// GESTÃO DE ACESSO DO PAINEL DE CONTROLE (SENHA: Inovatech266)
+// GESTÃO DE ACESSO DO PAINEL DE CONTROLE (SENHA: inovatech26)
 // ==============================================================================
-var SENHA_PAINEL = "Inovatech266";
+var SENHA_PAINEL = "inovatech26";
 var painelModal = document.getElementById('painelPasswordModal');
 var painelGateCard = document.getElementById('painelGateCard');
 var painelKeyInput = document.getElementById('painelKeyInput');
@@ -2996,7 +2996,7 @@ var painelAuthForm = document.getElementById('painelAuthForm');
 if (painelAuthForm) {
 	painelAuthForm.addEventListener('submit', function(e) {
 		e.preventDefault();
-		var digitado = (painelKeyInput.value || '').trim();
+		var digitado = (painelKeyInput.value || '').trim().toLowerCase();
 		if (digitado === SENHA_PAINEL) {
 			sessionStorage.setItem('inovatech_painel_auth', 'granted');
 			if (painelAuthMsg) {

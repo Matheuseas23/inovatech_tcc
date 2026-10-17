@@ -19,7 +19,7 @@
 * **Status:** Deploy ativo e sincronizado via GitHub (Commit `b28b602`).
 * **Navegação:** Todas as 7 abas funcionais (Home, Painel, Manual, Ecossistema, Quem Somos, Referências, O Jogo).
 * **Regras SPA:** `vercel.json` configurado para reescrita de URLs sem erro 404.
-* **Segurança:** Senha `Inovatech266` com persistência em `sessionStorage` e efeito shake em caso de erro.
+* **Segurança:** Senha `inovatech26` com persistência em `sessionStorage` e efeito shake em caso de erro.
 * **Conectividade:** Conecta automaticamente em `https://inovatech-tcc.onrender.com` via WebSocket Seguro (`wss://`), com fallback automático para polling REST a cada 800ms caso o WebSocket sofra bloqueio de firewall.
 * **Polimento Aplicado:** Exposição de `window.syncBackgroundFn` para garantir transição suave do vídeo de fundo (`oculos.mp4`) em todas as chamadas programáticas.
 
@@ -104,7 +104,7 @@ Qualquer coisa só me avisar por aqui. Valeu professor! 👊
 ## 3. Resultados da Auditoria no Navegador (Realizada em Produção)
 
 * **Navegação:** Todas as 7 abas testadas e validadas sem falhas.
-* **Modal de Senha (`Inovatech266`):** Rejeição com shake para senhas incorretas; liberação instantânea com a chave correta.
+* **Modal de Senha (`inovatech26`):** Rejeição com shake para senhas incorretas; liberação instantânea com a chave correta.
 * **Simulação de Telemetria:**
   * Testado o fluxo: `NORMAL` -> `PRÉ-ALERTA` (1.5s a 2.4s) -> `ALARME ATIVADO` (2.5s).
   * Card geral pulsa em vermelho neon, buzzer sonoro toca via Web Audio API e banner vermelho de alerta na câmera acende.
