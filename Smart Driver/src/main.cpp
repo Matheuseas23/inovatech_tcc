@@ -15,15 +15,18 @@
 // ------------------------------------------------------------------------------
 // 1. CONFIGURAÇÃO DE REDE WI-FI & SERVIDOR
 // ------------------------------------------------------------------------------
-// IMPORTANTE: Na quarta-feira (Semana do TI), altere aqui para o nome e senha
-// do Wi-Fi da sala de aula ou do 4G roteado do celular:
-const char* WIFI_SSID     = "NOME_DO_WIFI";
-const char* WIFI_PASSWORD = "SENHA_DO_WIFI";
+// Rede própria da ESP32 (Access Point sem senha sempre ativo):
+const char* AP_SSID       = "ESP_900EC9";
+
+// Opcional: caso queira conectar a ESP32 também a um roteador externo:
+const char* WIFI_SSID     = "ESP_900EC9";
+const char* WIFI_PASSWORD = "";
 
 // Endereço do Servidor de Telemetria:
-// Opção A (Nuvem Render HTTPS): "https://inovatech-tcc.onrender.com/api/telemetry"
-// Opção B (Modo Local PC HTTP): "http://192.168.1.218:3001/api/telemetry" (Zero latência, < 5ms)
-const char* BACKEND_URL   = "https://inovatech-tcc.onrender.com/api/telemetry";
+// - Pelo Wi-Fi próprio da ESP32 (ESP_900EC9): o PC recebe IP 192.168.4.2
+// - Pela Nuvem Render HTTPS: "https://inovatech-tcc.onrender.com/api/telemetry"
+const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
+const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
 // 2. MAPEAMENTO DOS PINOS DE HARDWARE
@@ -88,18 +91,27 @@ void setup() {
   Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25 | Relé: GPIO 18"));
   Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 2500 ms (2,5s)"));
 
-  // Inicia conexão Wi-Fi se não for o placeholder
-  if (String(WIFI_SSID) != "NOME_DO_WIFI") {
-    Serial.print(F("[WIFI] Conectando a "));
+  // Mantém a rede Wi-Fi própria da ESP32 (ESP_900EC9 sem senha) sempre ativa
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.softAP(AP_SSID); // Sem senha (rede aberta)
+  Serial.print(F("[WIFI AP] Rede ativa sem senha: "));
+  Serial.print(AP_SSID);
+  Serial.print(F(" | IP da ESP32: "));
+  Serial.println(WiFi.softAPIP());
+
+  // Se houver um roteador externo configurado diferente de ESP_900EC9, conecta também
+  if (String(WIFI_SSID) != "NOME_DO_WIFI" && String(WIFI_SSID) != "ESP_900EC9") {
+    Serial.print(F("[WIFI STA] Conectando a "));
     Serial.println(WIFI_SSID);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  } else {
-    Serial.println(F("[WIFI] Modo offline ativo. Configure WIFI_SSID para telemetria em nuvem."));
+    if (strlen(WIFI_PASSWORD) > 0) {
+      WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    } else {
+      WiFi.begin(WIFI_SSID);
+    }
   }
 
   // Cria tarefa de Telemetria no Core 0 (Background IoT)
-  // Stack de 8192 bytes para suportar TLS/HTTPS do Render
+  // Stack de 8192 bytes para suportar TLS/HTTPS do Render e HTTP local
   xTaskCreatePinnedToCore(
     taskTelemetria,
     "TaskTelemetria",
@@ -198,18 +210,8 @@ void taskTelemetria(void *pvParameters) {
   secureClient.setInsecure(); // Pula validação de certificado CA para garantir comunicação com o Render
 
   HTTPClient http;
-  bool isHttps = String(BACKEND_URL).startsWith("https://");
 
   for (;;) {
-    // Se Wi-Fi estiver desconectado, tenta reconectar silenciosamente a cada 4 segundos
-    if (WiFi.status() != WL_CONNECTED) {
-      if (String(WIFI_SSID) != "NOME_DO_WIFI") {
-        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-      }
-      vTaskDelay(pdMS_TO_TICKS(4000));
-      continue;
-    }
-
     // Obtém snapshot instantâneo dos dados do motorista protegidos por mutex
     DadosTelemetria snap;
     portENTER_CRITICAL(&mutexDados);
@@ -227,19 +229,27 @@ void taskTelemetria(void *pvParameters) {
     payload += "\"acelerometro\":{\"pitch\":0.0,\"roll\":0.0,\"pescada_detectada\":" + String(snap.alarmeAtivo ? "true" : "false") + "}";
     payload += "}";
 
-    bool beginOk = false;
-    if (isHttps) {
-      http.setTimeout(2500); // 2.5s seguro para handshake TLS com o Render
-      beginOk = http.begin(secureClient, BACKEND_URL);
-    } else {
-      http.setTimeout(400); // 400ms ultra-rápido para servidor local HTTP
-      beginOk = http.begin(plainClient, BACKEND_URL);
+    // 1. Emite telemetria via Serial USB (COM5) para ponte direta com o PC
+    Serial.println("TELEMETRY:" + payload);
+
+    // 2. Se o PC estiver conectado na rede Wi-Fi ESP_900EC9, envia via HTTP para 192.168.4.2:3001
+    if (WiFi.softAPgetStationNum() > 0) {
+      http.setTimeout(350);
+      if (http.begin(plainClient, BACKEND_URL_AP)) {
+        http.addHeader("Content-Type", "application/json");
+        http.POST(payload);
+        http.end();
+      }
     }
 
-    if (beginOk) {
-      http.addHeader("Content-Type", "application/json");
-      http.POST(payload);
-      http.end();
+    // 3. Se estiver conectado a um Wi-Fi com internet, envia para a nuvem Render
+    if (WiFi.status() == WL_CONNECTED) {
+      http.setTimeout(2500);
+      if (http.begin(secureClient, BACKEND_URL_CLOUD)) {
+        http.addHeader("Content-Type", "application/json");
+        http.POST(payload);
+        http.end();
+      }
     }
 
     // Intervalo de transmissão contínua (250 ms = 4 vezes por segundo)

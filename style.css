@@ -2256,3 +2256,148 @@ body.light-theme .btn-access.outline:hover {
   color: var(--cyan);
 }
 
+/* ==========================================================================
+   AVISO FLUTUANTE GLOBAL NO CANTO DO SITE (TODOS OS DISPOSITIVOS & PÁGINAS)
+   ========================================================================== */
+.global-corner-alert {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  width: 370px;
+  max-width: calc(100vw - 32px);
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(12, 34, 50, 0.94) 0%, rgba(4, 16, 26, 0.97) 100%);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  border: 1.5px solid rgba(8, 222, 235, 0.5);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.65), 0 0 24px rgba(8, 222, 235, 0.25);
+  color: var(--text);
+  transform: translateY(130%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.global-corner-alert.visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.global-corner-alert.state-pre-alerta {
+  border-color: #ffaa00;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.7), 0 0 28px rgba(255, 170, 0, 0.42);
+  background: linear-gradient(135deg, rgba(48, 30, 6, 0.95) 0%, rgba(18, 12, 4, 0.98) 100%);
+}
+
+.global-corner-alert.state-alarme {
+  border-color: #ff2a55;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.8), 0 0 42px rgba(255, 42, 85, 0.75);
+  background: linear-gradient(135deg, rgba(64, 8, 22, 0.96) 0%, rgba(24, 4, 10, 0.98) 100%);
+  animation: cornerPulseDanger 0.95s infinite alternate;
+}
+
+.global-corner-alert.state-normal {
+  border-color: #55ee77;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 22px rgba(85, 238, 119, 0.3);
+}
+
+@keyframes cornerPulseDanger {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.8), 0 0 24px rgba(255, 42, 85, 0.55);
+  }
+  100% {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 22px 60px rgba(0, 0, 0, 0.9), 0 0 48px rgba(255, 42, 85, 0.95);
+  }
+}
+
+.corner-alert-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.corner-alert-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--cyan);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.global-corner-alert.state-pre-alerta .corner-alert-tag { color: #ffaa00; }
+.global-corner-alert.state-alarme .corner-alert-tag { color: #ff4b72; }
+.global-corner-alert.state-normal .corner-alert-tag { color: #55ee77; }
+
+.corner-alert-close {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+}
+
+.corner-alert-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+  color: #ffffff;
+}
+
+.corner-alert-desc {
+  font-family: 'Space Mono', monospace;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: #d6eaee;
+  margin: 0 0 10px;
+}
+
+.corner-alert-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.corner-alert-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--cyan);
+  transition: width 0.18s linear, background-color 0.2s ease;
+}
+
+.global-corner-alert.state-pre-alerta .corner-alert-bar-fill { background: #ffaa00; }
+.global-corner-alert.state-alarme .corner-alert-bar-fill { background: #ff2a55; }
+.global-corner-alert.state-normal .corner-alert-bar-fill { background: #55ee77; }
+
+.corner-alert-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.corner-alert-timer {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+

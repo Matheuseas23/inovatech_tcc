@@ -2266,9 +2266,176 @@
 			justify-content: center;
 			color: var(--cyan);
 		}
+
+		/* ==========================================================================
+		   AVISO FLUTUANTE GLOBAL NO CANTO DO SITE (TODOS OS DISPOSITIVOS & PÁGINAS)
+		   ========================================================================== */
+		.global-corner-alert {
+			position: fixed;
+			bottom: 24px;
+			right: 24px;
+			z-index: 9999;
+			width: 370px;
+			max-width: calc(100vw - 32px);
+			border-radius: 14px;
+			padding: 16px 18px;
+			background: linear-gradient(135deg, rgba(12, 34, 50, 0.94) 0%, rgba(4, 16, 26, 0.97) 100%);
+			backdrop-filter: blur(22px) saturate(180%);
+			-webkit-backdrop-filter: blur(22px) saturate(180%);
+			border: 1.5px solid rgba(8, 222, 235, 0.5);
+			box-shadow: 0 18px 46px rgba(0, 0, 0, 0.65), 0 0 24px rgba(8, 222, 235, 0.25);
+			color: var(--text);
+			transform: translateY(130%);
+			opacity: 0;
+			pointer-events: none;
+			transition: transform 0.34s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+		}
+
+		.global-corner-alert.visible {
+			transform: translateY(0);
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.global-corner-alert.state-pre-alerta {
+			border-color: #ffaa00;
+			box-shadow: 0 18px 46px rgba(0, 0, 0, 0.7), 0 0 28px rgba(255, 170, 0, 0.42);
+			background: linear-gradient(135deg, rgba(48, 30, 6, 0.95) 0%, rgba(18, 12, 4, 0.98) 100%);
+		}
+
+		.global-corner-alert.state-alarme {
+			border-color: #ff2a55;
+			box-shadow: 0 20px 55px rgba(0, 0, 0, 0.8), 0 0 42px rgba(255, 42, 85, 0.75);
+			background: linear-gradient(135deg, rgba(64, 8, 22, 0.96) 0%, rgba(24, 4, 10, 0.98) 100%);
+			animation: cornerPulseDanger 0.95s infinite alternate;
+		}
+
+		.global-corner-alert.state-normal {
+			border-color: #55ee77;
+			box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 22px rgba(85, 238, 119, 0.3);
+		}
+
+		@keyframes cornerPulseDanger {
+			0% {
+				transform: translateY(0) scale(1);
+				box-shadow: 0 18px 48px rgba(0, 0, 0, 0.8), 0 0 24px rgba(255, 42, 85, 0.55);
+			}
+			100% {
+				transform: translateY(-3px) scale(1.02);
+				box-shadow: 0 22px 60px rgba(0, 0, 0, 0.9), 0 0 48px rgba(255, 42, 85, 0.95);
+			}
+		}
+
+		.corner-alert-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			margin-bottom: 6px;
+		}
+
+		.corner-alert-tag {
+			font-family: 'Space Mono', monospace;
+			font-size: 9.5px;
+			font-weight: 700;
+			letter-spacing: 1px;
+			text-transform: uppercase;
+			color: var(--cyan);
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.global-corner-alert.state-pre-alerta .corner-alert-tag { color: #ffaa00; }
+		.global-corner-alert.state-alarme .corner-alert-tag { color: #ff4b72; }
+		.global-corner-alert.state-normal .corner-alert-tag { color: #55ee77; }
+
+		.corner-alert-close {
+			background: transparent;
+			border: none;
+			color: var(--muted);
+			font-size: 15px;
+			cursor: pointer;
+			padding: 2px 6px;
+			line-height: 1;
+		}
+
+		.corner-alert-title {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 21px;
+			font-weight: 700;
+			letter-spacing: 1px;
+			text-transform: uppercase;
+			margin: 0 0 4px;
+			color: #ffffff;
+		}
+
+		.corner-alert-desc {
+			font-family: 'Space Mono', monospace;
+			font-size: 10.5px;
+			line-height: 1.5;
+			color: #d6eaee;
+			margin: 0 0 10px;
+		}
+
+		.corner-alert-bar-wrap {
+			width: 100%;
+			height: 6px;
+			background: rgba(255, 255, 255, 0.12);
+			border-radius: 999px;
+			overflow: hidden;
+			margin-bottom: 12px;
+		}
+
+		.corner-alert-bar-fill {
+			height: 100%;
+			width: 0%;
+			background: var(--cyan);
+			transition: width 0.18s linear, background-color 0.2s ease;
+		}
+
+		.global-corner-alert.state-pre-alerta .corner-alert-bar-fill { background: #ffaa00; }
+		.global-corner-alert.state-alarme .corner-alert-bar-fill { background: #ff2a55; }
+		.global-corner-alert.state-normal .corner-alert-bar-fill { background: #55ee77; }
+
+		.corner-alert-actions {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+		}
+
+		.corner-alert-timer {
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			font-weight: 700;
+			color: #ffffff;
+		}
 	</style>
 </head>
 <body data-active-view="home">
+	<!-- Aviso Flutuante Global no Canto (Aparece em todas as abas e dispositivos) -->
+	<aside class="global-corner-alert" id="globalCornerAlert" role="alert" aria-live="assertive">
+		<div class="corner-alert-header">
+			<span class="corner-alert-tag" id="cornerAlertTag">
+				<span class="pulse-dot danger" id="cornerAlertDot"></span>
+				<span id="cornerAlertTagText">CENTRAL INOVATECH · ALERTA</span>
+			</span>
+			<button class="corner-alert-close" id="cornerAlertCloseBtn" title="Fechar aviso">✕</button>
+		</div>
+		<h4 class="corner-alert-title" id="cornerAlertTitle">ALARME ATIVADO: FADIGA DETECTADA</h4>
+		<p class="corner-alert-desc" id="cornerAlertDesc">Motorista permaneceu com a cabeça baixa por 2,5s. Buzzer e Relé acionados!</p>
+		<div class="corner-alert-bar-wrap">
+			<div class="corner-alert-bar-fill" id="cornerAlertBarFill"></div>
+		</div>
+		<div class="corner-alert-actions">
+			<span class="corner-alert-timer" id="cornerAlertTimer">2.5s / 2.5s</span>
+			<button class="btn-tactical danger" id="cornerAlertGoPainelBtn" style="padding:5px 12px;font-size:10px">
+				<span>⚡ Abrir Painel da Central</span>
+			</button>
+		</div>
+	</aside>
+
 	<!-- Vídeo e Imagem de Fundo Global do Site -->
 	<div class="site-bg-video-wrapper" id="siteBgWrapper" aria-hidden="true">
 		<div id="siteBgImage" class="site-bg-image"></div>
@@ -3146,6 +3313,67 @@ function restaurarLogsDoStorage() {
 	}
 }
 
+// Elementos do Aviso Flutuante Global no Canto (Todas as páginas e dispositivos)
+var globalCornerAlert = document.getElementById('globalCornerAlert');
+var cornerAlertTagText = document.getElementById('cornerAlertTagText');
+var cornerAlertDot = document.getElementById('cornerAlertDot');
+var cornerAlertTitle = document.getElementById('cornerAlertTitle');
+var cornerAlertDesc = document.getElementById('cornerAlertDesc');
+var cornerAlertBarFill = document.getElementById('cornerAlertBarFill');
+var cornerAlertTimer = document.getElementById('cornerAlertTimer');
+var cornerAlertCloseBtn = document.getElementById('cornerAlertCloseBtn');
+var cornerAlertGoPainelBtn = document.getElementById('cornerAlertGoPainelBtn');
+var cornerHideTimeout = null;
+
+if (cornerAlertCloseBtn) {
+	cornerAlertCloseBtn.addEventListener('click', function() {
+		if (globalCornerAlert) globalCornerAlert.classList.remove('visible');
+	});
+}
+if (cornerAlertGoPainelBtn) {
+	cornerAlertGoPainelBtn.addEventListener('click', function() {
+		navegarParaView('painel');
+	});
+}
+
+function atualizarAvisoCantoGlobal(status, tempoMs, segDecorridos, perc, estadoAnterior) {
+	if (!globalCornerAlert) return;
+
+	if (status === 'PRE_ALERTA') {
+		if (cornerHideTimeout) { clearTimeout(cornerHideTimeout); cornerHideTimeout = null; }
+		globalCornerAlert.className = 'global-corner-alert visible state-pre-alerta';
+		if (cornerAlertDot) cornerAlertDot.className = 'pulse-dot';
+		if (cornerAlertTagText) cornerAlertTagText.textContent = '⚡ PRÉ-ALERTA · CENTRAL INOVATECH';
+		if (cornerAlertTitle) cornerAlertTitle.textContent = 'CABEÇA BAIXA DETECTADA';
+		if (cornerAlertDesc) cornerAlertDesc.textContent = 'Contagem do filtro de segurança em andamento (' + tempoMs + ' ms). Aguardando limite de 2,5s...';
+		if (cornerAlertBarFill) cornerAlertBarFill.style.width = perc + '%';
+		if (cornerAlertTimer) cornerAlertTimer.textContent = segDecorridos + 's / 2.5s';
+	} else if (status === 'ALARME_ATIVADO') {
+		if (cornerHideTimeout) { clearTimeout(cornerHideTimeout); cornerHideTimeout = null; }
+		globalCornerAlert.className = 'global-corner-alert visible state-alarme';
+		if (cornerAlertDot) cornerAlertDot.className = 'pulse-dot danger';
+		if (cornerAlertTagText) cornerAlertTagText.textContent = '🚨 PERIGO CRÍTICO · CENTRAL INOVATECH';
+		if (cornerAlertTitle) cornerAlertTitle.textContent = 'ALARME ATIVADO: FADIGA DETECTADA!';
+		if (cornerAlertDesc) cornerAlertDesc.textContent = 'Motorista com cabeça baixa há mais de 2,5s! Buzzer ativo e Relé veicular acionados! Verifique a cabine!';
+		if (cornerAlertBarFill) cornerAlertBarFill.style.width = '100%';
+		if (cornerAlertTimer) cornerAlertTimer.textContent = segDecorridos + 's / 2.5s (CRÍTICO)';
+	} else if (status === 'NORMAL') {
+		if (estadoAnterior === 'PRE_ALERTA' || estadoAnterior === 'ALARME_ATIVADO') {
+			globalCornerAlert.className = 'global-corner-alert visible state-normal';
+			if (cornerAlertDot) cornerAlertDot.className = 'pulse-dot';
+			if (cornerAlertTagText) cornerAlertTagText.textContent = '✓ CENTRAL INOVATECH · NORMALIZADO';
+			if (cornerAlertTitle) cornerAlertTitle.textContent = 'POSTURA NORMALIZADA';
+			if (cornerAlertDesc) cornerAlertDesc.textContent = 'Condutor ergueu a cabeça. Buzzer e Relé desativados imediatamente.';
+			if (cornerAlertBarFill) cornerAlertBarFill.style.width = '0%';
+			if (cornerAlertTimer) cornerAlertTimer.textContent = '0.0s / 2.5s';
+			if (cornerHideTimeout) clearTimeout(cornerHideTimeout);
+			cornerHideTimeout = setTimeout(function() {
+				if (globalCornerAlert) globalCornerAlert.classList.remove('visible');
+			}, 3500);
+		}
+	}
+}
+
 // Atualizar toda a tela com base no estado de telemetria
 var ultimoEstadoRegistrado = 'NORMAL';
 function atualizarPainelComEstado(estado) {
@@ -3169,6 +3397,9 @@ function atualizarPainelComEstado(estado) {
 	var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
 	var segDecorridos = (tempoMs / 1000).toFixed(1);
 	var perc = Math.min(100, (tempoMs / 2500) * 100);
+
+	// Atualiza o Aviso Flutuante no Canto do Site (visível em qualquer aba e dispositivo)
+	atualizarAvisoCantoGlobal(status, tempoMs, segDecorridos, perc, ultimoEstadoRegistrado);
 
 	if (tempoInclinacaoDisplay) {
 		tempoInclinacaoDisplay.textContent = segDecorridos + 's / 2.5s';
@@ -3295,7 +3526,33 @@ function atualizarPainelComEstado(estado) {
 	try { localStorage.setItem(STORAGE_ULTIMO_ESTADO_KEY, JSON.stringify(estado)); } catch(e) {}
 }
 
-// Conectar ao Backend via WebSocket com fallback para Polling REST
+// Conectar ao Backend via WebSocket (Local + Nuvem simultâneos) com fallback para Polling REST
+var wsCloudClient = null;
+var CLOUD_BACKEND_URL = 'https://inovatech-tcc.onrender.com';
+
+function processarMensagemWs(event) {
+	try {
+		var msg = JSON.parse(event.data);
+		if (msg.estado) {
+			atualizarPainelComEstado(msg.estado);
+		}
+		if (msg.tipo === 'NOVO_EVENTO' && msg.evento) {
+			adicionarLogLocal(msg.evento.tipo, msg.evento.mensagem, msg.evento.horaFormatada);
+		}
+		if (msg.tipo === 'ESTADO_INICIAL' && msg.eventos && Array.isArray(msg.eventos)) {
+			var logsAtuais = obterLogsPersistidos();
+			if (logsAtuais.length <= 1) {
+				msg.eventos.slice().reverse().forEach(function(ev) {
+					adicionarLogLocal(ev.tipo, ev.mensagem, ev.horaFormatada);
+				});
+			}
+		}
+		if (msg.tipo === 'COMANDO_EXECUTADO' && msg.comando) {
+			adicionarLogLocal('COMANDO_CENTRAL', 'Comando Remoto executado: ' + (msg.comando.comando || msg.comando));
+		}
+	} catch(e) {}
+}
+
 function conectarBackend() {
 	if (inputBackendUrl) {
 		backendBaseUrl = inputBackendUrl.value.trim().replace(/\/$/, '') || 'http://localhost:3001';
@@ -3323,28 +3580,7 @@ function conectarBackend() {
 			if (pollingTimer) clearInterval(pollingTimer);
 		};
 
-		wsClient.onmessage = function(event) {
-			try {
-				var msg = JSON.parse(event.data);
-				if (msg.estado) {
-					atualizarPainelComEstado(msg.estado);
-				}
-				if (msg.tipo === 'NOVO_EVENTO' && msg.evento) {
-					adicionarLogLocal(msg.evento.tipo, msg.evento.mensagem, msg.evento.horaFormatada);
-				}
-				if (msg.tipo === 'ESTADO_INICIAL' && msg.eventos && Array.isArray(msg.eventos)) {
-					var logsAtuais = obterLogsPersistidos();
-					if (logsAtuais.length <= 1) {
-						msg.eventos.slice().reverse().forEach(function(ev) {
-							adicionarLogLocal(ev.tipo, ev.mensagem, ev.horaFormatada);
-						});
-					}
-				}
-				if (msg.tipo === 'COMANDO_EXECUTADO' && msg.comando) {
-					adicionarLogLocal('COMANDO_CENTRAL', 'Comando Remoto executado: ' + (msg.comando.comando || msg.comando));
-				}
-			} catch(e) {}
-		};
+		wsClient.onmessage = processarMensagemWs;
 
 		wsClient.onerror = function() {
 			iniciarPollingRestFallback();
@@ -3356,13 +3592,22 @@ function conectarBackend() {
 	} catch(e) {
 		iniciarPollingRestFallback();
 	}
+
+	// Se o endpoint principal for local, abre também escuta na nuvem (e vice-versa)
+	if (backendBaseUrl.indexOf('onrender.com') === -1) {
+		try {
+			if (wsCloudClient) { try { wsCloudClient.close(); } catch(e) {} }
+			wsCloudClient = new WebSocket('wss://inovatech-tcc.onrender.com/ws');
+			wsCloudClient.onmessage = processarMensagemWs;
+		} catch(e) {}
+	}
 }
 
 function iniciarPollingRestFallback() {
 	var backendStatusLabel = document.getElementById('backendStatusLabel');
 	var backendStatusChip = document.getElementById('backendStatusChip');
-	if (backendStatusLabel) backendStatusLabel.textContent = 'BACKEND: REST POLLING';
-	if (backendStatusChip) backendStatusChip.className = 'painel-chip';
+	if (backendStatusLabel) backendStatusLabel.textContent = 'BACKEND: SINCRONIZADO';
+	if (backendStatusChip) backendStatusChip.className = 'painel-chip online';
 
 	if (pollingTimer) clearInterval(pollingTimer);
 	pollingTimer = setInterval(function() {
@@ -3372,17 +3617,31 @@ function iniciarPollingRestFallback() {
 				if (data && data.estado) {
 					atualizarPainelComEstado(data.estado);
 				}
-				if (data && data.eventosRecentes && Array.isArray(data.eventosRecentes)) {
-					var logsAtuais = obterLogsPersistidos();
-					if (logsAtuais.length <= 1) {
-						data.eventosRecentes.slice().reverse().forEach(function(ev) {
-							adicionarLogLocal(ev.tipo, ev.mensagem, ev.horaFormatada);
-						});
-					}
-				}
 			})
-			.catch(function(err) {});
-	}, 800);
+			.catch(function(err) {
+				// Se falhar no local, tenta buscar da nuvem Render para nunca perder alertas
+				if (backendBaseUrl !== CLOUD_BACKEND_URL) {
+					fetch(CLOUD_BACKEND_URL + '/api/telemetry')
+						.then(function(r) { return r.json(); })
+						.then(function(d) {
+							if (d && d.estado) atualizarPainelComEstado(d.estado);
+						})
+						.catch(function(){});
+				}
+			});
+	}, 600);
+}
+
+// Envia telemetria/comando para todos os backends (Local + Nuvem Render) para sincronizar todos os dispositivos
+function propagarEstadoTodosDispositivos(payloadTelemetria) {
+	var urls = ['http://localhost:3001/api/telemetry', CLOUD_BACKEND_URL + '/api/telemetry'];
+	urls.forEach(function(u) {
+		fetch(u, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payloadTelemetria)
+		}).catch(function(){});
+	});
 }
 
 // Botões de comando da Central
@@ -3403,38 +3662,28 @@ if (btnSilenciarRemoto) {
 function enviarComandoParaBackend(cmd) {
 	if (wsClient && wsClient.readyState === WebSocket.OPEN) {
 		wsClient.send(JSON.stringify({ tipo: 'COMANDO', comando: cmd }));
-	} else {
-		fetch(backendBaseUrl + '/api/command', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ comando: cmd, origem: 'CENTRAL_WEB' })
-		}).catch(function(e) {
-			// Executa localmente se backend não estiver rodando
-			if (cmd === 'DISPARAR_TESTE') {
-				atualizarPainelComEstado({
-					online: true,
-					estado: 'ALARME_ATIVADO',
-					sensor_ir: 0,
-					tempo_cabeca_baixa_ms: 2500,
-					buzzer: 1,
-					rele: 1,
-					acelerometro: { pitch: -25, roll: 0, pescada_detectada: true },
-					contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent)||0) + 1 }
-				});
-			} else {
-				atualizarPainelComEstado({
-					online: true,
-					estado: 'NORMAL',
-					sensor_ir: 1,
-					tempo_cabeca_baixa_ms: 0,
-					buzzer: 0,
-					rele: 0,
-					acelerometro: { pitch: 2, roll: 0, pescada_detectada: false },
-					contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent)||0 }
-				});
-			}
-		});
 	}
+	var estSim = (cmd === 'DISPARAR_TESTE') ? {
+		online: true,
+		estado: 'ALARME_ATIVADO',
+		sensor_ir: 0,
+		tempo_cabeca_baixa_ms: 2500,
+		buzzer: 1,
+		rele: 1,
+		acelerometro: { pitch: -25, roll: 0, pescada_detectada: true },
+		contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent)||0) + 1 }
+	} : {
+		online: true,
+		estado: 'NORMAL',
+		sensor_ir: 1,
+		tempo_cabeca_baixa_ms: 0,
+		buzzer: 0,
+		rele: 0,
+		acelerometro: { pitch: 2, roll: 0, pescada_detectada: false },
+		contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent)||0 }
+	};
+	atualizarPainelComEstado(estSim);
+	propagarEstadoTodosDispositivos(estSim);
 }
 
 // Botão Reconectar
@@ -3443,7 +3692,7 @@ if (btnReconectarBackend) {
 	btnReconectarBackend.addEventListener('click', conectarBackend);
 }
 
-// Simulação Local no Navegador
+// Simulação Local + Propagação Global para Todos os Dispositivos
 var simTimer = null;
 var btnSimularCabecaBaixa = document.getElementById('btnSimularCabecaBaixa');
 if (btnSimularCabecaBaixa) {
@@ -3451,9 +3700,9 @@ if (btnSimularCabecaBaixa) {
 		if (simTimer) clearInterval(simTimer);
 		var ms = 0;
 		simTimer = setInterval(function() {
-			ms += 200;
+			ms += 250;
 			var est = (ms >= 2500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
-			atualizarPainelComEstado({
+			var pacote = {
 				online: true,
 				estado: est,
 				sensor_ir: 0,
@@ -3461,10 +3710,12 @@ if (btnSimularCabecaBaixa) {
 				buzzer: ms >= 2500 ? 1 : 0,
 				rele: ms >= 2500 ? 1 : 0,
 				acelerometro: { pitch: -22, roll: -3, pescada_detectada: ms >= 2500 },
-				contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent) + (ms === 2600 ? 1 : 0) }
-			});
+				contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent) + (ms === 2500 ? 1 : 0) }
+			};
+			atualizarPainelComEstado(pacote);
+			propagarEstadoTodosDispositivos(pacote);
 			if (ms >= 3000) clearInterval(simTimer);
-		}, 200);
+		}, 250);
 	});
 }
 
@@ -3472,7 +3723,7 @@ var btnSimularCabecaErguida = document.getElementById('btnSimularCabecaErguida')
 if (btnSimularCabecaErguida) {
 	btnSimularCabecaErguida.addEventListener('click', function() {
 		if (simTimer) clearInterval(simTimer);
-		atualizarPainelComEstado({
+		var pacoteNorm = {
 			online: true,
 			estado: 'NORMAL',
 			sensor_ir: 1,
@@ -3481,7 +3732,9 @@ if (btnSimularCabecaErguida) {
 			rele: 0,
 			acelerometro: { pitch: 2.5, roll: 0.5, pescada_detectada: false },
 			contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent)||0 }
-		});
+		};
+		atualizarPainelComEstado(pacoteNorm);
+		propagarEstadoTodosDispositivos(pacoteNorm);
 	});
 }
 

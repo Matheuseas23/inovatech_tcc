@@ -234,9 +234,47 @@ app.get(['/', '/api'], (req, res) => {
   });
 });
 
-// Endpoint de telemetria recebida do ESP32 ou simulador
-app.post('/api/telemetry', (req, res) => {
-  const payload = req.body || {};
+// Espelhamento automático para a Nuvem (Render) quando rodando localmente no PC
+const https = require('https');
+const RENDER_CLOUD_URL = process.env.RENDER_CLOUD_URL || 'https://inovatech-tcc.onrender.com/api/telemetry';
+const IS_RENDER_CLOUD = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
+let ultimoEnvioNuvemMs = 0;
+let ultimoEstadoEnviadoNuvem = '';
+
+function espelharParaNuvem(payloadEspelho, forcarImediato = false) {
+  if (IS_RENDER_CLOUD || payloadEspelho._fromLocalMirror) return;
+  const agora = Date.now();
+  const mudouEstado = payloadEspelho.estado !== ultimoEstadoEnviadoNuvem;
+  if (!forcarImediato && !mudouEstado && (agora - ultimoEnvioNuvemMs < 750)) {
+    return;
+  }
+  ultimoEnvioNuvemMs = agora;
+  ultimoEstadoEnviadoNuvem = payloadEspelho.estado;
+
+  try {
+    const bodyStr = JSON.stringify({ ...payloadEspelho, _fromLocalMirror: true });
+    const urlObj = new URL(RENDER_CLOUD_URL);
+    const req = https.request({
+      hostname: urlObj.hostname,
+      port: 443,
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(bodyStr)
+      },
+      timeout: 4000
+    }, (res) => {
+      res.resume();
+    });
+    req.on('error', () => {});
+    req.write(bodyStr);
+    req.end();
+  } catch (e) {}
+}
+
+// Função centralizada de processamento de telemetria (HTTP, WebSocket e USB Serial)
+function processarTelemetria(payload = {}) {
   const estadoAnterior = estado.estado;
 
   // Atualiza flags de presença
@@ -291,7 +329,8 @@ app.post('/api/telemetry', (req, res) => {
   }
 
   // Detecção de transição de estado para gerar log e métricas
-  if (estadoAnterior !== estado.estado) {
+  const houveTransicao = (estadoAnterior !== estado.estado);
+  if (houveTransicao) {
     if (estado.estado === 'PRE_ALERTA') {
       registrarEvento('PRE_ALERTA', 'Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)', `Tempo decorrido: ${estado.tempo_cabeca_baixa_ms}ms`);
     } else if (estado.estado === 'ALARME_ATIVADO') {
@@ -309,9 +348,26 @@ app.post('/api/telemetry', (req, res) => {
     comandosPendentesParaESP32: comandosPendentes.length
   });
 
+  // Espelha imediatamente para a nuvem Render para que TODOS os dispositivos recebam o alerta
+  if (!payload._fromLocalMirror) {
+    espelharParaNuvem({
+      dispositivo: estado.dispositivo,
+      sensor_ir: estado.sensor_ir,
+      tempo_cabeca_baixa_ms: estado.tempo_cabeca_baixa_ms,
+      buzzer: estado.buzzer,
+      rele: estado.rele,
+      estado: estado.estado,
+      acelerometro: estado.acelerometro
+    }, houveTransicao);
+  }
+
   // Salva no disco
   persistirEmDisco();
+}
 
+// Endpoint de telemetria recebida do ESP32 ou simulador
+app.post('/api/telemetry', (req, res) => {
+  processarTelemetria(req.body || {});
   return res.status(200).json({
     sucesso: true,
     estado_processado: estado.estado,
@@ -474,6 +530,75 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+// ------------------------------------------------------------------------------
+// PONTE AUTOMÁTICA USB SERIAL (WINDOWS COM PORT -> PAINEL EM TEMPO REAL + NUVEM)
+// ------------------------------------------------------------------------------
+const { spawn } = require('child_process');
+let serialBridgeProc = null;
+
+function iniciarPonteSerialUSB() {
+  if (process.platform !== 'win32' || IS_RENDER_CLOUD) return;
+
+  const psScript = `
+    $ErrorActionPreference = 'SilentlyContinue'
+    while ($true) {
+      $ports = [System.IO.Ports.SerialPort]::getportnames()
+      $target = if ($ports -contains 'COM5') { 'COM5' } else { $ports | Select-Object -First 1 }
+      if ($target) {
+        $sp = New-Object System.IO.Ports.SerialPort $target, 115200, 'None', 8, 'One'
+        $sp.ReadTimeout = 1000
+        try {
+          $sp.Open()
+          Write-Output "SERIAL_CONNECTED:$target"
+          while ($sp.IsOpen) {
+            try {
+              $line = $sp.ReadLine()
+              if ($line) { Write-Output $line.Trim() }
+            } catch [System.TimeoutException] {
+            } catch {
+              break
+            }
+          }
+        } catch {
+        } finally {
+          if ($sp -and $sp.IsOpen) { $sp.Close() }
+        }
+      }
+      Start-Sleep -Seconds 2
+    }
+  `;
+
+  serialBridgeProc = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', psScript], {
+    stdio: ['ignore', 'pipe', 'ignore']
+  });
+
+  let buffer = '';
+  serialBridgeProc.stdout.on('data', (chunk) => {
+    buffer += chunk.toString('utf8');
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() || '';
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line) continue;
+      if (line.startsWith('SERIAL_CONNECTED:')) {
+        const portName = line.split(':')[1];
+        console.log(`[USB SERIAL] Conectado automaticamente à ESP32 na porta ${portName} (115200 bps)`);
+        registrarEvento('NORMAL', `ESP32 conectada via USB Serial (${portName})`, 'Leitura em tempo real ativa.');
+      } else if (line.startsWith('TELEMETRY:')) {
+        try {
+          const jsonStr = line.substring('TELEMETRY:'.length).trim();
+          const dados = JSON.parse(jsonStr);
+          processarTelemetria(dados);
+        } catch (e) {}
+      }
+    }
+  });
+
+  serialBridgeProc.on('exit', () => {
+    setTimeout(iniciarPonteSerialUSB, 3000);
+  });
+}
+
 // Inicia escuta na porta e host configurados (0.0.0.0 é obrigatório para Render e Docker)
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`
@@ -488,11 +613,15 @@ server.listen(PORT, '0.0.0.0', () => {
   ✔ Health Check:          http://0.0.0.0:${PORT}/health
   ===================================================================
   `);
+  iniciarPonteSerialUSB();
 });
 
 // Encerramento gracioso para orquestradores de nuvem (Render, Docker, Kubernetes)
 function encerrarGraciosamente(sinal) {
   console.log(`[SERVER] Sinal ${sinal} recebido. Encerrando conexões graciosamente...`);
+  if (serialBridgeProc) {
+    try { serialBridgeProc.kill(); } catch (e) {}
+  }
   wss.clients.forEach(client => {
     try { client.close(1001, 'Servidor reiniciando'); } catch (e) {}
   });
