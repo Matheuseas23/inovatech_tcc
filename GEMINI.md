@@ -203,21 +203,20 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
        - Card 5: Atuadores de Segurança (Buzzer GPIO 25 e Relé GPIO 18) com botões remotos de teste e silenciamento.
        - Card 6: Conectividade WebSocket/REST, contadores de alarmes e log cronológico em tempo real.
      - **Protocolo de Escalação Crítica SOS em 3 Níveis Calibrado**:
-       - Nível 1: Cabeça baixa > 4,00s -> Alarme sonoro veicular, ativação do Buzzer nos óculos e áudio de voz feminina no app alertando sonolência após 4 segundos. Cronômetro dinâmico de 0.0s a 20.0s.
-       - Nível 2: Persistência por **20,0s** sem reação -> **SUSPEITA DE ACIDENTE**: Notificação de Alerta Crítico na Central, acionamento do display de **Localização Satelital GNSS em Tempo Real** com mapa interativo dark-tech indicando as coordenadas do Scania R-450 na Rodovia BR-116 KM 284.
-       - Nível 3: Persistência por **35,0s** sem reação -> **PROTOCOLO DE EMERGÊNCIA MÁXIMA SOS & INTERVENÇÃO IMEDIATA**: Painel entra em modo SOS com sirene militar contínua, corte gradual de tração via Relé GPIO 18 (Safe-Stop de 64 km/h a 0 km/h), acionamento de pisca-alerta/buzina e despacho automático para resgate rodoviário SAMU 192 / PRF.
+       - Nível 1: Cabeça baixa > 4,00s -> Alarme sonoro veicular, ativação do Buzzer nos óculos e áudio de voz feminina no app alertando sonolência após 4 segundos.
+       - Nível 2: Persistência por **17,0s** sem reação -> Notificação de Alerta Crítico na Central com alarme sonoro prioritário e voz feminina alertando que o condutor não responde há 17 segundos.
+       - Nível 3: Persistência por **27,0s** sem reação -> **PROTOCOLO DE POSSÍVEL ACIDENTE / INTERVENÇÃO IMEDIATA**: Painel entra em modo SOS com sirene militar contínua, voz feminina alertando emergência de 27 segundos sem resposta, corte gradual de tração via Relé GPIO 18 (Safe-Stop de 64 km/h a 0 km/h), acionamento de pisca-alerta/buzina e alerta automático enviado para resgate rodoviário e torre médica com coordenadas GPS.
   3. **`motorista.html` (App do Motorista — Cabine Veicular para Smartphone)**:
      - Interface tática otimizada para fixação no suporte do celular no painel do caminhão.
      - Identificação de condutor: *Matheus Garcia (ID: DRV-0194)*, placa *INO-2026* e status de ignição conectada.
-     - Botão ergonômico para Ligar/Desligar Turno de Operação com feedback sonoro imediato, sintetização de voz de início de viagem e sincronização instantânea em tempo real com a Central Tech.
+     - Botão ergonômico para Ligar/Desligar Turno de Operação com feedback sonoro imediato e sincronização instantânea em tempo real com a Central Tech.
      - Card de Estado do Condutor ao vivo em formato gigante e legível à distância com tolerância de 4,00s e recuperação automática de 3,00s.
      - Botão minimalista de **Viagem Noturna / Apagar Tela** contendo estritamente o ícone do smartphone (`smartphone`), sem texto.
-     - **Alerta Coffee Call em Tela Cheia**: Ao atingir a fadiga, cobre a tela com visual pulsante e toca mensagem sintetizada em voz feminina em português sincronizada com vibração contínua no celular e cronômetro de confirmação calibrado em 20.0s (com indicação de Suspeita de Acidente após 20s e SOS aos 35s).
+     - **Alerta Coffee Call em Tela Cheia**: Ao atingir a fadiga, cobre a tela com visual pulsante e toca mensagem sintetizada em voz feminina em português sincronizada com vibração contínua no celular e cronômetro de confirmação de 17,0s.
 - **Calibração de Tolerância e Recuperação Temporal**:
   - **Tolerância Inicial de Cabeça Baixa**: **4,00 segundos (4000 ms)** tanto no backend Node.js (`server.js`) quanto nos scripts do navegador. Evita falsos positivos em pequenas olhadas no painel do caminhão.
-  - **Tempo de Suspeita de Acidente na Central (Mapa GNSS Satelital)**: **20,0 segundos** ininterruptos de alarme sem reação.
-  - **Tempo de Protocolo SOS Máximo & Safe-Stop**: **35,0 segundos** ininterruptos de alarme sem reação.
-  - **Cálculo de Tempo Relativo Seguro**: Tempo calculado estritamente de forma relativa com sanitização contra clock jump e timestamps de época (evitando o bug de valores astronômicos).
+  - **Tempo de Alerta Crítico na Central**: **17,0 segundos** ininterruptos de alarme sem reação.
+  - **Tempo de Possível Acidente (SOS)**: **27,0 segundos** ininterruptos de alarme sem reação.
   - **Recuperação Automática de Postura**: Se o motorista mantiver a cabeça erguida por **3,00 segundos contínuos**, todos os alarmes (sonoros, visuais, Coffee Call e vibração) cessam instantaneamente de forma automática, dispensando a necessidade de apertar a tela durante a condução.
 - **Diretriz de Design Rigorosa (Ícones vs Emojis)**: Proibido o uso de emojis gráficos Unicode na interface. Todos os símbolos operacionais utilizam **Google Fonts Material Symbols** (`lock`, `visibility`, `dashboard`, `smartphone`, `local_cafe`, `power_settings_new`, `pan_tool`, `location_on`, `medical_services`, `support_agent`).
 
