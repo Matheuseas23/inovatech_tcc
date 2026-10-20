@@ -604,12 +604,41 @@
 			} catch (e) { }
 		}
 
+		// Solicita permissão de notificação nativa para alertas em segundo plano
+		if ('Notification' in window && Notification.permission === 'default') {
+			Notification.requestPermission().catch(function () { });
+		}
+
+		function dispararNotificacaoSegundoPlano() {
+			try {
+				if ('Notification' in window && Notification.permission === 'granted') {
+					var notif = new Notification('⚠️ INOVATECH SMART DRIVER: ALERTA DE FADIGA!', {
+						body: 'Detectamos sonolência ao volante! Toque aqui imediatamente para abrir a cabine e confirmar seu estado de alerta.',
+						icon: 'favicon.svg',
+						badge: 'favicon.svg',
+						tag: 'alerta-fadiga-inovatech',
+						renotify: true,
+						requireInteraction: true,
+						vibrate: [600, 250, 600, 250, 800]
+					});
+					notif.onclick = function () {
+						window.focus();
+						if (driverFullscreenCall) driverFullscreenCall.classList.add('active');
+						notif.close();
+					};
+				}
+			} catch (e) { }
+		}
+
 		function abrirChamadaTelaCheia() {
 			// Acorda o celular se a tela estiver apagada (sai do modo tela preta imediatamente)
 			if (driverBlackScreen) driverBlackScreen.classList.remove('active');
 
 			// Garante que a tela permaneça acesa sem apagar
 			ativarWakeLockTela();
+
+			// Dispara notificação nativa para acordar o celular caso esteja em segundo plano ou bloqueado
+			dispararNotificacaoSegundoPlano();
 
 			if (!driverFullscreenCall.classList.contains('active')) {
 				driverFullscreenCall.classList.add('active');
