@@ -66,6 +66,8 @@ const estado = {
   estado: 'NORMAL', // 'NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'
   buzzer: 0, // 0 = Desligado, 1 = Ligado
   rele: 0, // 0 = Desligado, 1 = Acionado
+  rele_1: 0, // Canal 1: Intervenção Safe-Stop (Tração)
+  rele_2: 0, // Canal 2: Sinalização Veicular (Pisca-Alerta)
   acelerometro: {
     pitch: 0.0,
     roll: 0.0,
@@ -311,6 +313,8 @@ function encerrarProtocoloAlertaTravado() {
   estado.estado = 'NORMAL';
   estado.buzzer = 0;
   estado.rele = 0;
+  estado.rele_1 = 0;
+  estado.rele_2 = 0;
   estado.tempo_cabeca_baixa_ms = 0;
   cooldownAntiRepiqueUntil = Date.now() + 3000;
   voltarParaLinklemoCelularADB();
@@ -486,6 +490,10 @@ function processarTelemetria(payload = {}) {
   // Atuadores
   if (payload.buzzer !== undefined) estado.buzzer = Number(payload.buzzer);
   if (payload.rele !== undefined) estado.rele = Number(payload.rele);
+  if (payload.rele_1 !== undefined) estado.rele_1 = Number(payload.rele_1);
+  else estado.rele_1 = estado.rele;
+  if (payload.rele_2 !== undefined) estado.rele_2 = Number(payload.rele_2);
+  else estado.rele_2 = estado.rele;
 
   // Acelerômetro (I2C)
   if (payload.acelerometro && typeof payload.acelerometro === 'object') {

@@ -8,7 +8,7 @@
 // ==============================================================================
 // Monitoramento biométrico de postura e combate à fadiga / sono ao volante.
 // Arquitetura Dual-Core (FreeRTOS):
-// - CORE 1: Sensor IR, Buzzer e Relé (Tempo real estrito a 100 Hz, zero delay).
+// - CORE 1: Sensor IR, Buzzer e Módulo Relé Duplo HL-52S (100 Hz, tempo real estrito).
 // - CORE 0: Conectividade Wi-Fi e Telemetria IoT (Nuvem Render ou Servidor Local).
 // ==============================================================================
 
@@ -23,27 +23,29 @@ const char* WIFI_SSID     = "ESP_900EC9";
 const char* WIFI_PASSWORD = "";
 
 // Endereço do Servidor de Telemetria:
-// - Pelo Wi-Fi próprio da ESP32 (ESP_900EC9): o PC recebe IP 192.168.4.2
-// - Pela Nuvem Render HTTPS: "https://inovatech-tcc.onrender.com/api/telemetry"
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
 const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
-// 2. MAPEAMENTO DOS 1INOS DE HARDWARE
+// 2. MAPEAMENTO DOS PINOS DE HARDWARE
 // ------------------------------------------------------------------------------
 const uint8_t PINO_SENSOR_IR = 32; // GPIO 32 - Sensor IR de obstáculo (haste dos óculos -> queixo/peito)
 const uint8_t PINO_BUZZER    = 25; // GPIO 25 - Buzzer sonoro ativo nos óculos
-const uint8_t PINO_RELE      = 18; // GPIO 18 - Módulo Relé veicular de segurança
+const uint8_t PINO_RELE_1    = 18; // GPIO 18 - Relé Canal 1: Intervenção Veicular Safe-Stop (Tração)
+const uint8_t PINO_RELE_2    = 19; // GPIO 19 - Relé Canal 2: Sinalização de Emergência (Pisca-Alerta Veicular)
 
 // Níveis Lógicos
 const int NIVEL_CABECA_BAIXA     = LOW;  // Sensor IR detecta aproximação (cabeça baixa)
 const int NIVEL_BUZZER_LIGADO    = HIGH; // Ativa o buzzer sonoro 3.3V
 const int NIVEL_BUZZER_DESLIGADO = LOW;
-const int NIVEL_RELE_LIGADO      = HIGH; // Comuta o módulo relé
-const int NIVEL_RELE_DESLIGADO   = LOW;
 
-// Filtro Temporal de Segurança: 6 segundos de tolerância com bips progressivos
-const unsigned long LIMIAR_CABECA_BAIXA_MS = 6000;
+// Módulo Relé Duplo Optoisolado HL-52S (Active LOW):
+// LOW aciona a bobina / acende o LED do relé | HIGH desliga
+const int NIVEL_RELE_LIGADO      = LOW;
+const int NIVEL_RELE_DESLIGADO   = HIGH;
+
+// Filtro Temporal de Segurança: 4 segundos de tolerância
+const unsigned long LIMIAR_CABECA_BAIXA_MS = 4000;
 const unsigned long INTERVALO_TELEMETRIA_MS = 250; // 4 pacotes por segundo
 
 // ------------------------------------------------------------------------------
@@ -53,22 +55,26 @@ struct DadosTelemetria {
   int sensorIr;
   unsigned long tempoCabecaBaixaMs;
   int buzzer;
-  int rele;
+  int rele1;
+  int rele2;
   char estado[24];
   bool alarmeAtivo;
 };
 
-DadosTelemetria dadosGlobais = {1, 0, 0, 0, "NORMAL", false};
+DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, "NORMAL", false};
 portMUX_TYPE mutexDados = portMUX_INITIALIZER_UNLOCKED;
 
 // Variáveis de Estado no Core 1 (Sensor)
 unsigned long tempoInicioCabecaBaixa = 0;
 bool cabecaEstavaBaixa               = false;
 bool alarmeAtivo                     = false;
+bool testeManualRele1                = false;
+bool testeManualRele2                = false;
 
 // Protótipos de Funções
 void ativarAlarmes();
 void desativarAlarmes();
+void processarComandosSerial();
 void taskTelemetria(void *pvParameters);
 
 // ------------------------------------------------------------------------------
@@ -80,7 +86,8 @@ void setup() {
   // Configuração dos pinos com pull-up interno no sensor
   pinMode(PINO_SENSOR_IR, INPUT_PULLUP);
   pinMode(PINO_BUZZER, OUTPUT);
-  pinMode(PINO_RELE, OUTPUT);
+  pinMode(PINO_RELE_1, OUTPUT);
+  pinMode(PINO_RELE_2, OUTPUT);
 
   desativarAlarmes();
 
@@ -88,8 +95,9 @@ void setup() {
   Serial.println(F("     INOVA TECH - SMART DRIVER (SISTEMA ATIVO)    "));
   Serial.println(F("   Monitoramento de Postura e Fadiga Veicular     "));
   Serial.println(F("=================================================="));
-  Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25 | Relé: GPIO 18"));
-  Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 6000 ms (6s) com 1 bip/s"));
+  Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25"));
+  Serial.println(F("[HARDWARE] Relé 1 (Safe-Stop): GPIO 18 | Relé 2 (Pisca-Alerta): GPIO 19"));
+  Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 4000 ms (4.0s)"));
 
   // Mantém a rede Wi-Fi própria da ESP32 (ESP_900EC9 sem senha) sempre ativa
   WiFi.mode(WIFI_AP_STA);
@@ -111,7 +119,6 @@ void setup() {
   }
 
   // Cria tarefa de Telemetria no Core 0 (Background IoT)
-  // Stack de 8192 bytes para suportar TLS/HTTPS do Render e HTTP local
   xTaskCreatePinnedToCore(
     taskTelemetria,
     "TaskTelemetria",
@@ -122,7 +129,7 @@ void setup() {
     0 // Executa exclusivamente no Core 0
   );
 
-  Serial.println(F("[FREERTOS] Core 1: Sensor IR & Atuadores (100 Hz, tempo real)."));
+  Serial.println(F("[FREERTOS] Core 1: Sensor IR & Atuadores Duplos (100 Hz, tempo real)."));
   Serial.println(F("[FREERTOS] Core 0: Telemetria IoT e Wi-Fi em background."));
   Serial.println(F("Pronto para operação.\n"));
 }
@@ -131,6 +138,8 @@ void setup() {
 // 5. LOOP DE SEGURANÇA E SENSOR (CORE 1 — NUNCA TRAVA NEM ATRASA)
 // ------------------------------------------------------------------------------
 void loop() {
+  processarComandosSerial();
+
   int estadoLeitura = digitalRead(PINO_SENSOR_IR);
   bool cabecaBaixaAgora = (estadoLeitura == NIVEL_CABECA_BAIXA);
   unsigned long tempoAtual = millis();
@@ -151,7 +160,7 @@ void loop() {
         alarmeAtivo = true;
         ativarAlarmes();
         estadoAtualTexto = "ALARME_ATIVADO";
-        Serial.println(F("PERIGO: MOTORISTA ADORMECEU! BUZZER E RELE ACIONADOS!"));
+        Serial.println(F("PERIGO: MOTORISTA ADORMECEU! BUZZER E RELES 1 E 2 ACIONADOS!"));
       } else {
         estadoAtualTexto = "PRE_ALERTA";
       }
@@ -172,11 +181,15 @@ void loop() {
   }
 
   // Atualiza os dados compartilhados com o Core 0 de forma atômica
+  int r1Val = (alarmeAtivo || testeManualRele1) ? 1 : 0;
+  int r2Val = (alarmeAtivo || testeManualRele2) ? 1 : 0;
+
   portENTER_CRITICAL(&mutexDados);
   dadosGlobais.sensorIr = estadoLeitura;
   dadosGlobais.tempoCabecaBaixaMs = tempoDecorridoMs;
   dadosGlobais.buzzer = alarmeAtivo ? 1 : 0;
-  dadosGlobais.rele = alarmeAtivo ? 1 : 0;
+  dadosGlobais.rele1 = r1Val;
+  dadosGlobais.rele2 = r2Val;
   dadosGlobais.alarmeAtivo = alarmeAtivo;
   strncpy(dadosGlobais.estado, estadoAtualTexto, sizeof(dadosGlobais.estado) - 1);
   portEXIT_CRITICAL(&mutexDados);
@@ -186,20 +199,51 @@ void loop() {
 }
 
 // ------------------------------------------------------------------------------
-// 6. ATUADORES DE SEGURANÇA
+// 6. PROCESSAMENTO DE COMANDOS DA SERIAL (PC / CENTRAL)
+// ------------------------------------------------------------------------------
+void processarComandosSerial() {
+  if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    if (cmd == "CMD:TEST_ALARM" || cmd == "TEST_ALARM") {
+      alarmeAtivo = true;
+      ativarAlarmes();
+      Serial.println(F("[COMANDO] Teste geral acionado via Serial!"));
+    } else if (cmd == "CMD:SILENCIAR" || cmd == "SILENCIAR_ALARME" || cmd == "RESET_ALARM") {
+      alarmeAtivo = false;
+      testeManualRele1 = false;
+      testeManualRele2 = false;
+      desativarAlarmes();
+      Serial.println(F("[COMANDO] Alarmes silenciados via Serial!"));
+    } else if (cmd == "CMD:TOGGLE_RELE1") {
+      testeManualRele1 = !testeManualRele1;
+      digitalWrite(PINO_RELE_1, testeManualRele1 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
+      Serial.println(testeManualRele1 ? F("[RELE 1] Safe-Stop LIGADO") : F("[RELE 1] Safe-Stop DESLIGADO"));
+    } else if (cmd == "CMD:TOGGLE_RELE2") {
+      testeManualRele2 = !testeManualRele2;
+      digitalWrite(PINO_RELE_2, testeManualRele2 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
+      Serial.println(testeManualRele2 ? F("[RELE 2] Pisca-Alerta LIGADO") : F("[RELE 2] Pisca-Alerta DESLIGADO"));
+    }
+  }
+}
+
+// ------------------------------------------------------------------------------
+// 7. ATUADORES DE SEGURANÇA
 // ------------------------------------------------------------------------------
 void ativarAlarmes() {
   digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
-  digitalWrite(PINO_RELE, NIVEL_RELE_LIGADO);
+  digitalWrite(PINO_RELE_1, NIVEL_RELE_LIGADO);
+  digitalWrite(PINO_RELE_2, NIVEL_RELE_LIGADO);
 }
 
 void desativarAlarmes() {
   digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO);
-  digitalWrite(PINO_RELE, NIVEL_RELE_DESLIGADO);
+  digitalWrite(PINO_RELE_1, testeManualRele1 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
+  digitalWrite(PINO_RELE_2, testeManualRele2 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
 }
 
 // ------------------------------------------------------------------------------
-// 7. TAREFA DE TELEMETRIA EM NUVEM E REDE (CORE 0 — EXECUTA EM SEGUNDO PLANO)
+// 8. TAREFA DE TELEMETRIA EM NUVEM E REDE (CORE 0 — EXECUTA EM SEGUNDO PLANO)
 // ------------------------------------------------------------------------------
 void taskTelemetria(void *pvParameters) {
   WiFi.setAutoReconnect(true);
@@ -207,12 +251,12 @@ void taskTelemetria(void *pvParameters) {
 
   WiFiClient plainClient;
   WiFiClientSecure secureClient;
-  secureClient.setInsecure(); // Pula validação de certificado CA para garantir comunicação com o Render
+  secureClient.setInsecure(); // Pula validação CA para conectar à nuvem Render
 
   HTTPClient http;
 
   for (;;) {
-    // Obtém snapshot instantâneo dos dados do motorista protegidos por mutex
+    // Obtém snapshot instantâneo dos dados protegidos por mutex
     DadosTelemetria snap;
     portENTER_CRITICAL(&mutexDados);
     snap = dadosGlobais;
@@ -224,9 +268,11 @@ void taskTelemetria(void *pvParameters) {
     payload += "\"sensor_ir\":" + String(snap.sensorIr) + ",";
     payload += "\"tempo_cabeca_baixa_ms\":" + String(snap.tempoCabecaBaixaMs) + ",";
     payload += "\"buzzer\":" + String(snap.buzzer) + ",";
-    payload += "\"rele\":" + String(snap.rele) + ",";
+    payload += "\"rele\":" + String(snap.rele1) + ",";
+    payload += "\"rele_1\":" + String(snap.rele1) + ",";
+    payload += "\"rele_2\":" + String(snap.rele2) + ",";
     payload += "\"estado\":\"" + String(snap.estado) + "\",";
-    payload += "\"acelerometro\":{\"pitch\":0.0,\"roll\":0.0,\"pescada_detectada\":" + String(snap.alarmeAtivo ? "true" : "false") + "}";
+    payload += "\"atuadores\":{\"rele1_safestop\":" + String(snap.rele1) + ",\"rele2_piscaalerta\":" + String(snap.rele2) + "}";
     payload += "}";
 
     // 1. Emite telemetria via Serial USB (COM5) para ponte direta com o PC
