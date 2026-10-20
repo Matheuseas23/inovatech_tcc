@@ -240,7 +240,8 @@
 			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 		}
 
-		.btn-standby-night:hover, .btn-standby-night:active {
+		.btn-standby-night:hover,
+		.btn-standby-night:active {
 			border-color: #08deeb;
 			background: rgba(8, 222, 235, 0.15);
 			box-shadow: 0 0 20px rgba(8, 222, 235, 0.4);
@@ -431,7 +432,8 @@
 
 		<!-- MODO VIAGEM NOTURNA / TELA APAGADA (APENAS ÍCONE DE CELULAR) -->
 		<div style="text-align:center;margin-top:10px">
-			<button class="btn-standby-night" id="btnStandbyNight" title="Modo Viagem Noturna: Apagar Tela" aria-label="Apagar Tela">
+			<button class="btn-standby-night" id="btnStandbyNight" title="Modo Viagem Noturna: Apagar Tela"
+				aria-label="Apagar Tela">
 				<span class="material-symbols-outlined g-icon">smartphone</span>
 			</button>
 		</div>
@@ -818,8 +820,8 @@
 			if (driverWsChip) driverWsChip.className = 'painel-chip warning';
 
 			pollingFallbackTimer = setInterval(function () {
-				var apiUrl = (window.location.protocol === 'https:') 
-					? 'https://inovatech-tcc.onrender.com/api/telemetry/current' 
+				var apiUrl = (window.location.protocol === 'https:')
+					? 'https://inovatech-tcc.onrender.com/api/telemetry/current'
 					: 'http://localhost:3001/api/telemetry/current';
 
 				fetch(apiUrl)

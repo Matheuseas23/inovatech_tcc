@@ -1,7 +1,7 @@
 {
   "dispositivo": "ESP32_SMART_DRIVER_01",
   "online": true,
-  "ultimoVisto": "2026-10-20T12:50:02.713Z",
+  "ultimoVisto": "2026-10-20T13:03:55.285Z",
   "sensor_ir": 1,
   "tempo_cabeca_baixa_ms": 0,
   "limiar_seguranca_ms": 4000,
@@ -16,7 +16,7 @@
     "status": "Ativo"
   },
   "contadores": {
-    "totalAlarmesSessao": 33,
+    "totalAlarmesSessao": 34,
     "inicioSessao": "2026-10-20T12:41:02.572Z"
   },
   "tempo_recuperacao_ms": 0,
