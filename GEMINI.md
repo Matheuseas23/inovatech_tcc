@@ -167,7 +167,7 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 
 ## 8. Status Atual de Hardware & Gravação da ESP32 (Outubro/2026)
 - **Status do Código & Frontend**: 100% revisado, polido, validado no navegador e commitado no GitHub (`origin/main`).
-- **Autenticação**: Senha do painel `inovatech26` (minúsculo).
+- **Autenticação**: Senha mestra do sistema `inovatech26` (minúsculo).
 - **Diagnóstico USB Realizado**:
   - Testado diretamente na USB do notebook: a placa ESP32 recebe energia e acende o LED perfeitamente.
   - O Windows não tocou o som de conexão USB e nenhuma porta COM apareceu porque o cabo utilizado é **apenas de carga** (sem os fios internos de dados D+/D-).
@@ -175,4 +175,47 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
   1. Conectar a ESP32 no notebook usando um cabo USB de dados (ex: cabo de celular que passa fotos/arquivos).
   2. Ouvir o som de conexão do Windows (*"turu-tum"*).
   3. Assistente detectará a porta COM ativa (ex: `COM3`, `COM4`) e executará o upload do firmware pelo PlatformIO (`Smart Driver/src/main.cpp`).
+
+---
+
+## 9. Arquitetura Modular Tripla & Filtros de Precisão (Registro Oficial)
+- **Data e Horário de Homologação**: Segunda-feira, 20 de Outubro de 2026, 00:30 BRT.
+- **Divisão do Sistema em 3 Páginas Autônomas (Zero pastas externas)**:
+  1. **`index.html` (Apresentação do Projeto para o Professor/Banca)**:
+     - Portal público contendo: Home com Hero e vídeo, Manual de Operações, Ecossistema com tabela de custos, Quem Somos (Equipe com Instagram oficial de cada membro), Referências Científicas e O Jogo no GDevelop.
+     - O painel de controle e telemetria pesada de rede foram removidos desta página para garantir que professores acessando via QR Code vejam unicamente o site de apresentação acadêmica do TCC, com navegação fluida e sem consumir banda da rede escolar.
+     - **Modal Seletor Inicial (`#portalAccessModal`)**: Modal visual Dark-Tech que surge ao abrir a página com 3 botões estilizados:
+       - *[ Apresentação do Projeto (Acesso Livre) ]*: Fecha o modal e navega normalmente na documentação.
+       - *[ Central Tech (Torre de Controle) ]*: Exibe ícone de cadeado (`lock`), solicita senha `inovatech26` e redireciona para `central.html`.
+       - *[ App do Motorista (Cabine Veicular) ]*: Exibe ícone de cadeado (`lock`), solicita senha `inovatech26` e redireciona para `motorista.html`.
+       - **Chave de Ocultação Temporária**: Controlada pela flag `const MOSTRAR_PORTAL_SELETOR = true;` no JavaScript de `index.html`. Quando a banca do professor for iniciar, basta definir como `false` para que qualquer pessoa com o link/QR Code entre direto na apresentação sem ver a caixa de pergunta.
+  2. **`central.html` (CENTRAL TECH — Torre de Controle Operacional para TV/PC)**:
+     - **Seleção de Frota Dinâmica**:
+       - 🟢 **Matheus Garcia**: Veículo Scania R-450 Highline (Placa INO-2026) na Rodovia BR-116 KM 284 -> **EM OPERAÇÃO** (Único acessível na demonstração). Ao clicar no card, abre instantaneamente o Cockpit de Monitoramento Ao Vivo.
+       - ⚪ **Matheus Oliveira**: Inativo / Fora de Turno (Acesso Bloqueado com ícone de cadeado).
+       - ⚪ **Nathan Arkhanjo**: Inativo / Fora de Turno (Acesso Bloqueado com ícone de cadeado).
+       - ⚪ **Thiago Tivium**: Inativo / Fora de Turno (Acesso Bloqueado com ícone de cadeado).
+     - **Cockpit Completo de 6 Cards**:
+       - Card 1: Estado do Condutor em Tempo Real com tolerância de 4,00s e recuperação automática de 3,00s.
+       - Card 2: Câmera Wi-Fi Linklemo da Cabine ao vivo 24/7 com alerta vermelho piscante e selo de intervenção em emergência.
+       - Card 3: Telemetria IR (GPIO 32) com contagem precisa de milissegundos.
+       - Card 4: Telemetria do Acelerômetro (I2C Pitch/Roll).
+       - Card 5: Atuadores de Segurança (Buzzer GPIO 25 e Relé GPIO 18) com botões remotos de teste e silenciamento.
+       - Card 6: Conectividade WebSocket/REST, contadores de alarmes e log cronológico em tempo real.
+     - **Protocolo de Escalação Crítica SOS em 3 Níveis**:
+       - Nível 1: Cabeça baixa > 4,00s -> Alarme sonoro veicular e alerta visual na tela.
+       - Nível 2: Persistência por > 10,0s sem reação -> Notificação de Alerta Crítico na Central com alarme prioritário.
+       - Nível 3: Persistência por mais 10,0s adicionais (> 20s total) -> **PROTOCOLO DE POSSÍVEL ACIDENTE / INTERVENÇÃO IMEDIATA**: Painel entra em modo SOS com sirene militar contínua, corte gradual de tração via Relé GPIO 18 (Safe-Stop de 64 km/h a 0 km/h), acionamento de pisca-alerta/buzina e alerta automático enviado para resgate rodoviário e torre médica com coordenadas GPS.
+  3. **`motorista.html` (App do Motorista — Cabine Veicular para Smartphone)**:
+     - Interface tática otimizada para fixação no suporte do celular no painel do caminhão.
+     - Identificação de condutor: *Matheus Garcia (ID: DRV-0194)*, placa *INO-2026* e status de ignição conectada.
+     - Botão ergonômico para Ligar/Desligar Turno de Operação com feedback sonoro imediato.
+     - Card de Estado do Condutor ao vivo em formato gigante e legível à distância.
+     - Standby Noturno com tela preta e relógio HUD de baixo consumo.
+     - **Alerta Coffee Call em Tela Cheia**: Ao atingir a fadiga, cobre a tela com visual pulsante e toca mensagem sintetizada em voz feminina em português ("ATENÇÃO CONDUTOR! SONOLÊNCIA DETECTADA. FAÇA UMA PARADA IMEDIATA PARA O CAFÉ!") acompanhada de vibração contínua no celular.
+- **Calibração de Tolerância e Recuperação Temporal**:
+  - **Tolerância Inicial de Cabeça Baixa**: **4,00 segundos (4000 ms)** tanto no backend Node.js (`server.js`) quanto nos scripts do navegador. Evita falsos positivos em pequenas olhadas no painel do caminhão.
+  - **Recuperação Automática de Postura**: Se o motorista mantiver a cabeça erguida por **3,00 segundos contínuos**, todos os alarmes (sonoros, visuais, Coffee Call e vibração) cessam instantaneamente de forma automática, dispensando a necessidade de apertar a tela durante a condução.
+- **Diretriz de Design Rigorosa (Ícones vs Emojis)**: Proibido o uso de emojis gráficos Unicode na interface. Todos os símbolos operacionais utilizam **Google Fonts Material Symbols** (`lock`, `visibility`, `dashboard`, `smartphone`, `local_cafe`, `power_settings_new`, `pan_tool`, `location_on`, `medical_services`, `support_agent`).
+
 

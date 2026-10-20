@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<title>SMART DRIVER | App do Condutor</title>
+	<link rel="icon" type="image/svg+xml" href="favicon.svg">
+	<link rel="apple-touch-icon" href="favicon.svg">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+	<link rel="stylesheet" href="style.css">
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Space+Mono:wght@400;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
+		body {
+			background: #020b12;
+			color: #e6f4f6;
+			font-family: 'Space Mono', monospace;
+			margin: 0;
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.driver-app-shell {
+			max-width: 520px;
+			margin: 0 auto;
+			padding: 16px 16px 40px;
+			width: 100%;
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			gap: 16px;
+		}
+
+		.driver-topbar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 12px 16px;
+			background: #061c2b;
+			border: 1px solid #16495b;
+			border-radius: 12px;
+		}
+
+		.driver-brand {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.driver-brand img {
+			height: 32px;
+			width: auto;
+		}
+
+		.driver-brand-title {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 20px;
+			font-weight: 700;
+			letter-spacing: 1.5px;
+			color: #ffffff;
+			text-transform: uppercase;
+		}
+
+		.driver-brand-sub {
+			font-size: 9px;
+			color: var(--cyan);
+			letter-spacing: 1px;
+			display: block;
+		}
+
+		.driver-shift-card {
+			background: linear-gradient(135deg, rgba(11, 34, 51, 0.95) 0%, rgba(6, 28, 43, 0.98) 100%);
+			border: 1px solid #16495b;
+			border-radius: 12px;
+			padding: 16px 18px;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+		}
+
+		.shift-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.shift-driver-name {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 22px;
+			font-weight: 700;
+			letter-spacing: 1px;
+			color: #ffffff;
+			margin: 0;
+			text-transform: uppercase;
+		}
+
+		.btn-toggle-shift {
+			width: 100%;
+			padding: 12px;
+			background: rgba(8, 222, 235, 0.15);
+			border: 1px solid var(--cyan);
+			border-radius: 8px;
+			color: var(--cyan);
+			font-family: 'Space Mono', monospace;
+			font-size: 11.5px;
+			font-weight: 700;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			text-transform: uppercase;
+			transition: all 0.2s ease;
+		}
+
+		.btn-toggle-shift.active-shift {
+			background: #10b981;
+			border-color: #55ee77;
+			color: #020b12;
+			box-shadow: 0 0 20px rgba(85, 238, 119, 0.4);
+		}
+
+		.driver-live-card {
+			background: linear-gradient(135deg, rgba(11, 34, 51, 0.95) 0%, rgba(5, 18, 28, 0.98) 100%);
+			border: 2px solid #0052ff;
+			border-radius: 14px;
+			padding: 20px 18px;
+			display: flex;
+			flex-direction: column;
+			gap: 14px;
+			transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		.driver-live-card.estado-normal {
+			border-color: #0052ff !important;
+			box-shadow: 0 8px 24px rgba(0, 82, 255, 0.2);
+		}
+
+		.driver-live-card.estado-pre-alerta {
+			border-color: #ffaa00 !important;
+			background: linear-gradient(135deg, rgba(255, 170, 0, 0.2) 0%, rgba(11, 34, 51, 0.95) 100%) !important;
+			box-shadow: 0 8px 30px rgba(255, 170, 0, 0.35);
+		}
+
+		.driver-live-card.estado-alarme {
+			border-color: #ff2a55 !important;
+			background: linear-gradient(135deg, rgba(255, 42, 85, 0.3) 0%, rgba(20, 5, 10, 0.98) 100%) !important;
+			box-shadow: 0 0 40px rgba(255, 42, 85, 0.6);
+			animation: bordaNeonAlarme 0.8s infinite alternate;
+		}
+
+		.driver-live-card.estado-recuperando {
+			border-color: #55ee77 !important;
+			background: linear-gradient(135deg, rgba(85, 238, 119, 0.2) 0%, rgba(11, 34, 51, 0.95) 100%) !important;
+			box-shadow: 0 0 35px rgba(85, 238, 119, 0.5);
+		}
+
+		.driver-status-headline {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 32px;
+			font-weight: 700;
+			letter-spacing: 1.5px;
+			text-transform: uppercase;
+			margin: 4px 0 0;
+			line-height: 1.1;
+		}
+
+		.driver-timer-large {
+			font-family: 'Space Mono', monospace;
+			font-size: 26px;
+			font-weight: 700;
+			color: #ffffff;
+			letter-spacing: 1px;
+		}
+
+		.btn-standby-night {
+			width: 100%;
+			padding: 14px;
+			background: rgba(2, 11, 18, 0.85);
+			border: 1px dashed rgba(255, 170, 0, 0.5);
+			border-radius: 10px;
+			color: #ffdd66;
+			font-family: 'Space Mono', monospace;
+			font-size: 12px;
+			font-weight: 700;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			text-transform: uppercase;
+		}
+
+		/* Modo tela preta apagada */
+		.driver-black-screen {
+			display: none;
+			position: fixed;
+			inset: 0;
+			background: #000000;
+			z-index: 99998;
+			cursor: pointer;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.driver-black-screen.active {
+			display: flex;
+		}
+	</style>
+</head>
+<body>
+	<!-- Modo Tela Apagada no Celular (Toque duplo para sair) -->
+	<div class="driver-black-screen" id="driverBlackScreen">
+		<span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:2px">● MONITORAMENTO ATIVO · TOQUE PARA ACENDER</span>
+	</div>
+
+	<!-- Tela Inteira de Chamada de Segurança no Celular do Motorista (Estilo Ligação WhatsApp) -->
+	<div class="driver-fullscreen-call" id="driverFullscreenCall" role="dialog" aria-modal="true" aria-labelledby="driverCallTitle">
+		<div class="driver-call-top">
+			<div class="driver-call-badge">
+				<span class="pulse-dot danger"></span>
+				<span>CHAMADA DE EMERGÊNCIA · CABINE SCANIA</span>
+			</div>
+			<span class="driver-call-sub">ALERTA DE FADIGA E SONOLÊNCIA AO VOLANTE</span>
+		</div>
+
+		<div class="driver-call-center">
+			<div class="coffee-ring-wrapper">
+				<div class="coffee-ring-pulse"></div>
+				<div class="coffee-ring-pulse-2"></div>
+				<div class="coffee-avatar-circle" aria-hidden="true">
+					<svg viewBox="0 0 24 24">
+						<path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
+						<path d="M3 8h14v7a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/>
+						<line x1="6" y1="2" x2="6" y2="5"/>
+						<line x1="10" y1="2" x2="10" y2="5"/>
+						<line x1="14" y1="2" x2="14" y2="5"/>
+					</svg>
+				</div>
+			</div>
+			<h2 class="driver-call-title" id="driverCallTitle"><span class="material-symbols-outlined g-icon" style="font-size:1.05em;margin-right:6px">local_cafe</span> PARE PARA DESCANSAR!</h2>
+			<p class="driver-call-message">
+				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong>4,0 segundos</strong> detectada!<br>
+				Encoste em local seguro para descansar e tomar um café.
+			</p>
+			<div class="driver-call-escalation-box">
+				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span> <strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 10.0s</span><br>
+				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos ou aperte abaixo para desativar o alerta!</span>
+			</div>
+		</div>
+
+		<div class="driver-call-bottom">
+			<button class="btn-call-accept" id="btnDriverAcceptRest">
+				<span><span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> VOU PARAR PARA DESCANSAR</span>
+			</button>
+			<button class="btn-call-dismiss" id="btnDriverDismissCall">
+				<span>ESTOU ALERTA · SILENCIAR</span>
+			</button>
+		</div>
+	</div>
+
+	<!-- APP DO CONDUTOR -->
+	<div class="driver-app-shell">
+		<header class="driver-topbar">
+			<div class="driver-brand">
+				<img src="image.png" alt="InovaTech">
+				<div>
+					<div class="driver-brand-title">SMART DRIVER</div>
+					<span class="driver-brand-sub">CABINE VEICULAR · APP DO MOTORISTA</span>
+				</div>
+			</div>
+			<div class="painel-chip online" id="driverWsChip">
+				<span class="pulse-dot"></span>
+				<span id="driverWsLabel">CONECTADO</span>
+			</div>
+		</header>
+
+		<!-- CARD DE IDENTIFICAÇÃO DO CONDUTOR E TURNO -->
+		<section class="driver-shift-card">
+			<div class="shift-row">
+				<div>
+					<span class="card-label">CONDUTOR TITULAR</span>
+					<h1 class="shift-driver-name">Matheus Garcia</h1>
+					<span style="font-size:11px;color:var(--muted)">Veículo: Scania R-450 · Placa INO-2026</span>
+				</div>
+				<span class="driver-badge-live" id="shiftStatusBadge">
+					<span class="pulse-dot"></span>
+					<span>OPERANDO</span>
+				</span>
+			</div>
+			<button class="btn-toggle-shift active-shift" id="btnToggleShift">
+				<span class="material-symbols-outlined g-icon">check_circle</span>
+				<span id="shiftBtnText">TURNO ATIVO · EM OPERAÇÃO NA ROTA</span>
+			</button>
+		</section>
+
+		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 4,00s) -->
+		<section class="driver-live-card estado-normal" id="driverLiveCard">
+			<div style="display:flex;justify-content:space-between;align-items:center">
+				<span class="card-label">◉ MONITORAMENTO BIOMÉTRICO AO VIVO</span>
+				<span style="font-size:10px;color:var(--cyan)" id="driverSampFreq">100 Hz · BLE</span>
+			</div>
+
+			<div>
+				<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">ESTADO ATUAL DA CABINE</span>
+				<h2 class="driver-status-headline" id="driverStatusHeadline" style="color:#08deeb">NORMAL: CABEÇA ERGUIDA</h2>
+			</div>
+
+			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
+				<span style="font-size:11px;color:var(--muted)">CRONÔMETRO DE TOLERÂNCIA:</span>
+				<div class="driver-timer-large" id="driverTimerCount">0.00s / 4.00s</div>
+			</div>
+
+			<div class="progresso-bar-bg" style="height:12px">
+				<div class="progresso-bar-fill" id="driverBarFill"></div>
+			</div>
+
+			<p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0" id="driverFeedbackMsg">
+				Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.
+			</p>
+		</section>
+
+		<!-- MODO VIAGEM NOTURNA / TELA APAGADA -->
+		<button class="btn-standby-night" id="btnStandbyNight">
+			<span class="material-symbols-outlined g-icon">dark_mode</span>
+			<span>Viagem Noturna: Apagar Tela (Acorda no Alerta)</span>
+		</button>
+
+		<div style="text-align:center;margin-top:auto;padding-top:16px">
+			<a href="index.html" style="color:var(--muted);font-size:10px;text-decoration:none">
+				<span>← Voltar ao Portal Institucional InovaTech</span>
+			</a>
+		</div>
+	</div>
+
+	<!-- SCRIPTS EXCLUSIVOS DO APP DO MOTORISTA -->
+	<script>
+	var LIMIAR_TOLERANCIA_MS = 4000;
+	var wsClient = null;
+	var audioCtx = null;
+	var callRingtoneTimer = null;
+	var callVibrationTimer = null;
+	var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
+	vozCafeAudio.preload = 'auto';
+
+	var driverLiveCard = document.getElementById('driverLiveCard');
+	var driverStatusHeadline = document.getElementById('driverStatusHeadline');
+	var driverTimerCount = document.getElementById('driverTimerCount');
+	var driverBarFill = document.getElementById('driverBarFill');
+	var driverFeedbackMsg = document.getElementById('driverFeedbackMsg');
+	var driverFullscreenCall = document.getElementById('driverFullscreenCall');
+	var driverBlackScreen = document.getElementById('driverBlackScreen');
+	var btnStandbyNight = document.getElementById('btnStandbyNight');
+	var btnDriverAcceptRest = document.getElementById('btnDriverAcceptRest');
+	var btnDriverDismissCall = document.getElementById('btnDriverDismissCall');
+	var driverWsLabel = document.getElementById('driverWsLabel');
+	var driverWsChip = document.getElementById('driverWsChip');
+
+	var alertaAtivoMotorista = false;
+	var inicioRecuperacaoLocalMs = 0;
+	var cooldownAntiRepiqueUntil = 0;
+	var turnoAtivo = true;
+
+	// Iniciar turno / Pausar turno
+	var btnToggleShift = document.getElementById('btnToggleShift');
+	var shiftStatusBadge = document.getElementById('shiftStatusBadge');
+	var shiftBtnText = document.getElementById('shiftBtnText');
+
+	if (btnToggleShift) {
+		btnToggleShift.addEventListener('click', function() {
+			turnoAtivo = !turnoAtivo;
+			if (turnoAtivo) {
+				btnToggleShift.className = 'btn-toggle-shift active-shift';
+				shiftStatusBadge.className = 'driver-badge-live';
+				shiftStatusBadge.innerHTML = '<span class="pulse-dot"></span><span>OPERANDO</span>';
+				shiftBtnText.textContent = 'TURNO ATIVO · EM OPERAÇÃO NA ROTA';
+			} else {
+				btnToggleShift.className = 'btn-toggle-shift';
+				shiftStatusBadge.className = 'driver-badge-inactive';
+				shiftStatusBadge.innerHTML = '<span>TURNO EM PAUSA</span>';
+				shiftBtnText.textContent = 'INICIAR / RETOMAR OPERAÇÃO';
+			}
+		});
+	}
+
+	function tocarToqueChamada() {
+		try {
+			if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+			var now = audioCtx.currentTime;
+			var notas = [
+				{ f: 784, t: 0.0, d: 0.16 }, { f: 987.77, t: 0.18, d: 0.16 },
+				{ f: 1174.66, t: 0.36, d: 0.22 }, { f: 1318.5, t: 0.65, d: 0.28 }
+			];
+			notas.forEach(function(n) {
+				var osc = audioCtx.createOscillator();
+				var gain = audioCtx.createGain();
+				osc.type = 'triangle';
+				osc.frequency.setValueAtTime(n.f, now + n.t);
+				gain.gain.setValueAtTime(0.28, now + n.t);
+				gain.gain.exponentialRampToValueAtTime(0.008, now + n.t + n.d);
+				osc.connect(gain); gain.connect(audioCtx.destination);
+				osc.start(now + n.t); osc.stop(now + n.t + n.d);
+			});
+		} catch(e){}
+	}
+
+	function tocarVozFemininaCafe() {
+		try {
+			vozCafeAudio.pause();
+			vozCafeAudio.currentTime = 0;
+			vozCafeAudio.playbackRate = 1.12;
+			vozCafeAudio.volume = 1.0;
+			vozCafeAudio.play().catch(function() {
+				if ('speechSynthesis' in window) {
+					var msg = new SpeechSynthesisUtterance('Atenção motorista! Detectamos sinais de fadiga. Pare em um local seguro para descansar e tomar um café!');
+					msg.lang = 'pt-BR';
+					window.speechSynthesis.speak(msg);
+				}
+			});
+		} catch(e){}
+	}
+
+	function abrirChamadaTelaCheia() {
+		if (driverBlackScreen) driverBlackScreen.classList.remove('active');
+		if (!driverFullscreenCall.classList.contains('active')) {
+			driverFullscreenCall.classList.add('active');
+			try {
+				if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+					document.documentElement.requestFullscreen().catch(function(){});
+				}
+			} catch(e){}
+
+			tocarToqueChamada();
+			tocarVozFemininaCafe();
+			if (callRingtoneTimer) clearInterval(callRingtoneTimer);
+			callRingtoneTimer = setInterval(tocarToqueChamada, 1600);
+
+			if (navigator.vibrate) {
+				try { navigator.vibrate([600, 250, 600, 250, 800]); } catch(e){}
+				if (callVibrationTimer) clearInterval(callVibrationTimer);
+				callVibrationTimer = setInterval(function() {
+					try { navigator.vibrate([600, 250, 600, 250, 800]); } catch(e){}
+				}, 2400);
+			}
+		}
+	}
+
+	function fecharChamadaTelaCheia() {
+		if (!driverFullscreenCall) return;
+		driverFullscreenCall.classList.remove('active');
+		if (callRingtoneTimer) { clearInterval(callRingtoneTimer); callRingtoneTimer = null; }
+		if (callVibrationTimer) { clearInterval(callVibrationTimer); callVibrationTimer = null; }
+		if (navigator.vibrate) { try { navigator.vibrate(0); } catch(e){} }
+		try { vozCafeAudio.pause(); vozCafeAudio.currentTime = 0; } catch(e){}
+		if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e){} }
+	}
+
+	if (btnDriverAcceptRest) {
+		btnDriverAcceptRest.addEventListener('click', function() {
+			fecharChamadaTelaCheia();
+			enviarSilenciarAoBackend();
+		});
+	}
+
+	if (btnDriverDismissCall) {
+		btnDriverDismissCall.addEventListener('click', function() {
+			fecharChamadaTelaCheia();
+			enviarSilenciarAoBackend();
+		});
+	}
+
+	function enviarSilenciarAoBackend() {
+		var urls = ['http://localhost:3001/api/command', 'https://inovatech-tcc.onrender.com/api/command'];
+		urls.forEach(function(u) {
+			fetch(u, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ comando: 'SILENCIAR_ALARME', origem: 'APP_MOTORISTA' })
+			}).catch(function(){});
+		});
+	}
+
+	// Modo Tela Apagada (Viagem Noturna)
+	if (btnStandbyNight) {
+		btnStandbyNight.addEventListener('click', function() {
+			if (driverBlackScreen) driverBlackScreen.classList.add('active');
+			try {
+				if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(function(){});
+				if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+					document.documentElement.requestFullscreen().catch(function(){});
+				}
+			} catch(e){}
+		});
+	}
+
+	if (driverBlackScreen) {
+		driverBlackScreen.addEventListener('click', function() {
+			driverBlackScreen.classList.remove('active');
+		});
+	}
+
+	// Atualização do Estado Postural com 4,00s e Recuperação de 3,0s
+	function atualizarEstadoNoApp(estado) {
+		if (!estado || !turnoAtivo) return;
+
+		var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
+		var status = estado.estado || 'NORMAL';
+		var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
+		var decorridoRecupMs = 0;
+
+		if (ir === 1) {
+			if (alertaAtivoMotorista || status === 'ALARME_ATIVADO' || status === 'RECUPERANDO') {
+				if (!inicioRecuperacaoLocalMs) inicioRecuperacaoLocalMs = Date.now();
+				decorridoRecupMs = (estado.tempo_recuperacao_ms !== undefined && estado.tempo_recuperacao_ms > 0)
+					? estado.tempo_recuperacao_ms : (Date.now() - inicioRecuperacaoLocalMs);
+
+				if (decorridoRecupMs >= 3000) {
+					alertaAtivoMotorista = false;
+					inicioRecuperacaoLocalMs = 0;
+					cooldownAntiRepiqueUntil = Date.now() + 3000;
+					status = 'NORMAL';
+					fecharChamadaTelaCheia();
+					enviarSilenciarAoBackend();
+				} else {
+					status = 'RECUPERANDO';
+				}
+			} else {
+				inicioRecuperacaoLocalMs = 0;
+				if (status !== 'ALARME_ATIVADO') status = 'NORMAL';
+			}
+		} else {
+			inicioRecuperacaoLocalMs = 0;
+			if (Date.now() < cooldownAntiRepiqueUntil && !alertaAtivoMotorista) {
+				status = 'NORMAL';
+				tempoMs = 0;
+			} else if (alertaAtivoMotorista || estado.alerta_travado) {
+				status = 'ALARME_ATIVADO';
+			}
+		}
+
+		var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 4000 : tempoMs)));
+		var seg = (msLim / 1000).toFixed(2);
+		var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
+
+		if (status === 'RECUPERANDO') {
+			var segR = (decorridoRecupMs / 1000).toFixed(1);
+			driverLiveCard.className = 'driver-live-card estado-recuperando';
+			driverStatusHeadline.style.color = '#55ee77';
+			driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + segR + 's / 3.0s)';
+			driverTimerCount.textContent = segR + 's / 3.0s';
+			driverBarFill.className = 'progresso-bar-fill';
+			driverBarFill.style.width = Math.min(100, (decorridoRecupMs / 3000) * 100) + '%';
+			driverFeedbackMsg.textContent = 'Cabeça erguida detectada! Mantenha a postura por 3 segundos para normalizar automaticamente.';
+		} else if (status === 'NORMAL') {
+			fecharChamadaTelaCheia();
+			driverLiveCard.className = 'driver-live-card estado-normal';
+			driverStatusHeadline.style.color = '#08deeb';
+			driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
+			driverTimerCount.textContent = '0.00s / 4.00s';
+			driverBarFill.className = 'progresso-bar-fill';
+			driverBarFill.style.width = '0%';
+			driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
+		} else if (status === 'PRE_ALERTA') {
+			driverLiveCard.className = 'driver-live-card estado-pre-alerta';
+			driverStatusHeadline.style.color = '#ffaa00';
+			driverStatusHeadline.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA';
+			driverTimerCount.textContent = seg + 's / 4.00s';
+			driverBarFill.className = 'progresso-bar-fill warning';
+			driverBarFill.style.width = perc + '%';
+			driverFeedbackMsg.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Erga a cabeça para evitar o alarme.';
+		} else if (status === 'ALARME_ATIVADO') {
+			alertaAtivoMotorista = true;
+			driverLiveCard.className = 'driver-live-card estado-alarme';
+			driverStatusHeadline.style.color = '#ff2a55';
+			driverStatusHeadline.textContent = 'PERIGO: CABEÇA BAIXA!';
+			driverTimerCount.textContent = '4.00s / 4.00s (CRÍTICO)';
+			driverBarFill.className = 'progresso-bar-fill danger';
+			driverBarFill.style.width = '100%';
+			driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por 3 segundos para desligar automaticamente.';
+			abrirChamadaTelaCheia();
+		}
+	}
+
+	// Conexão WebSocket
+	function conectarWebSocketMotorista() {
+		var wsUrl = 'ws://localhost:3001/ws';
+		try {
+			wsClient = new WebSocket(wsUrl);
+			wsClient.onopen = function() {
+				if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO';
+				if (driverWsChip) driverWsChip.className = 'painel-chip online';
+			};
+			wsClient.onmessage = function(ev) {
+				try {
+					var msg = JSON.parse(ev.data);
+					if (msg.estado) atualizarEstadoNoApp(msg.estado);
+				} catch(e){}
+			};
+			wsClient.onerror = function() { reconectarNuvem(); };
+			wsClient.onclose = function() { reconectarNuvem(); };
+		} catch(e) { reconectarNuvem(); }
+	}
+
+	function reconectarNuvem() {
+		try {
+			var cloudWs = new WebSocket('wss://inovatech-tcc.onrender.com/ws');
+			cloudWs.onopen = function() {
+				if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO (NUVEM)';
+				if (driverWsChip) driverWsChip.className = 'painel-chip online';
+			};
+			cloudWs.onmessage = function(ev) {
+				try {
+					var msg = JSON.parse(ev.data);
+					if (msg.estado) atualizarEstadoNoApp(msg.estado);
+				} catch(e){}
+			};
+		} catch(e){}
+	}
+
+	// Desbloqueio de áudio no primeiro toque na tela
+	document.addEventListener('click', function() {
+		try {
+			if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+			if (audioCtx.state === 'suspended') audioCtx.resume();
+			vozCafeAudio.volume = 0;
+			vozCafeAudio.play().then(function() {
+				vozCafeAudio.pause();
+				vozCafeAudio.currentTime = 0;
+				vozCafeAudio.volume = 1.0;
+			}).catch(function(){});
+		} catch(e){}
+	}, { once: true });
+
+	conectarWebSocketMotorista();
+	</script>
+</body>
+</html>

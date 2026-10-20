@@ -1,0 +1,27 @@
+{
+  "dispositivo": "ESP32_SMART_DRIVER_01",
+  "online": false,
+  "ultimoVisto": "2026-10-20T02:41:54.050Z",
+  "sensor_ir": 1,
+  "tempo_cabeca_baixa_ms": 0,
+  "limiar_seguranca_ms": 2500,
+  "estado": "NORMAL",
+  "buzzer": 0,
+  "rele": 0,
+  "acelerometro": {
+    "pitch": 0,
+    "roll": 0,
+    "yaw": 0,
+    "pescada_detectada": false,
+    "status": "Ativo"
+  },
+  "contadores": {
+    "totalAlarmesSessao": 29,
+    "inicioSessao": "2026-10-20T02:25:21.795Z"
+  },
+  "tempo_recuperacao_ms": 0,
+  "chamada_celular_ativa": false,
+  "alerta_travado": false,
+  "tempo_sem_resposta_ms": 0,
+  "nivel_escalonamento": 0
+}

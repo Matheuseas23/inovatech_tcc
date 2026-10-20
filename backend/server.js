@@ -54,7 +54,7 @@ const estado = {
   ultimoVisto: null,
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
   tempo_cabeca_baixa_ms: 0,
-  limiar_seguranca_ms: 2500,
+  limiar_seguranca_ms: 4000,
   estado: 'NORMAL', // 'NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'
   buzzer: 0, // 0 = Desligado, 1 = Ligado
   rele: 0, // 0 = Desligado, 1 = Acionado
@@ -208,6 +208,18 @@ setInterval(() => {
 // ------------------------------------------------------------------------------
 // ROTAS HTTP (REST API)
 // ------------------------------------------------------------------------------
+
+app.get('/central', (req, res) => {
+  const centralPath = path.join(frontendRoot, 'central.html');
+  if (fs.existsSync(centralPath)) return res.sendFile(centralPath);
+  res.redirect('/central.html');
+});
+
+app.get('/motorista', (req, res) => {
+  const motoristaPath = path.join(frontendRoot, 'motorista.html');
+  if (fs.existsSync(motoristaPath)) return res.sendFile(motoristaPath);
+  res.redirect('/motorista.html');
+});
 
 // Rota raiz inteligente: serve o frontend para navegadores ou JSON descritivo para APIs
 app.get(['/', '/api'], (req, res) => {
@@ -623,7 +635,7 @@ app.post('/api/command', (req, res) => {
     estado.estado = 'ALARME_ATIVADO';
     estado.buzzer = 1;
     estado.rele = 1;
-    estado.tempo_cabeca_baixa_ms = 2500;
+    estado.tempo_cabeca_baixa_ms = 4000;
     estado.contadores.totalAlarmesSessao++;
     iniciarProtocoloAlertaTravado();
     registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alerta Físico e Virtual no Celular Disparado');
@@ -721,7 +733,7 @@ wss.on('connection', (ws, req) => {
           estado.estado = 'ALARME_ATIVADO';
           estado.buzzer = 1;
           estado.rele = 1;
-          estado.tempo_cabeca_baixa_ms = 2500;
+          estado.tempo_cabeca_baixa_ms = 4000;
           estado.contadores.totalAlarmesSessao++;
           iniciarProtocoloAlertaTravado();
           registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alerta Físico e Virtual Disparado');

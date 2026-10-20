@@ -3023,7 +3023,112 @@ body.light-theme .btn-access.outline:hover {
   margin: 0;
 }
 
-/* Ideia Criativa na Central: Protocolo Autônomo Safe-Stop & Resgate SOS (Nível 3: Possível Acidente) */
+/* ==============================================================================
+   CARD SELETOR DE ACESSO INICIAL (PORTAL INOVATECH SMART DRIVER)
+   ============================================================================== */
+.portal-access-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 11, 18, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeInModal 0.25s ease-out;
+}
+
+.portal-access-modal.hidden {
+  display: none !important;
+}
+
+.portal-access-card {
+  background: linear-gradient(135deg, rgba(11, 34, 51, 0.98) 0%, rgba(4, 18, 28, 0.99) 100%);
+  border: 1px solid #16495b;
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(8, 222, 235, 0.15);
+}
+
+.portal-logo-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.portal-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portal-btn-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(8, 30, 46, 0.7);
+  border: 1px solid #16495b;
+  border-radius: 10px;
+  color: #e6f4f6;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Space Mono', monospace;
+  transition: all 0.2s ease;
+  position: relative;
+  width: 100%;
+}
+
+.portal-btn-option:hover {
+  border-color: var(--cyan);
+  background: rgba(8, 222, 235, 0.12);
+  transform: translateY(-2px);
+}
+
+.portal-btn-text strong {
+  display: block;
+  font-size: 13px;
+  color: #ffffff;
+  margin-bottom: 3px;
+  font-family: 'Space Mono', monospace;
+}
+
+.portal-btn-text span {
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+  line-height: 1.4;
+  font-family: 'Space Mono', monospace;
+}
+
+.portal-badge-free {
+  margin-left: auto;
+  font-size: 9.5px;
+  color: #55ee77;
+  border: 1px solid #55ee77;
+  padding: 3px 8px;
+  border-radius: 12px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.portal-badge-lock {
+  margin-left: auto;
+  font-size: 9.5px;
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.5);
+  padding: 3px 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
 .sos-protocol-board {
   display: none;
   flex-direction: column;
