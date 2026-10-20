@@ -236,6 +236,25 @@ app.get(['/', '/api'], (req, res) => {
 
 // Espelhamento automático para a Nuvem (Render) quando rodando localmente no PC
 const https = require('https');
+const { execFile } = require('child_process');
+const ADB_PATH = path.join(frontendRoot, 'espelhamento-celular', 'adb.exe');
+let chamadaCelularAbertaViaAdb = false;
+
+// Abre obrigatoriamente a tela inteira de Chamada Café sobre o app Linklemo no celular conectado via USB/ADB
+function dispararChamadaCelularADB() {
+  if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH)) return;
+  chamadaCelularAbertaViaAdb = true;
+  const urlChamada = 'https://inovatech-tcc.vercel.app/?chamada=1';
+  execFile(ADB_PATH, ['shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', urlChamada], { timeout: 3000 }, () => {});
+}
+
+// Quando o motorista clica em "Vou parar para descansar", retorna automaticamente para o app da câmera Linklemo
+function voltarParaLinklemoCelularADB() {
+  if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH) || !chamadaCelularAbertaViaAdb) return;
+  chamadaCelularAbertaViaAdb = false;
+  execFile(ADB_PATH, ['shell', 'input', 'keyevent', '4'], { timeout: 3000 }, () => {});
+}
+
 const RENDER_CLOUD_URL = process.env.RENDER_CLOUD_URL || 'https://inovatech-tcc.onrender.com/api/telemetry';
 const IS_RENDER_CLOUD = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
 let ultimoEnvioNuvemMs = 0;
@@ -336,6 +355,7 @@ function processarTelemetria(payload = {}) {
     } else if (estado.estado === 'ALARME_ATIVADO') {
       estado.contadores.totalAlarmesSessao++;
       registrarEvento('ALARME_ATIVADO', 'PERIGO: MOTORISTA ADORMECEU COM A CABEÇA BAIXA!', `Limite de 2500ms ultrapassado. Buzzer e Relé acionados.`);
+      dispararChamadaCelularADB();
     } else if (estado.estado === 'NORMAL') {
       registrarEvento('NORMAL', 'Postura Normalizada: Cabeça Erguida', 'Alarme cessado imediatamente.');
     }
@@ -408,12 +428,14 @@ app.post('/api/command', (req, res) => {
     estado.tempo_cabeca_baixa_ms = 2500;
     estado.contadores.totalAlarmesSessao++;
     registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alerta de Teste Disparado pela Central');
+    dispararChamadaCelularADB();
   } else if (comando === 'SILENCIAR_ALARME' || comando === 'RESET') {
     estado.estado = 'NORMAL';
     estado.buzzer = 0;
     estado.rele = 0;
     estado.tempo_cabeca_baixa_ms = 0;
     registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alarme Silenciado/Resetado pela Central');
+    voltarParaLinklemoCelularADB();
   }
 
   // Notifica todos via WebSocket imediatamente
@@ -503,12 +525,14 @@ wss.on('connection', (ws, req) => {
           estado.tempo_cabeca_baixa_ms = 2500;
           estado.contadores.totalAlarmesSessao++;
           registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alerta de Teste Disparado');
+          dispararChamadaCelularADB();
         } else if (parsed.comando === 'SILENCIAR_ALARME' || parsed.comando === 'RESET') {
           estado.estado = 'NORMAL';
           estado.buzzer = 0;
           estado.rele = 0;
           estado.tempo_cabeca_baixa_ms = 0;
           registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alarme Silenciado/Resetado');
+          voltarParaLinklemoCelularADB();
         }
         broadcast({
           tipo: 'COMANDO_EXECUTADO',
