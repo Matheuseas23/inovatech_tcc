@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>SMART DRIVER | App do Condutor</title>
 	<link rel="icon" type="image/svg+xml" href="favicon.svg">
 	<link rel="apple-touch-icon" href="favicon.svg">
-	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+	<link rel="stylesheet"
+		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 	<link rel="stylesheet" href="style.css">
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Space+Mono:wght@400;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
@@ -209,14 +211,17 @@
 		}
 	</style>
 </head>
+
 <body>
 	<!-- Modo Tela Apagada no Celular (Toque duplo para sair) -->
 	<div class="driver-black-screen" id="driverBlackScreen">
-		<span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:2px">● MONITORAMENTO ATIVO · TOQUE PARA ACENDER</span>
+		<span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:2px">● MONITORAMENTO ATIVO · TOQUE PARA
+			ACENDER</span>
 	</div>
 
 	<!-- Tela Inteira de Chamada de Segurança no Celular do Motorista (Estilo Ligação WhatsApp) -->
-	<div class="driver-fullscreen-call" id="driverFullscreenCall" role="dialog" aria-modal="true" aria-labelledby="driverCallTitle">
+	<div class="driver-fullscreen-call" id="driverFullscreenCall" role="dialog" aria-modal="true"
+		aria-labelledby="driverCallTitle">
 		<div class="driver-call-top">
 			<div class="driver-call-badge">
 				<span class="pulse-dot danger"></span>
@@ -231,28 +236,33 @@
 				<div class="coffee-ring-pulse-2"></div>
 				<div class="coffee-avatar-circle" aria-hidden="true">
 					<svg viewBox="0 0 24 24">
-						<path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
-						<path d="M3 8h14v7a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/>
-						<line x1="6" y1="2" x2="6" y2="5"/>
-						<line x1="10" y1="2" x2="10" y2="5"/>
-						<line x1="14" y1="2" x2="14" y2="5"/>
+						<path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+						<path d="M3 8h14v7a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z" />
+						<line x1="6" y1="2" x2="6" y2="5" />
+						<line x1="10" y1="2" x2="10" y2="5" />
+						<line x1="14" y1="2" x2="14" y2="5" />
 					</svg>
 				</div>
 			</div>
-			<h2 class="driver-call-title" id="driverCallTitle"><span class="material-symbols-outlined g-icon" style="font-size:1.05em;margin-right:6px">local_cafe</span> PARE PARA DESCANSAR!</h2>
+			<h2 class="driver-call-title" id="driverCallTitle"><span class="material-symbols-outlined g-icon"
+					style="font-size:1.05em;margin-right:6px">local_cafe</span> PARE PARA DESCANSAR!</h2>
 			<p class="driver-call-message">
-				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong>4,0 segundos</strong> detectada!<br>
+				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong>4,0 segundos</strong>
+				detectada!<br>
 				Encoste em local seguro para descansar e tomar um café.
 			</p>
 			<div class="driver-call-escalation-box">
-				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span> <strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 10.0s</span><br>
-				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos ou aperte abaixo para desativar o alerta!</span>
+				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span>
+				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 10.0s</span><br>
+				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos ou
+					aperte abaixo para desativar o alerta!</span>
 			</div>
 		</div>
 
 		<div class="driver-call-bottom">
 			<button class="btn-call-accept" id="btnDriverAcceptRest">
-				<span><span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> VOU PARAR PARA DESCANSAR</span>
+				<span><span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> VOU
+					PARAR PARA DESCANSAR</span>
 			</button>
 			<button class="btn-call-dismiss" id="btnDriverDismissCall">
 				<span>ESTOU ALERTA · SILENCIAR</span>
@@ -303,8 +313,10 @@
 			</div>
 
 			<div>
-				<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">ESTADO ATUAL DA CABINE</span>
-				<h2 class="driver-status-headline" id="driverStatusHeadline" style="color:#08deeb">NORMAL: CABEÇA ERGUIDA</h2>
+				<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">ESTADO ATUAL DA
+					CABINE</span>
+				<h2 class="driver-status-headline" id="driverStatusHeadline" style="color:#08deeb">NORMAL: CABEÇA
+					ERGUIDA</h2>
 			</div>
 
 			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
@@ -336,304 +348,305 @@
 
 	<!-- SCRIPTS EXCLUSIVOS DO APP DO MOTORISTA -->
 	<script>
-	var LIMIAR_TOLERANCIA_MS = 4000;
-	var wsClient = null;
-	var audioCtx = null;
-	var callRingtoneTimer = null;
-	var callVibrationTimer = null;
-	var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
-	vozCafeAudio.preload = 'auto';
+		var LIMIAR_TOLERANCIA_MS = 4000;
+		var wsClient = null;
+		var audioCtx = null;
+		var callRingtoneTimer = null;
+		var callVibrationTimer = null;
+		var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
+		vozCafeAudio.preload = 'auto';
 
-	var driverLiveCard = document.getElementById('driverLiveCard');
-	var driverStatusHeadline = document.getElementById('driverStatusHeadline');
-	var driverTimerCount = document.getElementById('driverTimerCount');
-	var driverBarFill = document.getElementById('driverBarFill');
-	var driverFeedbackMsg = document.getElementById('driverFeedbackMsg');
-	var driverFullscreenCall = document.getElementById('driverFullscreenCall');
-	var driverBlackScreen = document.getElementById('driverBlackScreen');
-	var btnStandbyNight = document.getElementById('btnStandbyNight');
-	var btnDriverAcceptRest = document.getElementById('btnDriverAcceptRest');
-	var btnDriverDismissCall = document.getElementById('btnDriverDismissCall');
-	var driverWsLabel = document.getElementById('driverWsLabel');
-	var driverWsChip = document.getElementById('driverWsChip');
+		var driverLiveCard = document.getElementById('driverLiveCard');
+		var driverStatusHeadline = document.getElementById('driverStatusHeadline');
+		var driverTimerCount = document.getElementById('driverTimerCount');
+		var driverBarFill = document.getElementById('driverBarFill');
+		var driverFeedbackMsg = document.getElementById('driverFeedbackMsg');
+		var driverFullscreenCall = document.getElementById('driverFullscreenCall');
+		var driverBlackScreen = document.getElementById('driverBlackScreen');
+		var btnStandbyNight = document.getElementById('btnStandbyNight');
+		var btnDriverAcceptRest = document.getElementById('btnDriverAcceptRest');
+		var btnDriverDismissCall = document.getElementById('btnDriverDismissCall');
+		var driverWsLabel = document.getElementById('driverWsLabel');
+		var driverWsChip = document.getElementById('driverWsChip');
 
-	var alertaAtivoMotorista = false;
-	var inicioRecuperacaoLocalMs = 0;
-	var cooldownAntiRepiqueUntil = 0;
-	var turnoAtivo = true;
+		var alertaAtivoMotorista = false;
+		var inicioRecuperacaoLocalMs = 0;
+		var cooldownAntiRepiqueUntil = 0;
+		var turnoAtivo = true;
 
-	// Iniciar turno / Pausar turno
-	var btnToggleShift = document.getElementById('btnToggleShift');
-	var shiftStatusBadge = document.getElementById('shiftStatusBadge');
-	var shiftBtnText = document.getElementById('shiftBtnText');
+		// Iniciar turno / Pausar turno
+		var btnToggleShift = document.getElementById('btnToggleShift');
+		var shiftStatusBadge = document.getElementById('shiftStatusBadge');
+		var shiftBtnText = document.getElementById('shiftBtnText');
 
-	if (btnToggleShift) {
-		btnToggleShift.addEventListener('click', function() {
-			turnoAtivo = !turnoAtivo;
-			if (turnoAtivo) {
-				btnToggleShift.className = 'btn-toggle-shift active-shift';
-				shiftStatusBadge.className = 'driver-badge-live';
-				shiftStatusBadge.innerHTML = '<span class="pulse-dot"></span><span>OPERANDO</span>';
-				shiftBtnText.textContent = 'TURNO ATIVO · EM OPERAÇÃO NA ROTA';
-			} else {
-				btnToggleShift.className = 'btn-toggle-shift';
-				shiftStatusBadge.className = 'driver-badge-inactive';
-				shiftStatusBadge.innerHTML = '<span>TURNO EM PAUSA</span>';
-				shiftBtnText.textContent = 'INICIAR / RETOMAR OPERAÇÃO';
-			}
-		});
-	}
-
-	function tocarToqueChamada() {
-		try {
-			if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-			if (audioCtx.state === 'suspended') audioCtx.resume();
-			var now = audioCtx.currentTime;
-			var notas = [
-				{ f: 784, t: 0.0, d: 0.16 }, { f: 987.77, t: 0.18, d: 0.16 },
-				{ f: 1174.66, t: 0.36, d: 0.22 }, { f: 1318.5, t: 0.65, d: 0.28 }
-			];
-			notas.forEach(function(n) {
-				var osc = audioCtx.createOscillator();
-				var gain = audioCtx.createGain();
-				osc.type = 'triangle';
-				osc.frequency.setValueAtTime(n.f, now + n.t);
-				gain.gain.setValueAtTime(0.28, now + n.t);
-				gain.gain.exponentialRampToValueAtTime(0.008, now + n.t + n.d);
-				osc.connect(gain); gain.connect(audioCtx.destination);
-				osc.start(now + n.t); osc.stop(now + n.t + n.d);
-			});
-		} catch(e){}
-	}
-
-	function tocarVozFemininaCafe() {
-		try {
-			vozCafeAudio.pause();
-			vozCafeAudio.currentTime = 0;
-			vozCafeAudio.playbackRate = 1.12;
-			vozCafeAudio.volume = 1.0;
-			vozCafeAudio.play().catch(function() {
-				if ('speechSynthesis' in window) {
-					var msg = new SpeechSynthesisUtterance('Atenção motorista! Detectamos sinais de fadiga. Pare em um local seguro para descansar e tomar um café!');
-					msg.lang = 'pt-BR';
-					window.speechSynthesis.speak(msg);
+		if (btnToggleShift) {
+			btnToggleShift.addEventListener('click', function () {
+				turnoAtivo = !turnoAtivo;
+				if (turnoAtivo) {
+					btnToggleShift.className = 'btn-toggle-shift active-shift';
+					shiftStatusBadge.className = 'driver-badge-live';
+					shiftStatusBadge.innerHTML = '<span class="pulse-dot"></span><span>OPERANDO</span>';
+					shiftBtnText.textContent = 'TURNO ATIVO · EM OPERAÇÃO NA ROTA';
+				} else {
+					btnToggleShift.className = 'btn-toggle-shift';
+					shiftStatusBadge.className = 'driver-badge-inactive';
+					shiftStatusBadge.innerHTML = '<span>TURNO EM PAUSA</span>';
+					shiftBtnText.textContent = 'INICIAR / RETOMAR OPERAÇÃO';
 				}
 			});
-		} catch(e){}
-	}
+		}
 
-	function abrirChamadaTelaCheia() {
-		if (driverBlackScreen) driverBlackScreen.classList.remove('active');
-		if (!driverFullscreenCall.classList.contains('active')) {
-			driverFullscreenCall.classList.add('active');
+		function tocarToqueChamada() {
 			try {
-				if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-					document.documentElement.requestFullscreen().catch(function(){});
+				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+				if (audioCtx.state === 'suspended') audioCtx.resume();
+				var now = audioCtx.currentTime;
+				var notas = [
+					{ f: 784, t: 0.0, d: 0.16 }, { f: 987.77, t: 0.18, d: 0.16 },
+					{ f: 1174.66, t: 0.36, d: 0.22 }, { f: 1318.5, t: 0.65, d: 0.28 }
+				];
+				notas.forEach(function (n) {
+					var osc = audioCtx.createOscillator();
+					var gain = audioCtx.createGain();
+					osc.type = 'triangle';
+					osc.frequency.setValueAtTime(n.f, now + n.t);
+					gain.gain.setValueAtTime(0.28, now + n.t);
+					gain.gain.exponentialRampToValueAtTime(0.008, now + n.t + n.d);
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(now + n.t); osc.stop(now + n.t + n.d);
+				});
+			} catch (e) { }
+		}
+
+		function tocarVozFemininaCafe() {
+			try {
+				vozCafeAudio.pause();
+				vozCafeAudio.currentTime = 0;
+				vozCafeAudio.playbackRate = 1.12;
+				vozCafeAudio.volume = 1.0;
+				vozCafeAudio.play().catch(function () {
+					if ('speechSynthesis' in window) {
+						var msg = new SpeechSynthesisUtterance('Atenção motorista! Detectamos sinais de fadiga. Pare em um local seguro para descansar e tomar um café!');
+						msg.lang = 'pt-BR';
+						window.speechSynthesis.speak(msg);
+					}
+				});
+			} catch (e) { }
+		}
+
+		function abrirChamadaTelaCheia() {
+			if (driverBlackScreen) driverBlackScreen.classList.remove('active');
+			if (!driverFullscreenCall.classList.contains('active')) {
+				driverFullscreenCall.classList.add('active');
+				try {
+					if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+						document.documentElement.requestFullscreen().catch(function () { });
+					}
+				} catch (e) { }
+
+				tocarToqueChamada();
+				tocarVozFemininaCafe();
+				if (callRingtoneTimer) clearInterval(callRingtoneTimer);
+				callRingtoneTimer = setInterval(tocarToqueChamada, 1600);
+
+				if (navigator.vibrate) {
+					try { navigator.vibrate([600, 250, 600, 250, 800]); } catch (e) { }
+					if (callVibrationTimer) clearInterval(callVibrationTimer);
+					callVibrationTimer = setInterval(function () {
+						try { navigator.vibrate([600, 250, 600, 250, 800]); } catch (e) { }
+					}, 2400);
 				}
-			} catch(e){}
-
-			tocarToqueChamada();
-			tocarVozFemininaCafe();
-			if (callRingtoneTimer) clearInterval(callRingtoneTimer);
-			callRingtoneTimer = setInterval(tocarToqueChamada, 1600);
-
-			if (navigator.vibrate) {
-				try { navigator.vibrate([600, 250, 600, 250, 800]); } catch(e){}
-				if (callVibrationTimer) clearInterval(callVibrationTimer);
-				callVibrationTimer = setInterval(function() {
-					try { navigator.vibrate([600, 250, 600, 250, 800]); } catch(e){}
-				}, 2400);
 			}
 		}
-	}
 
-	function fecharChamadaTelaCheia() {
-		if (!driverFullscreenCall) return;
-		driverFullscreenCall.classList.remove('active');
-		if (callRingtoneTimer) { clearInterval(callRingtoneTimer); callRingtoneTimer = null; }
-		if (callVibrationTimer) { clearInterval(callVibrationTimer); callVibrationTimer = null; }
-		if (navigator.vibrate) { try { navigator.vibrate(0); } catch(e){} }
-		try { vozCafeAudio.pause(); vozCafeAudio.currentTime = 0; } catch(e){}
-		if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch(e){} }
-	}
+		function fecharChamadaTelaCheia() {
+			if (!driverFullscreenCall) return;
+			driverFullscreenCall.classList.remove('active');
+			if (callRingtoneTimer) { clearInterval(callRingtoneTimer); callRingtoneTimer = null; }
+			if (callVibrationTimer) { clearInterval(callVibrationTimer); callVibrationTimer = null; }
+			if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
+			try { vozCafeAudio.pause(); vozCafeAudio.currentTime = 0; } catch (e) { }
+			if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch (e) { } }
+		}
 
-	if (btnDriverAcceptRest) {
-		btnDriverAcceptRest.addEventListener('click', function() {
-			fecharChamadaTelaCheia();
-			enviarSilenciarAoBackend();
-		});
-	}
+		if (btnDriverAcceptRest) {
+			btnDriverAcceptRest.addEventListener('click', function () {
+				fecharChamadaTelaCheia();
+				enviarSilenciarAoBackend();
+			});
+		}
 
-	if (btnDriverDismissCall) {
-		btnDriverDismissCall.addEventListener('click', function() {
-			fecharChamadaTelaCheia();
-			enviarSilenciarAoBackend();
-		});
-	}
+		if (btnDriverDismissCall) {
+			btnDriverDismissCall.addEventListener('click', function () {
+				fecharChamadaTelaCheia();
+				enviarSilenciarAoBackend();
+			});
+		}
 
-	function enviarSilenciarAoBackend() {
-		var urls = ['http://localhost:3001/api/command', 'https://inovatech-tcc.onrender.com/api/command'];
-		urls.forEach(function(u) {
-			fetch(u, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ comando: 'SILENCIAR_ALARME', origem: 'APP_MOTORISTA' })
-			}).catch(function(){});
-		});
-	}
+		function enviarSilenciarAoBackend() {
+			var urls = ['http://localhost:3001/api/command', 'https://inovatech-tcc.onrender.com/api/command'];
+			urls.forEach(function (u) {
+				fetch(u, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ comando: 'SILENCIAR_ALARME', origem: 'APP_MOTORISTA' })
+				}).catch(function () { });
+			});
+		}
 
-	// Modo Tela Apagada (Viagem Noturna)
-	if (btnStandbyNight) {
-		btnStandbyNight.addEventListener('click', function() {
-			if (driverBlackScreen) driverBlackScreen.classList.add('active');
-			try {
-				if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(function(){});
-				if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-					document.documentElement.requestFullscreen().catch(function(){});
-				}
-			} catch(e){}
-		});
-	}
+		// Modo Tela Apagada (Viagem Noturna)
+		if (btnStandbyNight) {
+			btnStandbyNight.addEventListener('click', function () {
+				if (driverBlackScreen) driverBlackScreen.classList.add('active');
+				try {
+					if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(function () { });
+					if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+						document.documentElement.requestFullscreen().catch(function () { });
+					}
+				} catch (e) { }
+			});
+		}
 
-	if (driverBlackScreen) {
-		driverBlackScreen.addEventListener('click', function() {
-			driverBlackScreen.classList.remove('active');
-		});
-	}
+		if (driverBlackScreen) {
+			driverBlackScreen.addEventListener('click', function () {
+				driverBlackScreen.classList.remove('active');
+			});
+		}
 
-	// Atualização do Estado Postural com 4,00s e Recuperação de 3,0s
-	function atualizarEstadoNoApp(estado) {
-		if (!estado || !turnoAtivo) return;
+		// Atualização do Estado Postural com 4,00s e Recuperação de 3,0s
+		function atualizarEstadoNoApp(estado) {
+			if (!estado || !turnoAtivo) return;
 
-		var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
-		var status = estado.estado || 'NORMAL';
-		var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
-		var decorridoRecupMs = 0;
+			var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
+			var status = estado.estado || 'NORMAL';
+			var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
+			var decorridoRecupMs = 0;
 
-		if (ir === 1) {
-			if (alertaAtivoMotorista || status === 'ALARME_ATIVADO' || status === 'RECUPERANDO') {
-				if (!inicioRecuperacaoLocalMs) inicioRecuperacaoLocalMs = Date.now();
-				decorridoRecupMs = (estado.tempo_recuperacao_ms !== undefined && estado.tempo_recuperacao_ms > 0)
-					? estado.tempo_recuperacao_ms : (Date.now() - inicioRecuperacaoLocalMs);
+			if (ir === 1) {
+				if (alertaAtivoMotorista || status === 'ALARME_ATIVADO' || status === 'RECUPERANDO') {
+					if (!inicioRecuperacaoLocalMs) inicioRecuperacaoLocalMs = Date.now();
+					decorridoRecupMs = (estado.tempo_recuperacao_ms !== undefined && estado.tempo_recuperacao_ms > 0)
+						? estado.tempo_recuperacao_ms : (Date.now() - inicioRecuperacaoLocalMs);
 
-				if (decorridoRecupMs >= 3000) {
-					alertaAtivoMotorista = false;
-					inicioRecuperacaoLocalMs = 0;
-					cooldownAntiRepiqueUntil = Date.now() + 3000;
-					status = 'NORMAL';
-					fecharChamadaTelaCheia();
-					enviarSilenciarAoBackend();
+					if (decorridoRecupMs >= 3000) {
+						alertaAtivoMotorista = false;
+						inicioRecuperacaoLocalMs = 0;
+						cooldownAntiRepiqueUntil = Date.now() + 3000;
+						status = 'NORMAL';
+						fecharChamadaTelaCheia();
+						enviarSilenciarAoBackend();
+					} else {
+						status = 'RECUPERANDO';
+					}
 				} else {
-					status = 'RECUPERANDO';
+					inicioRecuperacaoLocalMs = 0;
+					if (status !== 'ALARME_ATIVADO') status = 'NORMAL';
 				}
 			} else {
 				inicioRecuperacaoLocalMs = 0;
-				if (status !== 'ALARME_ATIVADO') status = 'NORMAL';
+				if (Date.now() < cooldownAntiRepiqueUntil && !alertaAtivoMotorista) {
+					status = 'NORMAL';
+					tempoMs = 0;
+				} else if (alertaAtivoMotorista || estado.alerta_travado) {
+					status = 'ALARME_ATIVADO';
+				}
 			}
-		} else {
-			inicioRecuperacaoLocalMs = 0;
-			if (Date.now() < cooldownAntiRepiqueUntil && !alertaAtivoMotorista) {
-				status = 'NORMAL';
-				tempoMs = 0;
-			} else if (alertaAtivoMotorista || estado.alerta_travado) {
-				status = 'ALARME_ATIVADO';
+
+			var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 4000 : tempoMs)));
+			var seg = (msLim / 1000).toFixed(2);
+			var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
+
+			if (status === 'RECUPERANDO') {
+				var segR = (decorridoRecupMs / 1000).toFixed(1);
+				driverLiveCard.className = 'driver-live-card estado-recuperando';
+				driverStatusHeadline.style.color = '#55ee77';
+				driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + segR + 's / 3.0s)';
+				driverTimerCount.textContent = segR + 's / 3.0s';
+				driverBarFill.className = 'progresso-bar-fill';
+				driverBarFill.style.width = Math.min(100, (decorridoRecupMs / 3000) * 100) + '%';
+				driverFeedbackMsg.textContent = 'Cabeça erguida detectada! Mantenha a postura por 3 segundos para normalizar automaticamente.';
+			} else if (status === 'NORMAL') {
+				fecharChamadaTelaCheia();
+				driverLiveCard.className = 'driver-live-card estado-normal';
+				driverStatusHeadline.style.color = '#08deeb';
+				driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
+				driverTimerCount.textContent = '0.00s / 4.00s';
+				driverBarFill.className = 'progresso-bar-fill';
+				driverBarFill.style.width = '0%';
+				driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
+			} else if (status === 'PRE_ALERTA') {
+				driverLiveCard.className = 'driver-live-card estado-pre-alerta';
+				driverStatusHeadline.style.color = '#ffaa00';
+				driverStatusHeadline.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA';
+				driverTimerCount.textContent = seg + 's / 4.00s';
+				driverBarFill.className = 'progresso-bar-fill warning';
+				driverBarFill.style.width = perc + '%';
+				driverFeedbackMsg.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Erga a cabeça para evitar o alarme.';
+			} else if (status === 'ALARME_ATIVADO') {
+				alertaAtivoMotorista = true;
+				driverLiveCard.className = 'driver-live-card estado-alarme';
+				driverStatusHeadline.style.color = '#ff2a55';
+				driverStatusHeadline.textContent = 'PERIGO: CABEÇA BAIXA!';
+				driverTimerCount.textContent = '4.00s / 4.00s (CRÍTICO)';
+				driverBarFill.className = 'progresso-bar-fill danger';
+				driverBarFill.style.width = '100%';
+				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por 3 segundos para desligar automaticamente.';
+				abrirChamadaTelaCheia();
 			}
 		}
 
-		var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 4000 : tempoMs)));
-		var seg = (msLim / 1000).toFixed(2);
-		var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
-
-		if (status === 'RECUPERANDO') {
-			var segR = (decorridoRecupMs / 1000).toFixed(1);
-			driverLiveCard.className = 'driver-live-card estado-recuperando';
-			driverStatusHeadline.style.color = '#55ee77';
-			driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + segR + 's / 3.0s)';
-			driverTimerCount.textContent = segR + 's / 3.0s';
-			driverBarFill.className = 'progresso-bar-fill';
-			driverBarFill.style.width = Math.min(100, (decorridoRecupMs / 3000) * 100) + '%';
-			driverFeedbackMsg.textContent = 'Cabeça erguida detectada! Mantenha a postura por 3 segundos para normalizar automaticamente.';
-		} else if (status === 'NORMAL') {
-			fecharChamadaTelaCheia();
-			driverLiveCard.className = 'driver-live-card estado-normal';
-			driverStatusHeadline.style.color = '#08deeb';
-			driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
-			driverTimerCount.textContent = '0.00s / 4.00s';
-			driverBarFill.className = 'progresso-bar-fill';
-			driverBarFill.style.width = '0%';
-			driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
-		} else if (status === 'PRE_ALERTA') {
-			driverLiveCard.className = 'driver-live-card estado-pre-alerta';
-			driverStatusHeadline.style.color = '#ffaa00';
-			driverStatusHeadline.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA';
-			driverTimerCount.textContent = seg + 's / 4.00s';
-			driverBarFill.className = 'progresso-bar-fill warning';
-			driverBarFill.style.width = perc + '%';
-			driverFeedbackMsg.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Erga a cabeça para evitar o alarme.';
-		} else if (status === 'ALARME_ATIVADO') {
-			alertaAtivoMotorista = true;
-			driverLiveCard.className = 'driver-live-card estado-alarme';
-			driverStatusHeadline.style.color = '#ff2a55';
-			driverStatusHeadline.textContent = 'PERIGO: CABEÇA BAIXA!';
-			driverTimerCount.textContent = '4.00s / 4.00s (CRÍTICO)';
-			driverBarFill.className = 'progresso-bar-fill danger';
-			driverBarFill.style.width = '100%';
-			driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por 3 segundos para desligar automaticamente.';
-			abrirChamadaTelaCheia();
+		// Conexão WebSocket
+		function conectarWebSocketMotorista() {
+			var wsUrl = 'ws://localhost:3001/ws';
+			try {
+				wsClient = new WebSocket(wsUrl);
+				wsClient.onopen = function () {
+					if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO';
+					if (driverWsChip) driverWsChip.className = 'painel-chip online';
+				};
+				wsClient.onmessage = function (ev) {
+					try {
+						var msg = JSON.parse(ev.data);
+						if (msg.estado) atualizarEstadoNoApp(msg.estado);
+					} catch (e) { }
+				};
+				wsClient.onerror = function () { reconectarNuvem(); };
+				wsClient.onclose = function () { reconectarNuvem(); };
+			} catch (e) { reconectarNuvem(); }
 		}
-	}
 
-	// Conexão WebSocket
-	function conectarWebSocketMotorista() {
-		var wsUrl = 'ws://localhost:3001/ws';
-		try {
-			wsClient = new WebSocket(wsUrl);
-			wsClient.onopen = function() {
-				if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO';
-				if (driverWsChip) driverWsChip.className = 'painel-chip online';
-			};
-			wsClient.onmessage = function(ev) {
-				try {
-					var msg = JSON.parse(ev.data);
-					if (msg.estado) atualizarEstadoNoApp(msg.estado);
-				} catch(e){}
-			};
-			wsClient.onerror = function() { reconectarNuvem(); };
-			wsClient.onclose = function() { reconectarNuvem(); };
-		} catch(e) { reconectarNuvem(); }
-	}
+		function reconectarNuvem() {
+			try {
+				var cloudWs = new WebSocket('wss://inovatech-tcc.onrender.com/ws');
+				cloudWs.onopen = function () {
+					if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO (NUVEM)';
+					if (driverWsChip) driverWsChip.className = 'painel-chip online';
+				};
+				cloudWs.onmessage = function (ev) {
+					try {
+						var msg = JSON.parse(ev.data);
+						if (msg.estado) atualizarEstadoNoApp(msg.estado);
+					} catch (e) { }
+				};
+			} catch (e) { }
+		}
 
-	function reconectarNuvem() {
-		try {
-			var cloudWs = new WebSocket('wss://inovatech-tcc.onrender.com/ws');
-			cloudWs.onopen = function() {
-				if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO (NUVEM)';
-				if (driverWsChip) driverWsChip.className = 'painel-chip online';
-			};
-			cloudWs.onmessage = function(ev) {
-				try {
-					var msg = JSON.parse(ev.data);
-					if (msg.estado) atualizarEstadoNoApp(msg.estado);
-				} catch(e){}
-			};
-		} catch(e){}
-	}
+		// Desbloqueio de áudio no primeiro toque na tela
+		document.addEventListener('click', function () {
+			try {
+				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+				if (audioCtx.state === 'suspended') audioCtx.resume();
+				vozCafeAudio.volume = 0;
+				vozCafeAudio.play().then(function () {
+					vozCafeAudio.pause();
+					vozCafeAudio.currentTime = 0;
+					vozCafeAudio.volume = 1.0;
+				}).catch(function () { });
+			} catch (e) { }
+		}, { once: true });
 
-	// Desbloqueio de áudio no primeiro toque na tela
-	document.addEventListener('click', function() {
-		try {
-			if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-			if (audioCtx.state === 'suspended') audioCtx.resume();
-			vozCafeAudio.volume = 0;
-			vozCafeAudio.play().then(function() {
-				vozCafeAudio.pause();
-				vozCafeAudio.currentTime = 0;
-				vozCafeAudio.volume = 1.0;
-			}).catch(function(){});
-		} catch(e){}
-	}, { once: true });
-
-	conectarWebSocketMotorista();
+		conectarWebSocketMotorista();
 	</script>
 </body>
+
 </html>
