@@ -324,7 +324,7 @@ setInterval(() => {
     mudouNivel = true;
     registrarEvento(
       'ALARME_ATIVADO',
-      '🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!',
+      'ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!',
       'Iniciando contagem crítica de +10s para protocolo de Possível Acidente.'
     );
     // Reforça despertar da tela do celular via ADB
@@ -337,7 +337,7 @@ setInterval(() => {
     mudouNivel = true;
     registrarEvento(
       'ALARME_ATIVADO',
-      '💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!',
+      'POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!',
       'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192.'
     );
   }
