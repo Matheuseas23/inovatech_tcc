@@ -1,7 +1,7 @@
 {
   "dispositivo": "ESP32_SMART_DRIVER_01",
   "online": true,
-  "ultimoVisto": "2026-10-20T16:49:58.501Z",
+  "ultimoVisto": "2026-10-20T16:55:04.926Z",
   "motoristas": {
     "matheus_garcia": {
       "nome": "Matheus Garcia",
@@ -10,10 +10,10 @@
       "rota": "Rodovia BR-116 KM 284 · Régis Bittencourt"
     }
   },
-  "sensor_ir": 1,
-  "tempo_cabeca_baixa_ms": 0,
+  "sensor_ir": 0,
+  "tempo_cabeca_baixa_ms": 266,
   "limiar_seguranca_ms": 4000,
-  "estado": "NORMAL",
+  "estado": "PRE_ALERTA",
   "buzzer": 0,
   "rele": 0,
   "acelerometro": {
