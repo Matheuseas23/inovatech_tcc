@@ -29,7 +29,7 @@ const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
 const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
-// 2. MAPEAMENTO DOS PINOS DE HARDWARE
+// 2. MAPEAMENTO DOS 1INOS DE HARDWARE
 // ------------------------------------------------------------------------------
 const uint8_t PINO_SENSOR_IR = 32; // GPIO 32 - Sensor IR de obstáculo (haste dos óculos -> queixo/peito)
 const uint8_t PINO_BUZZER    = 25; // GPIO 25 - Buzzer sonoro ativo nos óculos

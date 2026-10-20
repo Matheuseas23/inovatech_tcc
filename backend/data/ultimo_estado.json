@@ -1,7 +1,7 @@
 {
   "dispositivo": "ESP32_SMART_DRIVER_01",
   "online": true,
-  "ultimoVisto": "2026-10-20T15:55:09.519Z",
+  "ultimoVisto": "2026-10-20T16:49:58.501Z",
   "motoristas": {
     "matheus_garcia": {
       "nome": "Matheus Garcia",
@@ -24,8 +24,8 @@
     "status": "Ativo"
   },
   "contadores": {
-    "totalAlarmesSessao": 81,
-    "inicioSessao": "2026-10-20T15:18:42.492Z"
+    "totalAlarmesSessao": 91,
+    "inicioSessao": "2026-10-20T16:31:50.639Z"
   },
   "tempo_recuperacao_ms": 0,
   "chamada_celular_ativa": false,
