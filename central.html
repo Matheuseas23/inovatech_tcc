@@ -292,27 +292,30 @@
 			background: rgba(8, 222, 235, 0.15);
 		}
 
-		/* Toast de Notificação Tática da Central */
+		/* Toast de Notificação Tática da Central no Canto Superior Direito */
 		.central-toast-banner {
 			position: fixed;
 			top: 24px;
-			left: 50%;
-			transform: translateX(-50%) translateY(-100px);
-			background: linear-gradient(135deg, rgba(8, 222, 235, 0.25) 0%, rgba(6, 28, 43, 0.95) 50%, rgba(2, 14, 24, 0.98) 100%);
+			right: 24px;
+			left: auto;
+			transform: translateX(120%);
+			background: linear-gradient(135deg, rgba(8, 222, 235, 0.28) 0%, rgba(6, 28, 43, 0.95) 50%, rgba(2, 14, 24, 0.98) 100%);
 			border: 1.5px solid var(--cyan);
-			border-radius: 30px;
-			padding: 12px 28px;
+			border-radius: 12px;
+			padding: 16px 22px;
+			max-width: 440px;
 			color: #ffffff;
 			font-family: 'Space Mono', monospace;
-			font-size: 12px;
+			font-size: 11.5px;
 			font-weight: 700;
 			letter-spacing: 0.5px;
+			line-height: 1.5;
 			display: flex;
 			align-items: center;
-			gap: 12px;
-			box-shadow: 0 10px 35px rgba(8, 222, 235, 0.4), inset 0 1px 1px #ffffff;
-			backdrop-filter: blur(20px);
-			-webkit-backdrop-filter: blur(20px);
+			gap: 14px;
+			box-shadow: 0 12px 35px rgba(8, 222, 235, 0.45), inset 0 1.5px 1px #ffffff;
+			backdrop-filter: blur(24px) saturate(190%);
+			-webkit-backdrop-filter: blur(24px) saturate(190%);
 			z-index: 999999;
 			opacity: 0;
 			pointer-events: none;
@@ -320,7 +323,7 @@
 		}
 
 		.central-toast-banner.show {
-			transform: translateX(-50%) translateY(0);
+			transform: translateX(0);
 			opacity: 1;
 		}
 
@@ -1123,8 +1126,13 @@
 		}
 
 		function tocarAudioVoz(audioObj) {
-			// Diretriz de Operação: Voz desativada na Central Tech (voz ativa exclusivamente no App do Motorista)
-			return;
+			try {
+				[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) { if (a !== audioObj) { a.pause(); a.currentTime = 0; } });
+				audioObj.currentTime = 0;
+				audioObj.playbackRate = 1.12;
+				audioObj.volume = 1.0;
+				audioObj.play().catch(function () { });
+			} catch (e) { }
 		}
 
 		function atualizarPainelEscalonamentoUI(decorridoMs) {
@@ -1414,6 +1422,13 @@
 						try {
 							var m = JSON.parse(ev.data);
 							if (m.estado) atualizarPainelComEstado(m.estado);
+							if (m.tipo === 'NOVO_EVENTO' && m.evento) {
+								adicionarLogLocal(m.evento.tipo, m.evento.mensagem, m.evento.horaFormatada);
+							}
+							if (m.tipo === 'STATUS_MOTORISTA') {
+								var emViagem = (m.status_viagem === 'EM_VIAGEM');
+								atualizarEstadoGarciaUI(emViagem, emViagem);
+							}
 						} catch (e) { }
 					};
 				} catch (e) { }
@@ -1423,9 +1438,21 @@
 		function iniciarPolling() {
 			if (pollingTimer) clearInterval(pollingTimer);
 			pollingTimer = setInterval(function () {
-				fetch(backendBaseUrl + '/api/telemetry')
+				var url = (backendBaseUrl.indexOf('http') === 0 ? backendBaseUrl : 'http://localhost:3001') + '/api/telemetry';
+				fetch(url)
 					.then(function (r) { return r.json(); })
-					.then(function (d) { if (d && d.estado) atualizarPainelComEstado(d.estado); })
+					.then(function (d) {
+						if (d && d.estado) {
+							atualizarPainelComEstado(d.estado);
+							if (d.estado.motoristas && d.estado.motoristas.matheus_garcia) {
+								var statusDrv = d.estado.motoristas.matheus_garcia.status;
+								var ativo = (statusDrv === 'EM_VIAGEM');
+								if (ativo !== garciaViagemAtiva) {
+									atualizarEstadoGarciaUI(ativo, ativo);
+								}
+							}
+						}
+					})
 					.catch(function () { });
 			}, 600);
 		}

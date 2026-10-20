@@ -52,6 +52,14 @@ const estado = {
   dispositivo: 'ESP32_SMART_DRIVER_01',
   online: false,
   ultimoVisto: null,
+  motoristas: {
+    matheus_garcia: {
+      nome: 'Matheus Garcia',
+      status: 'INATIVO', // 'EM_VIAGEM' ou 'INATIVO'
+      veiculo: 'Scania R-450 (Placa INO-2026)',
+      rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
+    }
+  },
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
   tempo_cabeca_baixa_ms: 0,
   limiar_seguranca_ms: 4000,
@@ -614,6 +622,36 @@ app.get('/api/telemetry', (req, res) => {
   });
 });
 
+// Endpoint REST para atualizar status do motorista (App -> Backend -> Central)
+app.post('/api/driver/status', (req, res) => {
+  const { motorista = 'Matheus Garcia', status_viagem = 'EM_VIAGEM' } = req.body || {};
+  const novoStatus = (status_viagem === 'EM_VIAGEM') ? 'EM_VIAGEM' : 'INATIVO';
+
+  if (estado.motoristas && estado.motoristas.matheus_garcia) {
+    estado.motoristas.matheus_garcia.status = novoStatus;
+  }
+
+  const msgLog = (novoStatus === 'EM_VIAGEM')
+    ? 'Condutor Matheus Garcia ATIVOU o monitoramento seguro e INICIOU A VIAGEM.'
+    : 'Condutor Matheus Garcia PAUSOU o monitoramento / Viagem encerrada.';
+  registrarEvento('STATUS_MOTORISTA', msgLog, 'Sincronizado via App do Motorista (REST)');
+  persistirEmDisco();
+
+  broadcast({
+    tipo: 'STATUS_MOTORISTA',
+    motorista: 'Matheus Garcia',
+    status_viagem: novoStatus,
+    timestamp: Date.now(),
+    estado
+  });
+
+  return res.status(200).json({
+    sucesso: true,
+    motorista,
+    status_viagem: novoStatus
+  });
+});
+
 // Endpoint para a Central enviar comando remoto
 app.post('/api/command', (req, res) => {
   const { comando, origem = 'CENTRAL_WEB' } = req.body || {};
@@ -726,6 +764,24 @@ wss.on('connection', (ws, req) => {
           method: 'POST',
           url: '/api/telemetry',
           body: parsed.dados || parsed
+        });
+      } else if (parsed.tipo === 'STATUS_MOTORISTA') {
+        // Motorista ativou ou pausou a viagem no App
+        const novoStatus = (parsed.status_viagem === 'EM_VIAGEM') ? 'EM_VIAGEM' : 'INATIVO';
+        if (estado.motoristas && estado.motoristas.matheus_garcia) {
+          estado.motoristas.matheus_garcia.status = novoStatus;
+        }
+        const msgLog = (novoStatus === 'EM_VIAGEM')
+          ? 'Condutor Matheus Garcia ATIVOU o monitoramento seguro e INICIOU A VIAGEM.'
+          : 'Condutor Matheus Garcia PAUSOU o monitoramento / Viagem encerrada.';
+        registrarEvento('STATUS_MOTORISTA', msgLog, 'Sincronizado via App do Motorista (Cabine)');
+        persistirEmDisco();
+        broadcast({
+          tipo: 'STATUS_MOTORISTA',
+          motorista: 'Matheus Garcia',
+          status_viagem: novoStatus,
+          timestamp: Date.now(),
+          estado
         });
       } else if (parsed.tipo === 'COMANDO') {
         // Processa comando recebido via WS
