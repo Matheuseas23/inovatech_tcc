@@ -1,23 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Space+Mono:wght@400;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-
-.g-icon {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 1.18em;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  vertical-align: -0.18em;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20;
-}
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
   --bg: #031522;
@@ -2105,6 +2086,18 @@ body.light-theme .btn-access.outline:hover {
   background: linear-gradient(135deg, rgba(255, 42, 85, 0.25) 0%, rgba(20, 5, 10, 0.95) 100%) !important;
   box-shadow: 0 0 40px rgba(255, 42, 85, 0.5);
   animation: bordaNeonAlarme 0.9s infinite alternate;
+}
+
+.card-alerta-principal.estado-recuperando {
+  border-color: #55ee77 !important;
+  background: linear-gradient(135deg, rgba(85, 238, 119, 0.18) 0%, rgba(11, 34, 51, 0.85) 100%) !important;
+  box-shadow: 0 0 35px rgba(85, 238, 119, 0.4);
+  animation: bordaNeonRecuperando 0.8s infinite alternate;
+}
+
+@keyframes bordaNeonRecuperando {
+  from { box-shadow: 0 0 15px rgba(85, 238, 119, 0.3); }
+  to { box-shadow: 0 0 35px rgba(85, 238, 119, 0.7); }
 }
 
 @keyframes bordaNeonAlarme {

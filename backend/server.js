@@ -261,16 +261,19 @@ function voltarParaLinklemoCelularADB() {
 }
 
 // ------------------------------------------------------------------------------
-// MOTOR DE ESCALONAMENTO DE EMERGÊNCIA (FASE 1: CELULAR -> FASE 2: +10s CRÍTICO -> FASE 3: +10s POSSÍVEL ACIDENTE)
+// MOTOR DE ESCALONAMENTO E RECUPERAÇÃO AUTOMÁTICA (3s DE CABEÇA ERGUIDA DESLIGA ALERTA)
 // ------------------------------------------------------------------------------
 let inicioSemRespostaTimestamp = 0;
-let cooldownNormalizacaoUntil = 0;
+let inicioRecuperacaoPosturaTimestamp = 0;
+let cooldownAntiRepiqueUntil = 0;
 
 function iniciarProtocoloAlertaTravado() {
   if (!estado.chamada_celular_ativa) {
     estado.chamada_celular_ativa = true;
     estado.alerta_travado = true;
     inicioSemRespostaTimestamp = Date.now();
+    inicioRecuperacaoPosturaTimestamp = 0;
+    estado.tempo_recuperacao_ms = 0;
     estado.tempo_sem_resposta_ms = 0;
     estado.nivel_escalonamento = 1; // 1 = Alerta Físico + Celular | 2 = Alerta Crítico Central (>10s) | 3 = Possível Acidente + SOS (>20s)
     dispararChamadaCelularADB();
@@ -281,18 +284,21 @@ function encerrarProtocoloAlertaTravado() {
   estado.chamada_celular_ativa = false;
   estado.alerta_travado = false;
   inicioSemRespostaTimestamp = 0;
+  inicioRecuperacaoPosturaTimestamp = 0;
+  estado.tempo_recuperacao_ms = 0;
   estado.tempo_sem_resposta_ms = 0;
   estado.nivel_escalonamento = 0;
   estado.estado = 'NORMAL';
   estado.buzzer = 0;
   estado.rele = 0;
   estado.tempo_cabeca_baixa_ms = 0;
-  cooldownNormalizacaoUntil = Date.now() + 2500;
+  cooldownAntiRepiqueUntil = Date.now() + 3000;
   voltarParaLinklemoCelularADB();
   espelharParaNuvem({
     dispositivo: estado.dispositivo,
     sensor_ir: 1,
     tempo_cabeca_baixa_ms: 0,
+    tempo_recuperacao_ms: 0,
     buzzer: 0,
     rele: 0,
     estado: 'NORMAL',
@@ -306,9 +312,39 @@ function encerrarProtocoloAlertaTravado() {
   persistirEmDisco();
 }
 
-// Loop de alta precisão (250ms) que monitora o tempo sem resposta do motorista no celular
+// Loop de alta precisão (250ms) que monitora o tempo sem resposta e a recuperação automática de 3s
 setInterval(() => {
-  if (!estado.chamada_celular_ativa || !inicioSemRespostaTimestamp) return;
+  if (!estado.chamada_celular_ativa) return;
+
+  // Verificação de Recuperação Automática: Se a cabeça voltou ao normal (sensor_ir === 1) por 3 segundos
+  if (estado.sensor_ir === 1) {
+    if (!inicioRecuperacaoPosturaTimestamp) {
+      inicioRecuperacaoPosturaTimestamp = Date.now();
+    }
+    const tempoRecup = Date.now() - inicioRecuperacaoPosturaTimestamp;
+    estado.tempo_recuperacao_ms = tempoRecup;
+
+    if (tempoRecup >= 3000) {
+      // 3 segundos com cabeça erguida: Encerra o alarme automaticamente sem o motorista precisar apertar!
+      encerrarProtocoloAlertaTravado();
+      registrarEvento(
+        'NORMAL',
+        'Recuperação Automática: Condutor ergueu a cabeça por 3 segundos. Alerta cancelado automaticamente.',
+        'Postura segura restabelecida. Alarme físico e chamada virtual desligados.'
+      );
+      broadcast({
+        tipo: 'RECUPERACAO_AUTOMATICA',
+        estado
+      });
+      return;
+    }
+  } else {
+    // Se abaixou a cabeça de novo, zera a contagem de recuperação de 3s
+    inicioRecuperacaoPosturaTimestamp = 0;
+    estado.tempo_recuperacao_ms = 0;
+  }
+
+  if (!inicioSemRespostaTimestamp) return;
 
   const decorridoMs = Date.now() - inicioSemRespostaTimestamp;
   estado.tempo_sem_resposta_ms = decorridoMs;
@@ -352,6 +388,7 @@ setInterval(() => {
     dispositivo: estado.dispositivo,
     sensor_ir: estado.sensor_ir,
     tempo_cabeca_baixa_ms: estado.tempo_cabeca_baixa_ms,
+    tempo_recuperacao_ms: estado.tempo_recuperacao_ms || 0,
     buzzer: estado.buzzer,
     rele: estado.rele,
     estado: estado.estado,
@@ -447,22 +484,43 @@ function processarTelemetria(payload = {}) {
     estado.alerta_travado = Boolean(payload.alerta_travado);
   }
 
-  // Enquanto o motorista NÃO apertar para desativar o alerta no celular, mantém o alerta travado ativo!
-  if (estado.alerta_travado && !payload._forceReset) {
-    estado.estado = 'ALARME_ATIVADO';
-    estado.buzzer = 1;
-    estado.rele = 1;
-    estado.chamada_celular_ativa = true;
-    estado.tempo_cabeca_baixa_ms = Math.max(2500, estado.tempo_cabeca_baixa_ms || 2500);
-  } else if (Date.now() < cooldownNormalizacaoUntil && payload.estado !== 'ALARME_ATIVADO') {
-    estado.estado = 'NORMAL';
-    estado.tempo_cabeca_baixa_ms = 0;
-    estado.buzzer = 0;
-    estado.rele = 0;
-  } else if (payload.estado) {
-    estado.estado = payload.estado;
+  // Processamento do estado com base no sensor IR, recuperação automática de 3s e cooldown anti-repique
+  if (estado.sensor_ir === 1) {
+    if (estado.alerta_travado || estado.estado === 'ALARME_ATIVADO' || estado.estado === 'RECUPERANDO') {
+      if (!inicioRecuperacaoPosturaTimestamp) {
+        inicioRecuperacaoPosturaTimestamp = Date.now();
+      }
+      const tempoRecup = Date.now() - inicioRecuperacaoPosturaTimestamp;
+      estado.tempo_recuperacao_ms = tempoRecup;
+
+      if (tempoRecup >= 3000) {
+        // Completou 3 segundos ininterruptos de cabeça erguida: cancela alerta automaticamente!
+        encerrarProtocoloAlertaTravado();
+        registrarEvento('NORMAL', 'Recuperação Automática: Condutor ergueu a cabeça por 3 segundos. Alerta cancelado com sucesso.');
+      } else {
+        // Estado transitório de recuperação (mostra contagem 0.0s / 3.0s no painel)
+        estado.estado = 'RECUPERANDO';
+      }
+    } else {
+      inicioRecuperacaoPosturaTimestamp = 0;
+      estado.tempo_recuperacao_ms = 0;
+      estado.estado = 'NORMAL';
+      estado.tempo_cabeca_baixa_ms = 0;
+      estado.buzzer = 0;
+      estado.rele = 0;
+    }
   } else {
-    if (estado.sensor_ir === 0) {
+    // sensor_ir === 0 (cabeça tombada ou queixo próximo)
+    inicioRecuperacaoPosturaTimestamp = 0;
+    estado.tempo_recuperacao_ms = 0;
+
+    // Se estiver no cooldown pós-normalização (3s), ignora aproximações rápidas para evitar alarmes em série
+    if (Date.now() < cooldownAntiRepiqueUntil) {
+      estado.tempo_cabeca_baixa_ms = 0;
+      estado.estado = 'NORMAL';
+      estado.buzzer = 0;
+      estado.rele = 0;
+    } else {
       if (estado.tempo_cabeca_baixa_ms >= estado.limiar_seguranca_ms) {
         estado.estado = 'ALARME_ATIVADO';
         estado.buzzer = 1;
@@ -470,11 +528,6 @@ function processarTelemetria(payload = {}) {
       } else {
         estado.estado = 'PRE_ALERTA';
       }
-    } else {
-      estado.estado = 'NORMAL';
-      estado.tempo_cabeca_baixa_ms = 0;
-      estado.buzzer = 0;
-      estado.rele = 0;
     }
   }
 
