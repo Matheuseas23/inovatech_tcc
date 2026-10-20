@@ -220,4 +220,17 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
   - **Recuperação Automática de Postura**: Se o motorista mantiver a cabeça erguida por **3,00 segundos contínuos**, todos os alarmes (sonoros, visuais, Coffee Call e vibração) cessam instantaneamente de forma automática, dispensando a necessidade de apertar a tela durante a condução.
 - **Diretriz de Design Rigorosa (Ícones vs Emojis)**: Proibido o uso de emojis gráficos Unicode na interface. Todos os símbolos operacionais utilizam **Google Fonts Material Symbols** (`lock`, `visibility`, `dashboard`, `smartphone`, `local_cafe`, `power_settings_new`, `pan_tool`, `location_on`, `medical_services`, `support_agent`).
 
+---
+
+## 10. Atualizações Homologadas (Terça-feira, 20 de Outubro de 2026, 13:00 BRT)
+- **App do Motorista (`motorista.html`)**:
+  - **Áudio & Mensagem de Voz**: Frase atualizada rigorosamente para *"Atenção motorista! Cansaço detectado. Pare o veículo e descanse em uma área segura."* gravada em `alerta-cafe-voz.mp3`.
+  - **Modo Tela Cheia & Safe Area**: Suporte total a recorte de câmera (`viewport-fit=cover`, `env(safe-area-inset-*)`).
+  - **Modo Tela Apagada / Standby**: Removida qualquer caixa ou texto da tela preta. O celular fica 100% escuro (`#000000`), parecendo totalmente desligado, enquanto continua monitorando em segundo plano com WakeLock e alertas nativos.
+  - **Botão de Iniciar Turno**: Otimizado com suporte tátil nativo (`click` + `touchend` com `preventDefault()`) e envio duplo WebSocket + HTTP REST.
+- **ESP32 & Conexão Fora da USB**:
+  - Firmware configurado com Access Point `ESP_900EC9` e suporte a Wi-Fi STA para nuvem Render (`https://inovatech-tcc.onrender.com/api/telemetry`).
+  - Ao receber energia via powerbank ou bateria, a placa dá boot autônomo e conecta diretamente na nuvem/rede sem qualquer cabo USB no notebook.
+
+
 

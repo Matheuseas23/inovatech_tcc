@@ -3,10 +3,14 @@
 
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 	<title>SMART DRIVER | App do Condutor</title>
 	<link rel="icon" type="image/svg+xml" href="favicon.svg">
 	<link rel="apple-touch-icon" href="favicon.svg">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="theme-color" content="#000000">
 	<link rel="stylesheet"
 		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 	<link rel="stylesheet" href="style.css">
@@ -57,12 +61,14 @@
 			z-index: 1;
 			max-width: 520px;
 			margin: 0 auto;
-			padding: 16px 16px 40px;
+			padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(30px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
 			width: 100%;
+			min-height: 100vh;
 			flex: 1;
 			display: flex;
 			flex-direction: column;
 			gap: 16px;
+			box-sizing: border-box;
 		}
 
 		.driver-topbar {
@@ -258,20 +264,18 @@
 			font-size: 28px;
 		}
 
-		/* Modo tela preta apagada */
+		/* Modo tela preta apagada (100% preta sem caixas para simular celular desligado) */
 		.driver-black-screen {
 			display: none;
 			position: fixed;
 			inset: 0;
-			background: #000000;
+			background: #000000 !important;
 			z-index: 99998;
 			cursor: pointer;
-			align-items: center;
-			justify-content: center;
 		}
 
 		.driver-black-screen.active {
-			display: flex;
+			display: block;
 		}
 
 		/* ==============================================================================
@@ -317,11 +321,8 @@
 		<div class="driver-bg-overlay"></div>
 	</div>
 
-	<!-- Modo Tela Apagada no Celular (Toque duplo para sair) -->
-	<div class="driver-black-screen" id="driverBlackScreen">
-		<span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:2px">● MONITORAMENTO ATIVO · TOQUE PARA
-			ACENDER</span>
-	</div>
+	<!-- Modo Tela Apagada no Celular (Preto total simulando celular desligado) -->
+	<div class="driver-black-screen" id="driverBlackScreen"></div>
 
 	<!-- Tela Inteira de Chamada de Segurança no Celular do Motorista (Estilo Ligação WhatsApp) -->
 	<div class="driver-fullscreen-call" id="driverFullscreenCall" role="dialog" aria-modal="true"
@@ -351,9 +352,7 @@
 			<h2 class="driver-call-title" id="driverCallTitle"><span class="material-symbols-outlined g-icon"
 					style="font-size:1.05em;margin-right:6px">local_cafe</span> PARE PARA DESCANSAR!</h2>
 			<p class="driver-call-message">
-				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong>4,0 segundos</strong>
-				detectada!<br>
-				Encoste em local seguro para descansar e tomar um café.
+				<strong>ATENÇÃO MOTORISTA:</strong> Cansaço detectado. Pare o veículo e descanse em uma área segura.
 			</p>
 			<div class="driver-call-escalation-box">
 				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span>
@@ -582,11 +581,11 @@
 			try {
 				vozCafeAudio.pause();
 				vozCafeAudio.currentTime = 0;
-				vozCafeAudio.playbackRate = 1.12;
+				vozCafeAudio.playbackRate = 1.05;
 				vozCafeAudio.volume = 1.0;
 				vozCafeAudio.play().catch(function () {
 					if ('speechSynthesis' in window) {
-						var msg = new SpeechSynthesisUtterance('Atenção motorista! Detectamos sinais de fadiga. Pare em um local seguro para descansar e tomar um café!');
+						var msg = new SpeechSynthesisUtterance('Atenção motorista! Cansaço detectado. Pare o veículo e descanse em uma área segura.');
 						msg.lang = 'pt-BR';
 						window.speechSynthesis.speak(msg);
 					}
