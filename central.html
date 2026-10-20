@@ -561,16 +561,16 @@
 				</div>
 			</div>
 
-			<!-- PAINEL DE ESCALONAMENTO DE EMERGÊNCIA DA CENTRAL TECH (17s ALERTA CRÍTICO -> 27s POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS) -->
+			<!-- PAINEL DE ESCALONAMENTO DE EMERGÊNCIA DA CENTRAL TECH (20s SUSPEITA DE ACIDENTE & MAPA GNSS -> 35s PROTOCOLO SAFE-STOP & RESGATE SOS) -->
 			<div class="central-escalation-panel" id="centralEscalationPanel" role="alert" aria-live="assertive">
 				<div class="central-esc-header">
 					<span class="central-esc-badge" id="centralEscBadge">
 						<span class="pulse-dot danger"></span>
 						<span id="centralEscBadgeText"><span class="material-symbols-outlined g-icon"
-								style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA DESATIVAR
-							ALERTA NO CELULAR</span>
+								style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO
+							CELULAR</span>
 					</span>
-					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s / 17.0s</span>
+					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s / 20.0s</span>
 				</div>
 
 				<h3 class="central-esc-title" id="centralEscTitle"><span class="material-symbols-outlined g-icon"
@@ -578,16 +578,76 @@
 				</h3>
 				<p class="central-esc-desc" id="centralEscDesc">
 					O alerta físico (Buzzer/Relé) e a chamada em tela inteira no celular foram disparados após 4,00
-					segundos de cabeça baixa. Caso o motorista não aperte para desativar ou não erga a cabeça por 3
-					segundos, a Central entrará em Alerta Crítico aos 17 segundos!
+					segundos de cabeça baixa. Caso o motorista não reaja ou não erga a cabeça por 3
+					segundos, a Central entrará em Suspeita de Acidente aos 20 segundos!
 				</p>
 
 				<div class="progresso-bar-bg" style="height:10px">
 					<div class="progresso-bar-fill danger" id="centralEscBarFill" style="width:0%"></div>
 				</div>
 
-				<!-- PROTOCOLO AUTÔNOMO SAFE-STOP & RESGATE SOS (Acionado aos 20s sem resposta) -->
-				<div class="sos-protocol-board" id="sosProtocolBoard">
+				<!-- MAPA TÁTICO & LOCALIZAÇÃO VIA SATÉLITE GNSS (Acionado aos 20s sem resposta) -->
+				<div class="satellite-map-container" id="satelliteMapContainer"
+					style="display:none;margin-top:8px;border:1px solid rgba(8,222,235,0.4);border-radius:10px;background:rgba(3,17,28,0.92);padding:14px;overflow:hidden;">
+					<div
+						style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;border-bottom:1px solid rgba(8,222,235,0.2);padding-bottom:8px">
+						<div style="display:flex;align-items:center;gap:8px">
+							<span class="pulse-dot" style="background:#08deeb;box-shadow:0 0 10px #08deeb"></span>
+							<span
+								style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:1px">
+								<span class="material-symbols-outlined g-icon"
+									style="font-size:16px;vertical-align:middle;margin-right:4px">satellite_alt</span>
+								LOCALIZAÇÃO SATELITAL GNSS EM TEMPO REAL · SCANIA R-450 (INO-2026)
+							</span>
+						</div>
+						<span style="font-family:'Space Mono',monospace;font-size:10px;color:#55ee77;font-weight:700">
+							SINAL GNSS: FIX 3D (14 SATÉLITES GPS/GLONASS)
+						</span>
+					</div>
+
+					<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:stretch"
+						class="sat-grid-responsive">
+						<!-- Mapa Tático Interativo Embed OpenStreetMap com Marcador -->
+						<div
+							style="position:relative;border-radius:8px;overflow:hidden;height:230px;border:1px solid rgba(8,222,235,0.3);background:#020b12;">
+							<iframe
+								src="https://www.openstreetmap.org/export/embed.html?bbox=-46.8854%2C-23.6921%2C-46.8654%2C-23.6721&amp;layer=mapnik&amp;marker=-23.6821%2C-46.8754"
+								style="width:100%;height:100%;border:none;filter:invert(90%) hue-rotate(180deg) contrast(110%) brightness(85%);"
+								loading="lazy"></iframe>
+							<div
+								style="position:absolute;top:10px;left:10px;background:rgba(2,11,18,0.88);border:1px solid var(--cyan);padding:4px 8px;border-radius:4px;font-size:9.5px;font-family:'Space Mono';color:#ffffff;pointer-events:none;">
+								📍 ALVO: BR-116 KM 284 · RÉGIS BITTENCOURT
+							</div>
+							<div
+								style="position:absolute;bottom:10px;right:10px;background:rgba(255,42,85,0.9);color:#ffffff;padding:3px 8px;border-radius:4px;font-size:9px;font-family:'Space Mono';font-weight:700;pointer-events:none;">
+								SCANIA R-450 #01
+							</div>
+						</div>
+
+						<!-- Telemetria do Ponto do Veículo -->
+						<div
+							style="display:flex;flex-direction:column;gap:8px;justify-content:center;background:rgba(6,28,43,0.7);border-radius:8px;padding:12px;border:1px solid rgba(8,222,235,0.25);">
+							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono'">COORDENADAS GEOGRÁFICAS
+							</div>
+							<div style="font-size:13px;color:#ffffff;font-family:'Space Mono';font-weight:700">LAT:
+								-23.682138°<br>LON: -46.875412°</div>
+
+							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono';margin-top:4px">RODOVIA
+								/ TRECHO</div>
+							<div style="font-size:12px;color:var(--cyan);font-family:'Space Mono';font-weight:700">
+								BR-116 KM 284 (Sentido Sul)</div>
+							<div style="font-size:10px;color:#8ca4ad">Régis Bittencourt · Graal Buenos Aires</div>
+
+							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono';margin-top:4px">STATUS
+								DO SINAL</div>
+							<div style="font-size:11px;color:#ffdd66;font-family:'Space Mono';font-weight:700">
+								PRECISÃO: ±1,8 METROS</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- PROTOCOLO AUTÔNOMO SAFE-STOP & RESGATE SOS (Acionado aos 35s sem resposta) -->
+				<div class="sos-protocol-board" id="sosProtocolBoard" style="display:none">
 					<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
 						<span
 							style="font-family:'Space Mono';font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:1px">
@@ -1078,6 +1138,8 @@
 		var centralEscTitle = document.getElementById('centralEscTitle');
 		var centralEscDesc = document.getElementById('centralEscDesc');
 		var centralEscBarFill = document.getElementById('centralEscBarFill');
+		var satelliteMapContainer = document.getElementById('satelliteMapContainer');
+		var sosProtocolBoard = document.getElementById('sosProtocolBoard');
 		var sosVelocidadeVal = document.getElementById('sosVelocidadeVal');
 		var btnCentralConfirmarResgate = document.getElementById('btnCentralConfirmarResgate');
 		var btnCentralDesativarEscalonamento = document.getElementById('btnCentralDesativarEscalonamento');
@@ -1136,42 +1198,52 @@
 		}
 
 		function atualizarPainelEscalonamentoUI(decorridoMs) {
+			// Sanitização: Impede timestamp epoch, valores negativos ou clock jump
+			if (isNaN(decorridoMs) || decorridoMs < 0 || decorridoMs > 300000) {
+				decorridoMs = 0;
+			}
 			var segTotal = (decorridoMs / 1000).toFixed(1);
 			var nivel = 1;
-			if (decorridoMs >= 27000) nivel = 3;
-			else if (decorridoMs >= 17000) nivel = 2;
+			if (decorridoMs >= 35000) nivel = 3;
+			else if (decorridoMs >= 20000) nivel = 2;
 
 			if (centralEscalationPanel) {
 				centralEscalationPanel.classList.add('visible');
 				if (nivel === 1) {
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA DESATIVAR ALERTA NO CELULAR';
-					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + segTotal + 's / 17.0s';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO CELULAR';
+					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + segTotal + 's / 20.0s';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
-					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico e a chamada no celular foram disparados (limite de 4,00s). Se o condutor não desativar ou mantiver a cabeça erguida por 3s, a Central entrará em Alerta Crítico aos 17 segundos!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 17000) * 100).toFixed(1) + '%';
+					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico e a chamada no celular foram disparados (tolerância de 4,00s). Se o condutor não reagir ou não mantiver a cabeça erguida por 3s, a Central entrará em Suspeita de Acidente aos 20 segundos!';
+					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 20000) * 100).toFixed(1) + '%';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
 				} else if (nivel === 2) {
-					var segFase2 = ((decorridoMs - 17000) / 1000).toFixed(1);
+					var segFase2 = ((decorridoMs - 20000) / 1000).toFixed(1);
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (17s SEM RESPOSTA)';
-					if (centralEscTimer) centralEscTimer.textContent = 'CONTAGEM ACIDENTE: ' + segFase2 + 's / 10.0s (Total: ' + segTotal + 's / 27.0s)';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> ALERTA CRÍTICO NA CENTRAL: MOTORISTA INATIVO!';
-					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: O motorista não respondeu ao alerta no celular após 17 segundos! Caso permaneça até 27s sem resposta, o sistema acionará Protocolo de Possível Acidente!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 17000) / 10000) * 100).toFixed(1) + '%';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · SUSPEITA DE ACIDENTE (20s SEM RESPOSTA)';
+					if (centralEscTimer) centralEscTimer.textContent = 'CONTAGEM SOS: ' + segFase2 + 's / 15.0s (Total: ' + segTotal + 's / 35.0s)';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> SUSPEITA DE ACIDENTE: LOCALIZAÇÃO SATELITAL TRANSMITIDA!';
+					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: O motorista não respondeu após 20 segundos! Localização satelital da Scania R-450 na BR-116 KM 284 confirmada. Se persistir até 35s, o protocolo Safe-Stop será executado!';
+					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 20000) / 15000) * 100).toFixed(1) + '%';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
 				} else if (nivel === 3) {
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE DETECTADO (27s)';
-					if (centralEscTimer) centralEscTimer.textContent = 'INATIVO HÁ: ' + segTotal + 's / 27.0s · PROTOCOLO SOS ATIVO';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> POSSÍVEL ACIDENTE DETECTADO — PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
-					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Condutor inativo por 27 segundos ininterruptos! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e envio de GPS ao Resgate SAMU 192 / PRF!';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE CONFIRMADO (35s)';
+					if (centralEscTimer) centralEscTimer.textContent = 'INATIVO HÁ: ' + segTotal + 's / 35.0s · PROTOCOLO SOS ATIVO';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
+					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Condutor inativo por mais de 35 segundos! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e envio das coordenadas ao Resgate SAMU 192 / PRF!';
 					if (centralEscBarFill) centralEscBarFill.style.width = '100%';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
 
 					if (sosVelocidadeVal) {
-						var segApos27 = Math.max(0, (decorridoMs - 27000) / 1000);
-						var velAtual = Math.max(0, Math.round(64 - segApos27 * 8));
+						var segApos35 = Math.max(0, (decorridoMs - 35000) / 1000);
+						var velAtual = Math.max(0, Math.round(64 - segApos35 * 8));
 						sosVelocidadeVal.textContent = 'Corte gradual de tração ativo · Velocidade: ' + velAtual + ' km/h ' + (velAtual === 0 ? '(VEÍCULO IMOBILIZADO COM SEGURANÇA)' : '(REDUZINDO...)') + ' · Pisca-Alerta LIGADO';
 					}
 				}
@@ -1180,19 +1252,21 @@
 			if (nivel !== ultimoNivelEscalonamento) {
 				if (nivel === 2 && ultimoNivelEscalonamento < 2) {
 					tocarAudioVoz(vozCritico10sAudio);
-					adicionarLogLocal('ALARME_ATIVADO', 'ALERTA CRÍTICO NA CENTRAL: Motorista não desativou alerta após 17s!');
+					adicionarLogLocal('ALARME_ATIVADO', 'SUSPEITA DE ACIDENTE (20s): Localização satelital transmitida na BR-116 KM 284!');
 				} else if (nivel === 3 && ultimoNivelEscalonamento < 3) {
 					tocarAudioVoz(vozAcidente20sAudio);
-					adicionarLogLocal('ALARME_ATIVADO', 'POSSÍVEL ACIDENTE DETECTADO (27s SEM RESPOSTA): Protocolo Safe-Stop e SOS acionados!');
+					adicionarLogLocal('ALARME_ATIVADO', 'EMERGÊNCIA MÁXIMA SOS (35s): Protocolo Safe-Stop e socorro médico acionados!');
 				}
 				ultimoNivelEscalonamento = nivel;
 			}
 		}
 
 		function iniciarMonitorEscalonamento(tempoMs) {
-			if (!alertaTravadoLocal) {
+			var agora = Date.now();
+			var offset = (typeof tempoMs === 'number' && tempoMs > 0 && tempoMs < 300000) ? tempoMs : 0;
+			if (!alertaTravadoLocal || !inicioSemRespostaLocalMs || (agora - inicioSemRespostaLocalMs > 300000)) {
 				alertaTravadoLocal = true;
-				inicioSemRespostaLocalMs = Date.now() - (tempoMs || 0);
+				inicioSemRespostaLocalMs = agora - offset;
 				ultimoNivelEscalonamento = 1;
 			}
 			if (!timerEscalonamentoLocal) {
@@ -1202,7 +1276,12 @@
 						timerEscalonamentoLocal = null;
 						return;
 					}
-					atualizarPainelEscalonamentoUI(Date.now() - inicioSemRespostaLocalMs);
+					var decorrido = Date.now() - inicioSemRespostaLocalMs;
+					if (isNaN(decorrido) || decorrido < 0 || decorrido > 300000) {
+						inicioSemRespostaLocalMs = Date.now();
+						decorrido = 0;
+					}
+					atualizarPainelEscalonamentoUI(decorrido);
 				}, 100);
 			}
 		}
@@ -1213,6 +1292,8 @@
 			ultimoNivelEscalonamento = 0;
 			if (timerEscalonamentoLocal) { clearInterval(timerEscalonamentoLocal); timerEscalonamentoLocal = null; }
 			if (centralEscalationPanel) centralEscalationPanel.classList.remove('visible', 'nivel-1-celular', 'nivel-2-critico', 'nivel-3-acidente');
+			if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
+			if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
 			[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) { try { a.pause(); a.currentTime = 0; } catch (e) { } });
 		}
 
@@ -1330,7 +1411,6 @@
 				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill warning';
 				if (cardCameraLinklemo) cardCameraLinklemo.classList.remove('camera-alerta-critico');
 			} else if (status === 'ALARME_ATIVADO') {
-				alertaTravadoLocal = true;
 				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-alarme';
 				if (statusMotoristaTexto) {
 					statusMotoristaTexto.style.color = '#ff2a55';

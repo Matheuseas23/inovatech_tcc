@@ -369,7 +369,7 @@
 			</p>
 			<div class="driver-call-escalation-box">
 				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span>
-				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 17.0s</span><br>
+				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 20.0s</span><br>
 				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos ou
 					aperte abaixo para desativar o alerta!</span>
 			</div>
@@ -718,16 +718,22 @@
 					}, 2400);
 				}
 
-				// Cronômetro dinâmico de confirmação de 17.0s
+				// Cronômetro dinâmico de confirmação de 20.0s (Suspeita de Acidente aos 20s e SOS aos 35s)
 				var timerEl = document.getElementById('driverCallEscalationTimer');
 				if (driverEscalationInterval) clearInterval(driverEscalationInterval);
 				driverEscalationInterval = setInterval(function () {
 					var decorrido = ((Date.now() - callStartTimeMs) / 1000).toFixed(1);
+					var numDec = Number(decorrido);
 					if (timerEl) {
-						timerEl.textContent = decorrido + 's / 17.0s';
-						if (Number(decorrido) >= 17.0) {
+						if (numDec >= 35.0) {
 							timerEl.style.color = '#ff2a55';
-							timerEl.textContent = '17.0s / 17.0s (CRÍTICO NA CENTRAL)';
+							timerEl.textContent = decorrido + 's / 35.0s (PROTOCOLO SOS ATIVO)';
+						} else if (numDec >= 20.0) {
+							timerEl.style.color = '#ffaa00';
+							timerEl.textContent = decorrido + 's / 20.0s (SUSPEITA DE ACIDENTE · LOCALIZAÇÃO TRANSMITIDA)';
+						} else {
+							timerEl.style.color = '#ffdd66';
+							timerEl.textContent = decorrido + 's / 20.0s';
 						}
 					}
 				}, 100);
@@ -743,7 +749,7 @@
 			var timerEl = document.getElementById('driverCallEscalationTimer');
 			if (timerEl) {
 				timerEl.style.color = '#ffdd66';
-				timerEl.textContent = '0.0s / 17.0s';
+				timerEl.textContent = '0.0s / 20.0s';
 			}
 			if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
 			try { vozCafeAudio.pause(); vozCafeAudio.currentTime = 0; } catch (e) { }

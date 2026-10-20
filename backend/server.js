@@ -367,6 +367,11 @@ setInterval(() => {
   if (!inicioSemRespostaTimestamp) return;
 
   const decorridoMs = Date.now() - inicioSemRespostaTimestamp;
+  if (decorridoMs < 0 || decorridoMs > 300000) {
+    inicioSemRespostaTimestamp = Date.now();
+    estado.tempo_sem_resposta_ms = 0;
+    return;
+  }
   estado.tempo_sem_resposta_ms = decorridoMs;
   estado.estado = 'ALARME_ATIVADO';
   estado.buzzer = 1;
@@ -374,27 +379,27 @@ setInterval(() => {
 
   let mudouNivel = false;
 
-  // Passou de 10 segundos sem o motorista desativar o alerta no celular -> ALERTA CRÍTICO NA CENTRAL
-  if (decorridoMs >= 10000 && decorridoMs < 20000 && estado.nivel_escalonamento < 2) {
+  // Passou de 20 segundos sem o motorista reagir -> SUSPEITA DE ACIDENTE / LOCALIZAÇÃO SATELITAL NA CENTRAL
+  if (decorridoMs >= 20000 && decorridoMs < 35000 && estado.nivel_escalonamento < 2) {
     estado.nivel_escalonamento = 2;
     mudouNivel = true;
     registrarEvento(
       'ALARME_ATIVADO',
-      'ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!',
-      'Iniciando contagem crítica de +10s para protocolo de Possível Acidente.'
+      'SUSPEITA DE ACIDENTE NA CENTRAL (20s SEM RESPOSTA): Motorista inativo!',
+      'Localização satelital transmitida na BR-116 KM 284. Iniciando contagem para intervenção Safe-Stop aos 35s.'
     );
     // Reforça despertar da tela do celular via ADB
     dispararChamadaCelularADB();
   }
 
-  // Passou de +10 segundos após o Alerta Crítico (20s no total) -> POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS
-  if (decorridoMs >= 20000 && estado.nivel_escalonamento < 3) {
+  // Passou de 35 segundos ininterruptos -> EMERGÊNCIA MÁXIMA / PROTOCOLO SAFE-STOP & SOS
+  if (decorridoMs >= 35000 && estado.nivel_escalonamento < 3) {
     estado.nivel_escalonamento = 3;
     mudouNivel = true;
     registrarEvento(
       'ALARME_ATIVADO',
-      'POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!',
-      'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192.'
+      'EMERGÊNCIA MÁXIMA SOS (35s SEM RESPOSTA)! Protocolo Safe-Stop & Resgate SOS Acionado na Central!',
+      'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e acionamento de Resgate SAMU 192 / PRF.'
     );
   }
 
