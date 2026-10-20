@@ -245,11 +245,12 @@ function dispararChamadaCelularADB() {
   if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH)) return;
   chamadaCelularAbertaViaAdb = true;
   const urlChamada = 'https://inovatech-tcc.vercel.app/?chamada=1';
-  // 1. Acende a tela física caso o celular esteja desligado/apagado (KEYCODE_WAKEUP = 224)
-  // 2. Desbloqueia a tela de bloqueio (wm dismiss-keyguard + KEYCODE_MENU = 82 + swipe)
-  // 3. Abre a Chamada de Café em Tela Inteira por cima de qualquer app
-  const cmdShell = `input keyevent 224 && wm dismiss-keyguard && input keyevent 82 && input swipe 500 1700 500 300 180 && am start -a android.intent.action.VIEW -d "${urlChamada}"`;
-  execFile(ADB_PATH, ['shell', cmdShell], { timeout: 6000 }, () => {});
+  // 1. Acende a tela física caso o celular esteja desligado/apagado (KEYCODE_WAKEUP = 224 + POWER)
+  // 2. Aumenta brilho e volume de mídia para garantir que toque alto igual WhatsApp
+  // 3. Desbloqueia a tela de bloqueio (wm dismiss-keyguard + KEYCODE_MENU = 82 + swipe)
+  // 4. Abre a Chamada de Café em Tela Inteira por cima de qualquer app
+  const cmdShell = `input keyevent 224 && settings put system screen_brightness 255 && media volume --show --stream 3 --set 15 ; wm dismiss-keyguard && input keyevent 82 && input swipe 500 1750 500 250 180 && am start -a android.intent.action.VIEW -d "${urlChamada}"`;
+  execFile(ADB_PATH, ['shell', cmdShell], { timeout: 7000 }, () => {});
 }
 
 // Quando o motorista clica em "Vou parar para descansar", retorna automaticamente para o app da câmera Linklemo
@@ -258,6 +259,109 @@ function voltarParaLinklemoCelularADB() {
   chamadaCelularAbertaViaAdb = false;
   execFile(ADB_PATH, ['shell', 'input', 'keyevent', '4'], { timeout: 3000 }, () => {});
 }
+
+// ------------------------------------------------------------------------------
+// MOTOR DE ESCALONAMENTO DE EMERGÊNCIA (FASE 1: CELULAR -> FASE 2: +10s CRÍTICO -> FASE 3: +10s POSSÍVEL ACIDENTE)
+// ------------------------------------------------------------------------------
+let inicioSemRespostaTimestamp = 0;
+let cooldownNormalizacaoUntil = 0;
+
+function iniciarProtocoloAlertaTravado() {
+  if (!estado.chamada_celular_ativa) {
+    estado.chamada_celular_ativa = true;
+    estado.alerta_travado = true;
+    inicioSemRespostaTimestamp = Date.now();
+    estado.tempo_sem_resposta_ms = 0;
+    estado.nivel_escalonamento = 1; // 1 = Alerta Físico + Celular | 2 = Alerta Crítico Central (>10s) | 3 = Possível Acidente + SOS (>20s)
+    dispararChamadaCelularADB();
+  }
+}
+
+function encerrarProtocoloAlertaTravado() {
+  estado.chamada_celular_ativa = false;
+  estado.alerta_travado = false;
+  inicioSemRespostaTimestamp = 0;
+  estado.tempo_sem_resposta_ms = 0;
+  estado.nivel_escalonamento = 0;
+  estado.estado = 'NORMAL';
+  estado.buzzer = 0;
+  estado.rele = 0;
+  estado.tempo_cabeca_baixa_ms = 0;
+  cooldownNormalizacaoUntil = Date.now() + 2500;
+  voltarParaLinklemoCelularADB();
+  espelharParaNuvem({
+    dispositivo: estado.dispositivo,
+    sensor_ir: 1,
+    tempo_cabeca_baixa_ms: 0,
+    buzzer: 0,
+    rele: 0,
+    estado: 'NORMAL',
+    chamada_celular_ativa: false,
+    alerta_travado: false,
+    tempo_sem_resposta_ms: 0,
+    nivel_escalonamento: 0,
+    _forceReset: true,
+    acelerometro: estado.acelerometro
+  }, true);
+  persistirEmDisco();
+}
+
+// Loop de alta precisão (250ms) que monitora o tempo sem resposta do motorista no celular
+setInterval(() => {
+  if (!estado.chamada_celular_ativa || !inicioSemRespostaTimestamp) return;
+
+  const decorridoMs = Date.now() - inicioSemRespostaTimestamp;
+  estado.tempo_sem_resposta_ms = decorridoMs;
+  estado.estado = 'ALARME_ATIVADO';
+  estado.buzzer = 1;
+  estado.rele = 1;
+
+  let mudouNivel = false;
+
+  // Passou de 10 segundos sem o motorista desativar o alerta no celular -> ALERTA CRÍTICO NA CENTRAL
+  if (decorridoMs >= 10000 && decorridoMs < 20000 && estado.nivel_escalonamento < 2) {
+    estado.nivel_escalonamento = 2;
+    mudouNivel = true;
+    registrarEvento(
+      'ALARME_ATIVADO',
+      '🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!',
+      'Iniciando contagem crítica de +10s para protocolo de Possível Acidente.'
+    );
+    // Reforça despertar da tela do celular via ADB
+    dispararChamadaCelularADB();
+  }
+
+  // Passou de +10 segundos após o Alerta Crítico (20s no total) -> POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS
+  if (decorridoMs >= 20000 && estado.nivel_escalonamento < 3) {
+    estado.nivel_escalonamento = 3;
+    mudouNivel = true;
+    registrarEvento(
+      'ALARME_ATIVADO',
+      '💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!',
+      'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192.'
+    );
+  }
+
+  broadcast({
+    tipo: mudouNivel ? 'ESCALONAMENTO_EMERGENCIA' : 'TELEMETRIA_UPDATE',
+    estado,
+    comandosPendentesParaESP32: comandosPendentes.length
+  });
+
+  espelharParaNuvem({
+    dispositivo: estado.dispositivo,
+    sensor_ir: estado.sensor_ir,
+    tempo_cabeca_baixa_ms: estado.tempo_cabeca_baixa_ms,
+    buzzer: estado.buzzer,
+    rele: estado.rele,
+    estado: estado.estado,
+    chamada_celular_ativa: true,
+    alerta_travado: true,
+    tempo_sem_resposta_ms: estado.tempo_sem_resposta_ms,
+    nivel_escalonamento: estado.nivel_escalonamento,
+    acelerometro: estado.acelerometro
+  }, mudouNivel);
+}, 250);
 
 const RENDER_CLOUD_URL = process.env.RENDER_CLOUD_URL || 'https://inovatech-tcc.onrender.com/api/telemetry';
 const IS_RENDER_CLOUD = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
@@ -332,8 +436,30 @@ function processarTelemetria(payload = {}) {
     };
   }
 
-  // Lógica de cálculo ou confirmação do estado de risco
-  if (payload.estado) {
+  // Se vier espelhado do backend local para a nuvem, preserva campos de escalonamento
+  if (payload.tempo_sem_resposta_ms !== undefined) {
+    estado.tempo_sem_resposta_ms = Number(payload.tempo_sem_resposta_ms);
+  }
+  if (payload.nivel_escalonamento !== undefined) {
+    estado.nivel_escalonamento = Number(payload.nivel_escalonamento);
+  }
+  if (payload.alerta_travado !== undefined) {
+    estado.alerta_travado = Boolean(payload.alerta_travado);
+  }
+
+  // Enquanto o motorista NÃO apertar para desativar o alerta no celular, mantém o alerta travado ativo!
+  if (estado.alerta_travado && !payload._forceReset) {
+    estado.estado = 'ALARME_ATIVADO';
+    estado.buzzer = 1;
+    estado.rele = 1;
+    estado.chamada_celular_ativa = true;
+    estado.tempo_cabeca_baixa_ms = Math.max(2500, estado.tempo_cabeca_baixa_ms || 2500);
+  } else if (Date.now() < cooldownNormalizacaoUntil && payload.estado !== 'ALARME_ATIVADO') {
+    estado.estado = 'NORMAL';
+    estado.tempo_cabeca_baixa_ms = 0;
+    estado.buzzer = 0;
+    estado.rele = 0;
+  } else if (payload.estado) {
     estado.estado = payload.estado;
   } else {
     if (estado.sensor_ir === 0) {
@@ -359,16 +485,15 @@ function processarTelemetria(payload = {}) {
       registrarEvento('PRE_ALERTA', 'Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)', `Tempo decorrido: ${estado.tempo_cabeca_baixa_ms}ms`);
     } else if (estado.estado === 'ALARME_ATIVADO') {
       estado.contadores.totalAlarmesSessao++;
-      estado.chamada_celular_ativa = true;
-      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (2,5s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados via Backend.`);
-      dispararChamadaCelularADB();
+      iniciarProtocoloAlertaTravado();
+      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (2,5s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!`);
       broadcast({
         tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
         dispararChamadaCafe: true,
         estado
       });
     } else if (estado.estado === 'NORMAL') {
-      registrarEvento('NORMAL', 'Postura Normalizada: Cabeça Erguida', 'Alarme físico cessado imediatamente.');
+      registrarEvento('NORMAL', 'Postura Normalizada: Motorista confirmou alerta', 'Alarme físico e virtual encerrados.');
     }
   }
 
@@ -392,6 +517,9 @@ function processarTelemetria(payload = {}) {
       rele: estado.rele,
       estado: estado.estado,
       chamada_celular_ativa: Boolean(estado.chamada_celular_ativa),
+      alerta_travado: Boolean(estado.alerta_travado),
+      tempo_sem_resposta_ms: estado.tempo_sem_resposta_ms || 0,
+      nivel_escalonamento: estado.nivel_escalonamento || 0,
       acelerometro: estado.acelerometro
     }, houveTransicao);
   }
@@ -443,23 +571,17 @@ app.post('/api/command', (req, res) => {
     estado.buzzer = 1;
     estado.rele = 1;
     estado.tempo_cabeca_baixa_ms = 2500;
-    estado.chamada_celular_ativa = true;
     estado.contadores.totalAlarmesSessao++;
+    iniciarProtocoloAlertaTravado();
     registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alerta Físico e Virtual no Celular Disparado');
-    dispararChamadaCelularADB();
     broadcast({
       tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
       dispararChamadaCafe: true,
       estado
     });
   } else if (comando === 'SILENCIAR_ALARME' || comando === 'RESET') {
-    estado.estado = 'NORMAL';
-    estado.buzzer = 0;
-    estado.rele = 0;
-    estado.tempo_cabeca_baixa_ms = 0;
-    estado.chamada_celular_ativa = false;
-    registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alarme Silenciado/Resetado pela Central');
-    voltarParaLinklemoCelularADB();
+    encerrarProtocoloAlertaTravado();
+    registrarEvento('COMANDO_CENTRAL', 'Confirmação Recebida: Alerta Desativado pelo Motorista / Central');
   }
 
   // Notifica todos via WebSocket imediatamente
@@ -547,23 +669,17 @@ wss.on('connection', (ws, req) => {
           estado.buzzer = 1;
           estado.rele = 1;
           estado.tempo_cabeca_baixa_ms = 2500;
-          estado.chamada_celular_ativa = true;
           estado.contadores.totalAlarmesSessao++;
+          iniciarProtocoloAlertaTravado();
           registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alerta Físico e Virtual Disparado');
-          dispararChamadaCelularADB();
           broadcast({
             tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
             dispararChamadaCafe: true,
             estado
           });
         } else if (parsed.comando === 'SILENCIAR_ALARME' || parsed.comando === 'RESET') {
-          estado.estado = 'NORMAL';
-          estado.buzzer = 0;
-          estado.rele = 0;
-          estado.tempo_cabeca_baixa_ms = 0;
-          estado.chamada_celular_ativa = false;
-          registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alarme Silenciado/Resetado');
-          voltarParaLinklemoCelularADB();
+          encerrarProtocoloAlertaTravado();
+          registrarEvento('COMANDO_CENTRAL', 'Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central');
         }
         broadcast({
           tipo: 'COMANDO_EXECUTADO',

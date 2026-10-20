@@ -2828,6 +2828,175 @@
 				display: inline-flex;
 			}
 		}
+
+		/* Contador de Escalonamento na Tela de Chamada do Celular */
+		.driver-call-escalation-box {
+			margin-top: 14px;
+			width: 100%;
+			padding: 10px 14px;
+			border-radius: 10px;
+			background: rgba(255, 42, 85, 0.22);
+			border: 1.5px solid #ff2a55;
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			color: #ffdd66;
+			text-align: center;
+			line-height: 1.45;
+		}
+
+		/* Painel de Escalonamento Crítico & Possível Acidente na Central da Empresa (#painel) */
+		.central-escalation-panel {
+			display: none;
+			flex-direction: column;
+			gap: 14px;
+			padding: 18px 22px;
+			border-radius: 14px;
+			border: 2px solid #ffaa00;
+			background: linear-gradient(135deg, rgba(45, 26, 6, 0.94) 0%, rgba(16, 10, 4, 0.97) 100%);
+			box-shadow: 0 14px 40px rgba(0, 0, 0, 0.65), 0 0 28px rgba(255, 170, 0, 0.35);
+			transition: all 0.3s ease;
+		}
+
+		.central-escalation-panel.visible {
+			display: flex;
+		}
+
+		.central-escalation-panel.nivel-2-critico {
+			border-color: #ff2a55;
+			background: linear-gradient(135deg, rgba(75, 8, 24, 0.96) 0%, rgba(24, 4, 10, 0.98) 100%);
+			box-shadow: 0 18px 50px rgba(0, 0, 0, 0.8), 0 0 45px rgba(255, 42, 85, 0.75);
+			animation: bordaNeonAlarme 0.7s infinite alternate;
+		}
+
+		.central-escalation-panel.nivel-3-acidente {
+			border-color: #ff003c;
+			border-width: 2.5px;
+			background: radial-gradient(circle at top right, rgba(255, 0, 60, 0.42) 0%, rgba(42, 4, 14, 0.98) 55%, #090205 100%);
+			box-shadow: 0 22px 65px rgba(0, 0, 0, 0.9), 0 0 70px rgba(255, 0, 60, 0.95);
+			animation: pulsoAcidenteGrave 0.55s infinite alternate;
+		}
+
+		@keyframes pulsoAcidenteGrave {
+			0% { transform: scale(1); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.85), 0 0 35px rgba(255, 0, 60, 0.7); }
+			100% { transform: scale(1.008); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.95), 0 0 75px rgba(255, 0, 60, 1); }
+		}
+
+		.central-esc-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			flex-wrap: wrap;
+			gap: 10px;
+		}
+
+		.central-esc-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 8px;
+			padding: 6px 14px;
+			border-radius: 999px;
+			background: rgba(255, 42, 85, 0.25);
+			border: 1px solid #ff4b72;
+			color: #ffffff;
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			font-weight: 700;
+			letter-spacing: 1px;
+			text-transform: uppercase;
+		}
+
+		.central-esc-timer {
+			font-family: 'Space Mono', monospace;
+			font-size: 18px;
+			font-weight: 700;
+			color: #ffdd66;
+		}
+
+		.central-esc-title {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 30px;
+			font-weight: 700;
+			letter-spacing: 1.5px;
+			text-transform: uppercase;
+			color: #ffffff;
+			margin: 0;
+			line-height: 1.1;
+		}
+
+		.central-esc-desc {
+			font-family: 'Space Mono', monospace;
+			font-size: 11.5px;
+			line-height: 1.6;
+			color: #f0e6e9;
+			margin: 0;
+		}
+
+		/* Ideia Criativa na Central: Protocolo Autônomo Safe-Stop & Resgate SOS (Nível 3: Possível Acidente) */
+		.sos-protocol-board {
+			display: none;
+			flex-direction: column;
+			gap: 12px;
+			margin-top: 6px;
+			padding: 16px;
+			border-radius: 12px;
+			background: rgba(5, 14, 22, 0.88);
+			border: 1px solid rgba(8, 222, 235, 0.45);
+		}
+
+		.central-escalation-panel.nivel-3-acidente .sos-protocol-board {
+			display: flex;
+		}
+
+		.sos-protocol-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 10px;
+		}
+
+		@media (max-width: 980px) {
+			.sos-protocol-grid {
+				grid-template-columns: repeat(2, 1fr);
+			}
+		}
+
+		.painel-container.painel-modo-celular .sos-protocol-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.sos-module-card {
+			padding: 12px;
+			border-radius: 8px;
+			background: rgba(12, 34, 50, 0.78);
+			border: 1px solid rgba(255, 42, 85, 0.45);
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.sos-module-tag {
+			font-family: 'Space Mono', monospace;
+			font-size: 9px;
+			font-weight: 700;
+			color: var(--cyan);
+			letter-spacing: 0.5px;
+			text-transform: uppercase;
+		}
+
+		.sos-module-title {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 17px;
+			font-weight: 700;
+			color: #ffffff;
+			text-transform: uppercase;
+			letter-spacing: 0.8px;
+		}
+
+		.sos-module-val {
+			font-family: 'Space Mono', monospace;
+			font-size: 10px;
+			color: #ffdd66;
+			line-height: 1.45;
+		}
 	</style>
 </head>
 <body data-active-view="home">
@@ -2871,6 +3040,10 @@
 				<strong>ATENÇÃO MOTORISTA:</strong> Detectamos queda de cabeça por mais de <strong>2,5 segundos</strong>.<br>
 				Encoste o veículo em um local seguro, faça uma pausa para descansar e tome um café!
 			</p>
+			<div class="driver-call-escalation-box" id="driverCallEscalationBox">
+				⏱️ <strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 10.0s</span><br>
+				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Aperte o botão verde abaixo! Em 10s sem resposta, um Alerta Crítico será enviado à Central da Empresa!</span>
+			</div>
 		</div>
 
 		<div class="driver-call-bottom">
@@ -2955,6 +3128,68 @@
 							<span class="eyebrow" id="painelClock" style="margin:0;color:var(--cyan);font-weight:700">AO VIVO · 00:00:00</span>
 							<button class="btn-tactical" id="btnLockPainel" title="Bloquear acesso à Central">
 								<span>🔒 Bloquear Painel</span>
+							</button>
+						</div>
+					</div>
+
+					<!-- PAINEL DE ESCALONAMENTO DE EMERGÊNCIA DA CENTRAL (10s ALERTA CRÍTICO -> 20s POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS) -->
+					<div class="central-escalation-panel" id="centralEscalationPanel" role="alert" aria-live="assertive">
+						<div class="central-esc-header">
+							<span class="central-esc-badge" id="centralEscBadge">
+								<span class="pulse-dot danger"></span>
+								<span id="centralEscBadgeText">📱 FASE 1 · AGUARDANDO MOTORISTA DESATIVAR ALERTA NO CELULAR</span>
+							</span>
+							<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s / 10.0s</span>
+						</div>
+
+						<h3 class="central-esc-title" id="centralEscTitle">☕ CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA</h3>
+						<p class="central-esc-desc" id="centralEscDesc">
+							O alerta físico (Buzzer/Relé) e a chamada em tela inteira no celular foram disparados. Caso o motorista não aperte para desativar em 10 segundos, a Central entrará em Alerta Crítico!
+						</p>
+
+						<div class="progresso-bar-bg" style="height:10px">
+							<div class="progresso-bar-fill danger" id="centralEscBarFill" style="width:0%"></div>
+						</div>
+
+						<!-- IDEIA EXCLUSIVA NA CENTRAL: PROTOCOLO AUTÔNOMO SAFE-STOP & TELEMETRIA DE RESGATE SOS (Acionado aos 20s sem resposta) -->
+						<div class="sos-protocol-board" id="sosProtocolBoard">
+							<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+								<span style="font-family:'Space Mono';font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:1px">
+									⚡ PROTOCOLO AUTÔNOMO INOVATECH "SAFE-STOP & RESGATE SOS" ATIVADO AUTOMATICAMENTE PELA CENTRAL:
+								</span>
+								<span style="font-family:'Space Mono';font-size:10px;color:#ff4b72;font-weight:700">● INTERVENÇÃO VEICULAR EM CURSO</span>
+							</div>
+
+							<div class="sos-protocol-grid">
+								<div class="sos-module-card">
+									<span class="sos-module-tag">1. INTERVENÇÃO VEICULAR (RELÉ GPIO 18)</span>
+									<strong class="sos-module-title">🛑 DESACELERAÇÃO SAFE-STOP</strong>
+									<span class="sos-module-val" id="sosVelocidadeVal">Corte gradual de tração ativo · Reduzindo: 64 km/h ➔ 0 km/h · Pisca-Alerta e Buzina Externa LIGADOS</span>
+								</div>
+								<div class="sos-module-card">
+									<span class="sos-module-tag">2. RASTREAMENTO DE EMERGÊNCIA</span>
+									<strong class="sos-module-title">📍 TELEMETRIA GPS SOS</strong>
+									<span class="sos-module-val">Rodovia BR-116 · KM 284 (Sentido Sul) · Lat -23.6821° / Lon -46.8754° enviado à Torre</span>
+								</div>
+								<div class="sos-module-card">
+									<span class="sos-module-tag">3. SOCORRO MÉDICO & RODOVIÁRIO</span>
+									<strong class="sos-module-title">🚑 DESPACHO SAMU 192 / PRF</strong>
+									<span class="sos-module-val">Alerta automático de suspeita de Mal Súbito / Colisão transmitido com prioridade máxima</span>
+								</div>
+								<div class="sos-module-card">
+									<span class="sos-module-tag">4. CAIXA-PRETA & AUDITORIA</span>
+									<strong class="sos-module-title">📹 GRAVAÇÃO DE CABINE</strong>
+									<span class="sos-module-val">Vídeo da câmera Linklemo e log biométrico travados na nuvem para perícia e socorro</span>
+								</div>
+							</div>
+						</div>
+
+						<div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:4px">
+							<button type="button" class="btn-tactical danger" id="btnCentralConfirmarResgate" style="display:none;padding:8px 16px;font-size:11px">
+								<span>🚑 Confirmar Despacho de Resgate & Contato na Cabine</span>
+							</button>
+							<button type="button" class="btn-tactical" id="btnCentralDesativarEscalonamento" style="padding:8px 16px;font-size:11px;border-color:#55ee77;color:#55ee77">
+								<span>✓ Motorista Confirmou / Desativar Alerta</span>
 							</button>
 						</div>
 					</div>
@@ -3906,6 +4141,242 @@ var callRingtoneTimer = null;
 var callVibrationTimer = null;
 var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
 vozCafeAudio.preload = 'auto';
+var vozCritico10sAudio = new Audio('alerta-critico-10s.mp3');
+vozCritico10sAudio.preload = 'auto';
+var vozAcidente20sAudio = new Audio('alerta-acidente-20s.mp3');
+vozAcidente20sAudio.preload = 'auto';
+
+// Elementos do Escalonamento na Central (10s Alerta Crítico -> 20s Possível Acidente + Safe-Stop SOS)
+var centralEscalationPanel = document.getElementById('centralEscalationPanel');
+var centralEscBadgeText = document.getElementById('centralEscBadgeText');
+var centralEscTimer = document.getElementById('centralEscTimer');
+var centralEscTitle = document.getElementById('centralEscTitle');
+var centralEscDesc = document.getElementById('centralEscDesc');
+var centralEscBarFill = document.getElementById('centralEscBarFill');
+var sosVelocidadeVal = document.getElementById('sosVelocidadeVal');
+var btnCentralConfirmarResgate = document.getElementById('btnCentralConfirmarResgate');
+var btnCentralDesativarEscalonamento = document.getElementById('btnCentralDesativarEscalonamento');
+var driverCallEscalationTimer = document.getElementById('driverCallEscalationTimer');
+var driverCallEscalationSub = document.getElementById('driverCallEscalationSub');
+
+var alertaTravadoLocal = false;
+var inicioSemRespostaLocalMs = 0;
+var timerEscalonamentoLocal = null;
+var ultimoNivelEscalonamento = 0;
+var keepAliveAudioAtivo = false;
+
+// Mantém canal de áudio silencioso ativo no celular para o alerta soar mesmo com a tela bloqueada/desligada
+function iniciarKeepAliveCelularDesligado() {
+	if (keepAliveAudioAtivo) return;
+	keepAliveAudioAtivo = true;
+	try {
+		if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+		if (audioCtx.state === 'suspended') audioCtx.resume();
+		// Desbloqueia os 3 arquivos de voz feminina no primeiro toque
+		[vozCafeAudio, vozCritico10sAudio, vozAcidente20sAudio].forEach(function(aud) {
+			aud.volume = 0;
+			aud.play().then(function() {
+				aud.pause();
+				aud.currentTime = 0;
+				aud.volume = 1.0;
+			}).catch(function(){});
+		});
+		if ('mediaSession' in navigator) {
+			navigator.mediaSession.metadata = new MediaMetadata({
+				title: 'Monitoramento Ativo · Smart Driver',
+				artist: 'InovaTech Central 24/7',
+				album: 'Proteção contra Fadiga'
+			});
+		}
+	} catch(e) {}
+}
+
+function tocarAudioVozFeminina(audioObj, textoFallback) {
+	try {
+		if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+		[vozCafeAudio, vozCritico10sAudio, vozAcidente20sAudio].forEach(function(a) {
+			if (a !== audioObj) { try { a.pause(); a.currentTime = 0; } catch(e) {} }
+		});
+		audioObj.pause();
+		audioObj.currentTime = 0;
+		audioObj.preservesPitch = false;
+		audioObj.mozPreservesPitch = false;
+		audioObj.webkitPreservesPitch = false;
+		audioObj.playbackRate = 1.12;
+		audioObj.volume = 1.0;
+		var p = audioObj.play();
+		if (p !== undefined) {
+			p.catch(function() {
+				if ('speechSynthesis' in window) {
+					var msg = new SpeechSynthesisUtterance(textoFallback);
+					msg.lang = 'pt-BR';
+					msg.rate = 1.1;
+					msg.pitch = 1.32;
+					window.speechSynthesis.speak(msg);
+				}
+			});
+		}
+	} catch(e) {}
+}
+
+function tocarSireneEscalonamentoCentral(nivel) {
+	try {
+		if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+		if (audioCtx.state === 'suspended') audioCtx.resume();
+		var now = audioCtx.currentTime;
+		var freqBase = (nivel >= 3) ? 1046.5 : 880;
+		for (var i = 0; i < (nivel >= 3 ? 6 : 4); i++) {
+			var osc = audioCtx.createOscillator();
+			var gain = audioCtx.createGain();
+			osc.type = 'sawtooth';
+			osc.frequency.setValueAtTime(i % 2 === 0 ? freqBase : freqBase * 1.25, now + i * 0.18);
+			gain.gain.setValueAtTime(0.22, now + i * 0.18);
+			gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.18 + 0.16);
+			osc.connect(gain);
+			gain.connect(audioCtx.destination);
+			osc.start(now + i * 0.18);
+			osc.stop(now + i * 0.18 + 0.16);
+		}
+	} catch(e) {}
+}
+
+function atualizarPainelEscalonamentoUI(decorridoMs) {
+	var segTotal = (decorridoMs / 1000).toFixed(1);
+	var nivel = 1;
+	if (decorridoMs >= 20000) {
+		nivel = 3;
+	} else if (decorridoMs >= 10000) {
+		nivel = 2;
+	}
+
+	// Atualiza contador na tela de chamada do celular
+	if (driverCallEscalationTimer) {
+		if (nivel === 1) {
+			driverCallEscalationTimer.textContent = segTotal + 's / 10.0s';
+			if (driverCallEscalationSub) driverCallEscalationSub.textContent = 'Aperte o botão verde abaixo! Em 10s sem resposta, um Alerta Crítico será enviado à Central da Empresa!';
+		} else if (nivel === 2) {
+			driverCallEscalationTimer.textContent = segTotal + 's / 20.0s (ALERTA CRÍTICO NA CENTRAL!)';
+			if (driverCallEscalationSub) driverCallEscalationSub.textContent = '🚨 ALERTA CRÍTICO ENVIADO À CENTRAL! Confirme agora ou a Central acionará Protocolo de Possível Acidente!';
+		} else {
+			driverCallEscalationTimer.textContent = segTotal + 's (POSSÍVEL ACIDENTE · SOS ACIONADO!)';
+			if (driverCallEscalationSub) driverCallEscalationSub.textContent = '💥 POSSÍVEL ACIDENTE DETECTADO! A Central acionou desaceleração veicular e equipe de resgate!';
+		}
+	}
+
+	// Atualiza Painel de Escalonamento na Central da Empresa (#painel)
+	if (centralEscalationPanel) {
+		centralEscalationPanel.classList.add('visible');
+		if (nivel === 1) {
+			centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
+			if (centralEscBadgeText) centralEscBadgeText.textContent = '📱 FASE 1 · AGUARDANDO MOTORISTA DESATIVAR ALERTA NO CELULAR';
+			if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + segTotal + 's / 10.0s';
+			if (centralEscTitle) centralEscTitle.textContent = '☕ CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
+			if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico (Buzzer/Relé) e a chamada em tela inteira no celular estão ativos. Se o motorista não apertar para desativar em 10 segundos, um Alerta Crítico será disparado na Central!';
+			if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 10000) * 100).toFixed(1) + '%';
+			if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
+		} else if (nivel === 2) {
+			var segFase2 = ((decorridoMs - 10000) / 1000).toFixed(1);
+			centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
+			if (centralEscBadgeText) centralEscBadgeText.textContent = '🚨 FASE 2 · ALERTA CRÍTICO NA CENTRAL DA EMPRESA (+10s SEM RESPOSTA)';
+			if (centralEscTimer) centralEscTimer.textContent = 'CONTAGEM ACIDENTE: ' + segFase2 + 's / 10.0s (Total: ' + segTotal + 's)';
+			if (centralEscTitle) centralEscTitle.textContent = '🚨 ALERTA CRÍTICO NA CENTRAL: MOTORISTA NÃO RESPONDEU HÁ MAIS DE 10 SEGUNDOS!';
+			if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR DA CENTRAL: O motorista não desativou o alerta no celular após 10 segundos! Caso permaneça mais 10 segundos sem resposta, o sistema declarará Possível Acidente e ativará o Protocolo Safe-Stop & SOS!';
+			if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 10000) / 10000) * 100).toFixed(1) + '%';
+			if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
+
+			// Atualiza também o Aviso no Canto Global
+			if (cornerAlertTagText) cornerAlertTagText.textContent = '🚨 ALERTA CRÍTICO NA CENTRAL (+10s SEM RESPOSTA)';
+			if (cornerAlertTitle) cornerAlertTitle.textContent = 'MOTORISTA INATIVO HÁ ' + segTotal + 's!';
+			if (cornerAlertDesc) cornerAlertDesc.textContent = 'Motorista não respondeu ao celular! Contando ' + segFase2 + 's / 10.0s para Protocolo de Possível Acidente!';
+		} else if (nivel === 3) {
+			centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
+			if (centralEscBadgeText) centralEscBadgeText.textContent = '💥 FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE DETECTADO (+20s SEM RESPOSTA)';
+			if (centralEscTimer) centralEscTimer.textContent = 'INATIVO HÁ: ' + segTotal + 's · PROTOCOLO SOS ATIVO';
+			if (centralEscTitle) centralEscTitle.textContent = '💥 POSSÍVEL ACIDENTE DETECTADO — PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
+			if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Mais de 10 segundos após o Alerta Crítico (20s totais sem resposta do motorista)! A Central InovaTech ativou automaticamente a desaceleração assistida do veículo (Relé GPIO 18), Pisca-Alerta e envio de localização GPS ao Resgate!';
+			if (centralEscBarFill) centralEscBarFill.style.width = '100%';
+			if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
+
+			// Simula desaceleração progressiva Safe-Stop de 64 km/h até 0 km/h
+			if (sosVelocidadeVal) {
+				var segApos20 = Math.max(0, (decorridoMs - 20000) / 1000);
+				var velAtual = Math.max(0, Math.round(64 - segApos20 * 8));
+				sosVelocidadeVal.textContent = 'Corte gradual de tração ativo · Velocidade: ' + velAtual + ' km/h ' + (velAtual === 0 ? '(VEÍCULO IMOBILIZADO COM SEGURANÇA)' : '(REDUZINDO...)') + ' · Pisca-Alerta LIGADO';
+			}
+
+			// Atualiza também o Aviso no Canto Global
+			if (cornerAlertTagText) cornerAlertTagText.textContent = '💥 POSSÍVEL ACIDENTE · PROTOCOLO SOS ATIVO';
+			if (cornerAlertTitle) cornerAlertTitle.textContent = 'POSSÍVEL ACIDENTE! MOTORISTA INATIVO (' + segTotal + 's)';
+			if (cornerAlertDesc) cornerAlertDesc.textContent = 'Protocolo Safe-Stop (Desaceleração via Relé) e Resgate SAMU 192 acionados automaticamente na Central!';
+		}
+	}
+
+	// Dispara eventos sonoros e logs na mudança de nível (1 -> 2 aos 10s, 2 -> 3 aos 20s)
+	if (nivel !== ultimoNivelEscalonamento) {
+		if (nivel === 2 && ultimoNivelEscalonamento < 2) {
+			tocarSireneEscalonamentoCentral(2);
+			tocarAudioVozFeminina(vozCritico10sAudio, 'Alerta crítico na Central da Empresa! O motorista não desativou o alerta há mais de dez segundos! Verifique a cabine imediatamente!');
+			adicionarLogLocal('ALARME_ATIVADO', '🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular! Contando +10s para Possível Acidente...');
+		} else if (nivel === 3 && ultimoNivelEscalonamento < 3) {
+			tocarSireneEscalonamentoCentral(3);
+			tocarAudioVozFeminina(vozAcidente20sAudio, 'Emergência máxima na Central! Possível acidente detectado! Motorista sem resposta há vinte segundos. Acionando parada automática do veículo e equipe de resgate!');
+			adicionarLogLocal('ALARME_ATIVADO', '💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA): Protocolo Autônomo Safe-Stop (Relé GPIO 18) e Resgate SOS acionados na Central!');
+		}
+		ultimoNivelEscalonamento = nivel;
+	}
+}
+
+function iniciarMonitorEscalonamentoSemResposta(tempoInicialMs) {
+	if (!alertaTravadoLocal) {
+		alertaTravadoLocal = true;
+		inicioSemRespostaLocalMs = Date.now() - (tempoInicialMs || 0);
+		ultimoNivelEscalonamento = 1;
+	} else if (tempoInicialMs && Math.abs((Date.now() - inicioSemRespostaLocalMs) - tempoInicialMs) > 1500) {
+		inicioSemRespostaLocalMs = Date.now() - tempoInicialMs;
+	}
+
+	if (!timerEscalonamentoLocal) {
+		timerEscalonamentoLocal = setInterval(function() {
+			if (!alertaTravadoLocal) {
+				clearInterval(timerEscalonamentoLocal);
+				timerEscalonamentoLocal = null;
+				return;
+			}
+			var decorrido = Date.now() - inicioSemRespostaLocalMs;
+			atualizarPainelEscalonamentoUI(decorrido);
+		}, 100);
+	}
+}
+
+function encerrarMonitorEscalonamentoSemResposta() {
+	alertaTravadoLocal = false;
+	inicioSemRespostaLocalMs = 0;
+	ultimoNivelEscalonamento = 0;
+	if (timerEscalonamentoLocal) {
+		clearInterval(timerEscalonamentoLocal);
+		timerEscalonamentoLocal = null;
+	}
+	if (centralEscalationPanel) {
+		centralEscalationPanel.classList.remove('visible', 'nivel-1-celular', 'nivel-2-critico', 'nivel-3-acidente');
+	}
+}
+
+if (btnCentralDesativarEscalonamento) {
+	btnCentralDesativarEscalonamento.addEventListener('click', function() {
+		encerrarChamadaTelaCheiaMotorista();
+		encerrarMonitorEscalonamentoSemResposta();
+		enviarComandoParaBackend('SILENCIAR_ALARME');
+	});
+}
+
+if (btnCentralConfirmarResgate) {
+	btnCentralConfirmarResgate.addEventListener('click', function() {
+		adicionarLogLocal('COMANDO_CENTRAL', '🚑 Operador da Central confirmou despacho de Resgate SAMU 192 / PRF e bloqueio seguro da viatura.');
+		btnCentralConfirmarResgate.innerHTML = '<span>✓ RESGATE SAMU 192 / FROTA ACIONADO COM SUCESSO</span>';
+		btnCentralConfirmarResgate.style.background = '#10b981';
+		btnCentralConfirmarResgate.style.borderColor = '#55ee77';
+	});
+}
 
 function ehDispositivoCelular() {
 	var params = new URLSearchParams(window.location.search);
@@ -3992,17 +4463,7 @@ function falarAvisoMotoristaCafe() {
 function ativarModoTelaApagadaCelular() {
 	if (!driverBlackStandby) return;
 	driverBlackStandby.classList.add('active');
-	// Desbloqueia previamente áudio, WakeLock e Tela Cheia para acordar instantaneamente no alerta
-	try {
-		if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-		if (audioCtx.state === 'suspended') audioCtx.resume();
-		vozCafeAudio.volume = 0;
-		vozCafeAudio.play().then(function() {
-			vozCafeAudio.pause();
-			vozCafeAudio.currentTime = 0;
-			vozCafeAudio.volume = 1.0;
-		}).catch(function(){});
-	} catch(e) {}
+	iniciarKeepAliveCelularDesligado();
 	try {
 		if ('wakeLock' in navigator) {
 			navigator.wakeLock.request('screen').catch(function(){});
@@ -4088,10 +4549,9 @@ function encerrarChamadaTelaCheiaMotorista() {
 	if (navigator.vibrate) {
 		try { navigator.vibrate(0); } catch(e) {}
 	}
-	try {
-		vozCafeAudio.pause();
-		vozCafeAudio.currentTime = 0;
-	} catch(e) {}
+	[vozCafeAudio, vozCritico10sAudio, vozAcidente20sAudio].forEach(function(a) {
+		try { a.pause(); a.currentTime = 0; } catch(e) {}
+	});
 	if ('speechSynthesis' in window) {
 		try { window.speechSynthesis.cancel(); } catch(e) {}
 	}
@@ -4100,6 +4560,7 @@ function encerrarChamadaTelaCheiaMotorista() {
 if (btnDriverAcceptRest) {
 	btnDriverAcceptRest.addEventListener('click', function() {
 		encerrarChamadaTelaCheiaMotorista();
+		encerrarMonitorEscalonamentoSemResposta();
 		adicionarLogLocal('COMANDO_CENTRAL', '☕ Motorista confirmou no celular: Vai parar para descansar e tomar café.');
 		enviarComandoParaBackend('SILENCIAR_ALARME');
 	});
@@ -4108,6 +4569,7 @@ if (btnDriverAcceptRest) {
 if (btnDriverDismissCall) {
 	btnDriverDismissCall.addEventListener('click', function() {
 		encerrarChamadaTelaCheiaMotorista();
+		encerrarMonitorEscalonamentoSemResposta();
 		enviarComandoParaBackend('SILENCIAR_ALARME');
 	});
 }
@@ -4115,6 +4577,7 @@ if (btnDriverDismissCall) {
 if (btnTestarChamadaCafe) {
 	btnTestarChamadaCafe.addEventListener('click', function() {
 		acionarChamadaTelaCheiaMotorista(true);
+		iniciarMonitorEscalonamentoSemResposta(0);
 		enviarComandoParaBackend('DISPARAR_TESTE');
 	});
 }
@@ -4123,9 +4586,13 @@ if (btnTestarChamadaCafe) {
 (function() {
 	var params = new URLSearchParams(window.location.search);
 	if (params.get('chamada') === '1') {
-		setTimeout(function() { acionarChamadaTelaCheiaMotorista(true); }, 300);
+		setTimeout(function() {
+			acionarChamadaTelaCheiaMotorista(true);
+			iniciarMonitorEscalonamentoSemResposta(0);
+		}, 300);
 	}
 	document.addEventListener('click', function desbloquearRecursosCelular() {
+		iniciarKeepAliveCelularDesligado();
 		if ('Notification' in window && Notification.permission === 'default') {
 			try { Notification.requestPermission(); } catch(e) {}
 		}
@@ -4275,6 +4742,13 @@ function atualizarPainelComEstado(estado) {
 
 	// 1. Estado do Condutor em Tempo Real (Alta Precisão)
 	var status = estado.estado || 'NORMAL';
+	// Enquanto o motorista não apertar para desativar o alerta, mantém o alerta travado ativo!
+	if (alertaTravadoLocal && status === 'NORMAL' && !estado._forceReset && estado.alerta_travado !== false) {
+		status = 'ALARME_ATIVADO';
+		estado.buzzer = 1;
+		estado.rele = 1;
+		estado.tempo_cabeca_baixa_ms = Math.max(2500, estado.tempo_cabeca_baixa_ms || 2500);
+	}
 	var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
 	var segDecorridos = (tempoMs / 1000).toFixed(2);
 	var perc = Math.min(100, (tempoMs / 2500) * 100);
@@ -4291,6 +4765,8 @@ function atualizarPainelComEstado(estado) {
 	}
 
 	if (status === 'NORMAL') {
+		encerrarMonitorEscalonamentoSemResposta();
+		encerrarChamadaTelaCheiaMotorista();
 		if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-normal';
 		if (statusMotoristaTexto) {
 			statusMotoristaTexto.style.color = '#08deeb';
@@ -4330,6 +4806,8 @@ function atualizarPainelComEstado(estado) {
 		if (cardCameraLinklemo) {
 			cardCameraLinklemo.classList.add('camera-alerta-critico');
 		}
+		// Inicia o monitor de escalonamento (10s -> Alerta Crítico | 20s -> Possível Acidente + Safe-Stop SOS)
+		iniciarMonitorEscalonamentoSemResposta(estado.tempo_sem_resposta_ms || 0);
 		// Aciona a Chamada de Emergência em Tela Inteira no Celular do Motorista (Ícone de Café ☕)
 		acionarChamadaTelaCheiaMotorista(false);
 		if (ultimoEstadoRegistrado !== 'ALARME_ATIVADO') {
@@ -4564,6 +5042,21 @@ function enviarComandoParaBackend(cmd) {
 	if (wsClient && wsClient.readyState === WebSocket.OPEN) {
 		wsClient.send(JSON.stringify({ tipo: 'COMANDO', comando: cmd }));
 	}
+	if (wsLocalBridgeClient && wsLocalBridgeClient.readyState === WebSocket.OPEN) {
+		wsLocalBridgeClient.send(JSON.stringify({ tipo: 'COMANDO', comando: cmd }));
+	}
+	if (cmd !== 'DISPARAR_TESTE') {
+		encerrarMonitorEscalonamentoSemResposta();
+		encerrarChamadaTelaCheiaMotorista();
+	}
+	var urlsCmd = ['http://localhost:3001/api/command', CLOUD_BACKEND_URL + '/api/command'];
+	urlsCmd.forEach(function(u) {
+		fetch(u, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ comando: cmd, origem: 'PAINEL_OU_CELULAR' })
+		}).catch(function(){});
+	});
 	var estSim = (cmd === 'DISPARAR_TESTE') ? {
 		online: true,
 		estado: 'ALARME_ATIVADO',
@@ -4571,6 +5064,8 @@ function enviarComandoParaBackend(cmd) {
 		tempo_cabeca_baixa_ms: 2500,
 		buzzer: 1,
 		rele: 1,
+		chamada_celular_ativa: true,
+		alerta_travado: true,
 		acelerometro: { pitch: -25, roll: 0, pescada_detectada: true },
 		contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent)||0) + 1 }
 	} : {
@@ -4580,6 +5075,9 @@ function enviarComandoParaBackend(cmd) {
 		tempo_cabeca_baixa_ms: 0,
 		buzzer: 0,
 		rele: 0,
+		chamada_celular_ativa: false,
+		alerta_travado: false,
+		_forceReset: true,
 		acelerometro: { pitch: 2, roll: 0, pescada_detectada: false },
 		contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent)||0 }
 	};
