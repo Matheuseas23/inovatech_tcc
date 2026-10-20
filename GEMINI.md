@@ -202,19 +202,21 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
        - Card 4: Telemetria do Acelerômetro (I2C Pitch/Roll).
        - Card 5: Atuadores de Segurança (Buzzer GPIO 25 e Relé GPIO 18) com botões remotos de teste e silenciamento.
        - Card 6: Conectividade WebSocket/REST, contadores de alarmes e log cronológico em tempo real.
-     - **Protocolo de Escalação Crítica SOS em 3 Níveis**:
-       - Nível 1: Cabeça baixa > 4,00s -> Alarme sonoro veicular e alerta visual na tela.
-       - Nível 2: Persistência por > 10,0s sem reação -> Notificação de Alerta Crítico na Central com alarme prioritário.
-       - Nível 3: Persistência por mais 10,0s adicionais (> 20s total) -> **PROTOCOLO DE POSSÍVEL ACIDENTE / INTERVENÇÃO IMEDIATA**: Painel entra em modo SOS com sirene militar contínua, corte gradual de tração via Relé GPIO 18 (Safe-Stop de 64 km/h a 0 km/h), acionamento de pisca-alerta/buzina e alerta automático enviado para resgate rodoviário e torre médica com coordenadas GPS.
+     - **Protocolo de Escalação Crítica SOS em 3 Níveis Calibrado**:
+       - Nível 1: Cabeça baixa > 4,00s -> Alarme sonoro veicular, ativação do Buzzer nos óculos e áudio de voz feminina no app alertando sonolência após 4 segundos.
+       - Nível 2: Persistência por **17,0s** sem reação -> Notificação de Alerta Crítico na Central com alarme sonoro prioritário e voz feminina alertando que o condutor não responde há 17 segundos.
+       - Nível 3: Persistência por **27,0s** sem reação -> **PROTOCOLO DE POSSÍVEL ACIDENTE / INTERVENÇÃO IMEDIATA**: Painel entra em modo SOS com sirene militar contínua, voz feminina alertando emergência de 27 segundos sem resposta, corte gradual de tração via Relé GPIO 18 (Safe-Stop de 64 km/h a 0 km/h), acionamento de pisca-alerta/buzina e alerta automático enviado para resgate rodoviário e torre médica com coordenadas GPS.
   3. **`motorista.html` (App do Motorista — Cabine Veicular para Smartphone)**:
      - Interface tática otimizada para fixação no suporte do celular no painel do caminhão.
      - Identificação de condutor: *Matheus Garcia (ID: DRV-0194)*, placa *INO-2026* e status de ignição conectada.
-     - Botão ergonômico para Ligar/Desligar Turno de Operação com feedback sonoro imediato.
-     - Card de Estado do Condutor ao vivo em formato gigante e legível à distância.
-     - Standby Noturno com tela preta e relógio HUD de baixo consumo.
-     - **Alerta Coffee Call em Tela Cheia**: Ao atingir a fadiga, cobre a tela com visual pulsante e toca mensagem sintetizada em voz feminina em português ("ATENÇÃO CONDUTOR! SONOLÊNCIA DETECTADA. FAÇA UMA PARADA IMEDIATA PARA O CAFÉ!") acompanhada de vibração contínua no celular.
+     - Botão ergonômico para Ligar/Desligar Turno de Operação com feedback sonoro imediato e sincronização instantânea em tempo real com a Central Tech.
+     - Card de Estado do Condutor ao vivo em formato gigante e legível à distância com tolerância de 4,00s e recuperação automática de 3,00s.
+     - Botão minimalista de **Viagem Noturna / Apagar Tela** contendo estritamente o ícone do smartphone (`smartphone`), sem texto.
+     - **Alerta Coffee Call em Tela Cheia**: Ao atingir a fadiga, cobre a tela com visual pulsante e toca mensagem sintetizada em voz feminina em português sincronizada com vibração contínua no celular e cronômetro de confirmação de 17,0s.
 - **Calibração de Tolerância e Recuperação Temporal**:
   - **Tolerância Inicial de Cabeça Baixa**: **4,00 segundos (4000 ms)** tanto no backend Node.js (`server.js`) quanto nos scripts do navegador. Evita falsos positivos em pequenas olhadas no painel do caminhão.
+  - **Tempo de Alerta Crítico na Central**: **17,0 segundos** ininterruptos de alarme sem reação.
+  - **Tempo de Possível Acidente (SOS)**: **27,0 segundos** ininterruptos de alarme sem reação.
   - **Recuperação Automática de Postura**: Se o motorista mantiver a cabeça erguida por **3,00 segundos contínuos**, todos os alarmes (sonoros, visuais, Coffee Call e vibração) cessam instantaneamente de forma automática, dispensando a necessidade de apertar a tela durante a condução.
 - **Diretriz de Design Rigorosa (Ícones vs Emojis)**: Proibido o uso de emojis gráficos Unicode na interface. Todos os símbolos operacionais utilizam **Google Fonts Material Symbols** (`lock`, `visibility`, `dashboard`, `smartphone`, `local_cafe`, `power_settings_new`, `pan_tool`, `location_on`, `medical_services`, `support_agent`).
 

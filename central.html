@@ -520,7 +520,7 @@
 				</div>
 			</div>
 
-			<!-- PAINEL DE ESCALONAMENTO DE EMERGÊNCIA DA CENTRAL TECH (10s ALERTA CRÍTICO -> 20s POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS) -->
+			<!-- PAINEL DE ESCALONAMENTO DE EMERGÊNCIA DA CENTRAL TECH (17s ALERTA CRÍTICO -> 27s POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS) -->
 			<div class="central-escalation-panel" id="centralEscalationPanel" role="alert" aria-live="assertive">
 				<div class="central-esc-header">
 					<span class="central-esc-badge" id="centralEscBadge">
@@ -529,7 +529,7 @@
 								style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA DESATIVAR
 							ALERTA NO CELULAR</span>
 					</span>
-					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s / 10.0s</span>
+					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s / 17.0s</span>
 				</div>
 
 				<h3 class="central-esc-title" id="centralEscTitle"><span class="material-symbols-outlined g-icon"
@@ -538,7 +538,7 @@
 				<p class="central-esc-desc" id="centralEscDesc">
 					O alerta físico (Buzzer/Relé) e a chamada em tela inteira no celular foram disparados após 4,00
 					segundos de cabeça baixa. Caso o motorista não aperte para desativar ou não erga a cabeça por 3
-					segundos, a Central entrará em Alerta Crítico!
+					segundos, a Central entrará em Alerta Crítico aos 17 segundos!
 				</p>
 
 				<div class="progresso-bar-bg" style="height:10px">
@@ -1097,40 +1097,40 @@
 		function atualizarPainelEscalonamentoUI(decorridoMs) {
 			var segTotal = (decorridoMs / 1000).toFixed(1);
 			var nivel = 1;
-			if (decorridoMs >= 20000) nivel = 3;
-			else if (decorridoMs >= 10000) nivel = 2;
+			if (decorridoMs >= 27000) nivel = 3;
+			else if (decorridoMs >= 17000) nivel = 2;
 
 			if (centralEscalationPanel) {
 				centralEscalationPanel.classList.add('visible');
 				if (nivel === 1) {
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
 					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA DESATIVAR ALERTA NO CELULAR';
-					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + segTotal + 's / 10.0s';
+					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + segTotal + 's / 17.0s';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
-					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico e a chamada no celular foram disparados (limite de 4,00s). Se o condutor não desativar ou mantiver a cabeça erguida por 3s, a Central entrará em Alerta Crítico!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 10000) * 100).toFixed(1) + '%';
+					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico e a chamada no celular foram disparados (limite de 4,00s). Se o condutor não desativar ou mantiver a cabeça erguida por 3s, a Central entrará em Alerta Crítico aos 17 segundos!';
+					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 17000) * 100).toFixed(1) + '%';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
 				} else if (nivel === 2) {
-					var segFase2 = ((decorridoMs - 10000) / 1000).toFixed(1);
+					var segFase2 = ((decorridoMs - 17000) / 1000).toFixed(1);
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (+10s SEM RESPOSTA)';
-					if (centralEscTimer) centralEscTimer.textContent = 'CONTAGEM ACIDENTE: ' + segFase2 + 's / 10.0s (Total: ' + segTotal + 's)';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (17s SEM RESPOSTA)';
+					if (centralEscTimer) centralEscTimer.textContent = 'CONTAGEM ACIDENTE: ' + segFase2 + 's / 10.0s (Total: ' + segTotal + 's / 27.0s)';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> ALERTA CRÍTICO NA CENTRAL: MOTORISTA INATIVO!';
-					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: O motorista não respondeu ao alerta no celular após 10 segundos! Caso permaneça mais 10s sem resposta, o sistema acionará Protocolo de Possível Acidente!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 10000) / 10000) * 100).toFixed(1) + '%';
+					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: O motorista não respondeu ao alerta no celular após 17 segundos! Caso permaneça até 27s sem resposta, o sistema acionará Protocolo de Possível Acidente!';
+					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 17000) / 10000) * 100).toFixed(1) + '%';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
 				} else if (nivel === 3) {
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE DETECTADO';
-					if (centralEscTimer) centralEscTimer.textContent = 'INATIVO HÁ: ' + segTotal + 's · PROTOCOLO SOS ATIVO';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE DETECTADO (27s)';
+					if (centralEscTimer) centralEscTimer.textContent = 'INATIVO HÁ: ' + segTotal + 's / 27.0s · PROTOCOLO SOS ATIVO';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> POSSÍVEL ACIDENTE DETECTADO — PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
-					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Mais de 10s após Alerta Crítico (20s totais)! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e envio de GPS ao Resgate SAMU 192!';
+					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Condutor inativo por 27 segundos ininterruptos! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e envio de GPS ao Resgate SAMU 192 / PRF!';
 					if (centralEscBarFill) centralEscBarFill.style.width = '100%';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
 
 					if (sosVelocidadeVal) {
-						var segApos20 = Math.max(0, (decorridoMs - 20000) / 1000);
-						var velAtual = Math.max(0, Math.round(64 - segApos20 * 8));
+						var segApos27 = Math.max(0, (decorridoMs - 27000) / 1000);
+						var velAtual = Math.max(0, Math.round(64 - segApos27 * 8));
 						sosVelocidadeVal.textContent = 'Corte gradual de tração ativo · Velocidade: ' + velAtual + ' km/h ' + (velAtual === 0 ? '(VEÍCULO IMOBILIZADO COM SEGURANÇA)' : '(REDUZINDO...)') + ' · Pisca-Alerta LIGADO';
 					}
 				}
@@ -1139,10 +1139,10 @@
 			if (nivel !== ultimoNivelEscalonamento) {
 				if (nivel === 2 && ultimoNivelEscalonamento < 2) {
 					tocarAudioVoz(vozCritico10sAudio);
-					adicionarLogLocal('ALARME_ATIVADO', 'ALERTA CRÍTICO NA CENTRAL: Motorista não desativou alerta após 10s!');
+					adicionarLogLocal('ALARME_ATIVADO', 'ALERTA CRÍTICO NA CENTRAL: Motorista não desativou alerta após 17s!');
 				} else if (nivel === 3 && ultimoNivelEscalonamento < 3) {
 					tocarAudioVoz(vozAcidente20sAudio);
-					adicionarLogLocal('ALARME_ATIVADO', 'POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA): Protocolo Safe-Stop e SOS acionados!');
+					adicionarLogLocal('ALARME_ATIVADO', 'POSSÍVEL ACIDENTE DETECTADO (27s SEM RESPOSTA): Protocolo Safe-Stop e SOS acionados!');
 				}
 				ultimoNivelEscalonamento = nivel;
 			}

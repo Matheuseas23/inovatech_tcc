@@ -225,21 +225,30 @@
 		}
 
 		.btn-standby-night {
-			width: 100%;
-			padding: 14px;
+			width: 54px;
+			height: 54px;
+			margin: 0 auto;
 			background: rgba(2, 11, 18, 0.85);
-			border: 1px dashed rgba(255, 170, 0, 0.5);
-			border-radius: 10px;
-			color: #ffdd66;
-			font-family: 'Space Mono', monospace;
-			font-size: 12px;
-			font-weight: 700;
+			border: 1px dashed rgba(8, 222, 235, 0.5);
+			border-radius: 50%;
+			color: var(--cyan);
 			cursor: pointer;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			gap: 8px;
-			text-transform: uppercase;
+			transition: all 0.25s ease;
+			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+		}
+
+		.btn-standby-night:hover, .btn-standby-night:active {
+			border-color: #08deeb;
+			background: rgba(8, 222, 235, 0.15);
+			box-shadow: 0 0 20px rgba(8, 222, 235, 0.4);
+			transform: scale(1.05);
+		}
+
+		.btn-standby-night .material-symbols-outlined {
+			font-size: 28px;
 		}
 
 		/* Modo tela preta apagada */
@@ -341,7 +350,7 @@
 			</p>
 			<div class="driver-call-escalation-box">
 				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span>
-				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 10.0s</span><br>
+				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 17.0s</span><br>
 				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos ou
 					aperte abaixo para desativar o alerta!</span>
 			</div>
@@ -420,11 +429,12 @@
 			</p>
 		</section>
 
-		<!-- MODO VIAGEM NOTURNA / TELA APAGADA -->
-		<button class="btn-standby-night" id="btnStandbyNight">
-			<span class="material-symbols-outlined g-icon">dark_mode</span>
-			<span>Viagem Noturna: Apagar Tela (Acorda no Alerta)</span>
-		</button>
+		<!-- MODO VIAGEM NOTURNA / TELA APAGADA (APENAS ÍCONE DE CELULAR) -->
+		<div style="text-align:center;margin-top:10px">
+			<button class="btn-standby-night" id="btnStandbyNight" title="Modo Viagem Noturna: Apagar Tela" aria-label="Apagar Tela">
+				<span class="material-symbols-outlined g-icon">smartphone</span>
+			</button>
+		</div>
 
 		<div style="text-align:center;margin-top:auto;padding-top:16px">
 			<a href="index.html" style="color:var(--muted);font-size:10px;text-decoration:none">
@@ -440,6 +450,8 @@
 		var audioCtx = null;
 		var callRingtoneTimer = null;
 		var callVibrationTimer = null;
+		var driverEscalationInterval = null;
+		var callStartTimeMs = 0;
 		var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
 		vozCafeAudio.preload = 'auto';
 
@@ -578,6 +590,7 @@
 			if (driverBlackScreen) driverBlackScreen.classList.remove('active');
 			if (!driverFullscreenCall.classList.contains('active')) {
 				driverFullscreenCall.classList.add('active');
+				callStartTimeMs = Date.now();
 				try {
 					if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
 						document.documentElement.requestFullscreen().catch(function () { });
@@ -596,6 +609,20 @@
 						try { navigator.vibrate([600, 250, 600, 250, 800]); } catch (e) { }
 					}, 2400);
 				}
+
+				// Cronômetro dinâmico de confirmação de 17.0s
+				var timerEl = document.getElementById('driverCallEscalationTimer');
+				if (driverEscalationInterval) clearInterval(driverEscalationInterval);
+				driverEscalationInterval = setInterval(function () {
+					var decorrido = ((Date.now() - callStartTimeMs) / 1000).toFixed(1);
+					if (timerEl) {
+						timerEl.textContent = decorrido + 's / 17.0s';
+						if (Number(decorrido) >= 17.0) {
+							timerEl.style.color = '#ff2a55';
+							timerEl.textContent = '17.0s / 17.0s (CRÍTICO NA CENTRAL)';
+						}
+					}
+				}, 100);
 			}
 		}
 
@@ -604,6 +631,12 @@
 			driverFullscreenCall.classList.remove('active');
 			if (callRingtoneTimer) { clearInterval(callRingtoneTimer); callRingtoneTimer = null; }
 			if (callVibrationTimer) { clearInterval(callVibrationTimer); callVibrationTimer = null; }
+			if (driverEscalationInterval) { clearInterval(driverEscalationInterval); driverEscalationInterval = null; }
+			var timerEl = document.getElementById('driverCallEscalationTimer');
+			if (timerEl) {
+				timerEl.style.color = '#ffdd66';
+				timerEl.textContent = '0.0s / 17.0s';
+			}
 			if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
 			try { vozCafeAudio.pause(); vozCafeAudio.currentTime = 0; } catch (e) { }
 			if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch (e) { } }
@@ -735,14 +768,17 @@
 			}
 		}
 
-		// Conexão WebSocket
+		// Conexão WebSocket com fallback para Polling REST
+		var pollingFallbackTimer = null;
+
 		function conectarWebSocketMotorista() {
-			var wsUrl = 'ws://localhost:3001/ws';
+			var wsUrl = (window.location.protocol === 'https:') ? 'wss://inovatech-tcc.onrender.com/ws' : 'ws://localhost:3001/ws';
 			try {
 				wsClient = new WebSocket(wsUrl);
 				wsClient.onopen = function () {
 					if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO';
 					if (driverWsChip) driverWsChip.className = 'painel-chip online';
+					if (pollingFallbackTimer) { clearInterval(pollingFallbackTimer); pollingFallbackTimer = null; }
 				};
 				wsClient.onmessage = function (ev) {
 					try {
@@ -750,17 +786,20 @@
 						if (msg.estado) atualizarEstadoNoApp(msg.estado);
 					} catch (e) { }
 				};
-				wsClient.onerror = function () { reconectarNuvem(); };
-				wsClient.onclose = function () { reconectarNuvem(); };
-			} catch (e) { reconectarNuvem(); }
+				wsClient.onerror = function () { tentarConexaoAlternativa(); };
+				wsClient.onclose = function () { tentarConexaoAlternativa(); };
+			} catch (e) { tentarConexaoAlternativa(); }
 		}
 
-		function reconectarNuvem() {
+		function tentarConexaoAlternativa() {
 			try {
-				var cloudWs = new WebSocket('wss://inovatech-tcc.onrender.com/ws');
+				var altUrl = (window.location.protocol === 'https:') ? 'ws://localhost:3001/ws' : 'wss://inovatech-tcc.onrender.com/ws';
+				var cloudWs = new WebSocket(altUrl);
 				cloudWs.onopen = function () {
+					wsClient = cloudWs;
 					if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO (NUVEM)';
 					if (driverWsChip) driverWsChip.className = 'painel-chip online';
+					if (pollingFallbackTimer) { clearInterval(pollingFallbackTimer); pollingFallbackTimer = null; }
 				};
 				cloudWs.onmessage = function (ev) {
 					try {
@@ -768,7 +807,35 @@
 						if (msg.estado) atualizarEstadoNoApp(msg.estado);
 					} catch (e) { }
 				};
-			} catch (e) { }
+				cloudWs.onerror = function () { ativarPollingREST(); };
+				cloudWs.onclose = function () { ativarPollingREST(); };
+			} catch (e) { ativarPollingREST(); }
+		}
+
+		function ativarPollingREST() {
+			if (pollingFallbackTimer) return;
+			if (driverWsLabel) driverWsLabel.textContent = 'MODO REST (HÍBRIDO)';
+			if (driverWsChip) driverWsChip.className = 'painel-chip warning';
+
+			pollingFallbackTimer = setInterval(function () {
+				var apiUrl = (window.location.protocol === 'https:') 
+					? 'https://inovatech-tcc.onrender.com/api/telemetry/current' 
+					: 'http://localhost:3001/api/telemetry/current';
+
+				fetch(apiUrl)
+					.then(function (r) { return r.json(); })
+					.then(function (data) {
+						if (data && data.estado) {
+							atualizarEstadoNoApp(data.estado);
+							if (driverWsLabel) driverWsLabel.textContent = 'REST SINCRONIZADO';
+							if (driverWsChip) driverWsChip.className = 'painel-chip online';
+						}
+					})
+					.catch(function () {
+						if (driverWsLabel) driverWsLabel.textContent = 'RECONECTANDO...';
+						if (driverWsChip) driverWsChip.className = 'painel-chip offline';
+					});
+			}, 300);
 		}
 
 		// Desbloqueio de áudio no primeiro toque na tela
