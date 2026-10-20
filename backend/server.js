@@ -57,12 +57,25 @@ const estado = {
       nome: 'Matheus Garcia',
       status: 'INATIVO', // 'EM_VIAGEM' ou 'INATIVO'
       veiculo: 'Scania R-450 (Placa INO-2026)',
-      rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
+      rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt',
+      localizacao: {
+        rodovia: 'Rodovia BR-116 (Régis Bittencourt)',
+        km: 'KM 284, Sentido Sul',
+        endereco: 'Trecho Serra do Cafezal - Juquitiba / SP',
+        latitude: -23.928412,
+        longitude: -47.067341,
+        altitude: '648 m',
+        satelites_conectados: 9,
+        link_satelital: 'ATIVO (IRIDIUM / GPS L1/L5)',
+        precisao_metros: 1.2,
+        origem: 'Satelite GNSS Autônomo (Offline Bridge)',
+        ultima_atualizacao: new Date().toISOString()
+      }
     }
   },
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
   tempo_cabeca_baixa_ms: 0,
-  limiar_seguranca_ms: 4000,
+  limiar_seguranca_ms: 6000,
   estado: 'NORMAL', // 'NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'
   buzzer: 0, // 0 = Desligado, 1 = Ligado
   rele: 0, // 0 = Desligado, 1 = Acionado
@@ -374,27 +387,28 @@ setInterval(() => {
 
   let mudouNivel = false;
 
-  // Passou de 10 segundos sem o motorista desativar o alerta no celular -> ALERTA CRÍTICO NA CENTRAL
-  if (decorridoMs >= 10000 && decorridoMs < 20000 && estado.nivel_escalonamento < 2) {
+  // Escalonamento em 3 Fases:
+  // FASE 1: 0 a 20s -> Chamada no App do motorista (Tolerância inicial de 6,0s)
+  // FASE 2: 20s a 35s -> POSSÍVEL ACIDENTE (Transmissão de Localização Satelital GNSS e Alerta de Intervenção)
+  // FASE 3: >= 35s -> ALERTA CRÍTICO DE EMERGÊNCIA MÁXIMA (Protocolo SOS, Safe-Stop e socorro)
+  if (decorridoMs >= 20000 && decorridoMs < 35000 && estado.nivel_escalonamento < 2) {
     estado.nivel_escalonamento = 2;
     mudouNivel = true;
     registrarEvento(
-      'ALARME_ATIVADO',
-      'ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!',
-      'Iniciando contagem crítica de +10s para protocolo de Possível Acidente.'
+      'POSSIVEL_ACIDENTE',
+      'POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA): Condutor inativo! Localização satelital transmitida à Central.',
+      'Endereço: Rodovia BR-116 KM 284 (Régis Bittencourt, Juquitiba/SP) · Lat -23.928412, Lon -47.067341'
     );
-    // Reforça despertar da tela do celular via ADB
     dispararChamadaCelularADB();
   }
 
-  // Passou de +10 segundos após o Alerta Crítico (20s no total) -> POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS
-  if (decorridoMs >= 20000 && estado.nivel_escalonamento < 3) {
+  if (decorridoMs >= 35000 && estado.nivel_escalonamento < 3) {
     estado.nivel_escalonamento = 3;
     mudouNivel = true;
     registrarEvento(
-      'ALARME_ATIVADO',
-      'POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!',
-      'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192.'
+      'ALARME_CRITICO',
+      'ALERTA CRÍTICO DE EMERGÊNCIA (35s SEM RESPOSTA): Protocolo Safe-Stop & Resgate SOS Acionado!',
+      'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e coordenadas GPS/Satélite enviadas para Resgate SAMU 192 e PRF.'
     );
   }
 
@@ -559,7 +573,7 @@ function processarTelemetria(payload = {}) {
     } else if (estado.estado === 'ALARME_ATIVADO') {
       estado.contadores.totalAlarmesSessao++;
       iniciarProtocoloAlertaTravado();
-      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (2,5s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!`);
+      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (6,0s)!', `Alerta Físico (Buzzer/Relé) e Chamada no Celular acionados. Aguardando motorista desativar!`);
       broadcast({
         tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
         dispararChamadaCafe: true,

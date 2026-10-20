@@ -42,8 +42,8 @@ const int NIVEL_BUZZER_DESLIGADO = LOW;
 const int NIVEL_RELE_LIGADO      = HIGH; // Comuta o módulo relé
 const int NIVEL_RELE_DESLIGADO   = LOW;
 
-// Filtro Temporal de Segurança (2.500 ms ininterruptos)
-const unsigned long LIMIAR_CABECA_BAIXA_MS = 2500;
+// Filtro Temporal de Segurança (6.000 ms ininterruptos de tolerância)
+const unsigned long LIMIAR_CABECA_BAIXA_MS = 6000;
 const unsigned long INTERVALO_TELEMETRIA_MS = 250; // 4 pacotes por segundo
 
 // ------------------------------------------------------------------------------
@@ -65,6 +65,8 @@ portMUX_TYPE mutexDados = portMUX_INITIALIZER_UNLOCKED;
 unsigned long tempoInicioCabecaBaixa = 0;
 bool cabecaEstavaBaixa               = false;
 bool alarmeAtivo                     = false;
+unsigned long ultimoBipToleranciaMs  = 0;
+unsigned long fimBipToleranciaMs     = 0;
 
 // Protótipos de Funções
 void ativarAlarmes();
@@ -154,6 +156,16 @@ void loop() {
         Serial.println(F("PERIGO: MOTORISTA ADORMECEU! BUZZER E RELE ACIONADOS!"));
       } else {
         estadoAtualTexto = "PRE_ALERTA";
+
+        // 1 BIP POR SEGUNDO DURANTE A TOLERÂNCIA (6 segundos)
+        if (tempoAtual - ultimoBipToleranciaMs >= 1000) {
+          ultimoBipToleranciaMs = tempoAtual;
+          fimBipToleranciaMs = tempoAtual + 100; // Duração de 100ms
+          digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
+        } else if (fimBipToleranciaMs > 0 && tempoAtual >= fimBipToleranciaMs) {
+          digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO);
+          fimBipToleranciaMs = 0;
+        }
       }
     } else {
       estadoAtualTexto = "ALARME_ATIVADO";
@@ -165,6 +177,8 @@ void loop() {
       alarmeAtivo = false;
       cabecaEstavaBaixa = false;
       tempoInicioCabecaBaixa = 0;
+      ultimoBipToleranciaMs = 0;
+      fimBipToleranciaMs = 0;
       Serial.println(F("Postura Normalizada: Cabeça Erguida (Alarmes cessados)."));
     }
     estadoAtualTexto = "NORMAL";
