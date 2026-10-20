@@ -42,8 +42,8 @@ const int NIVEL_BUZZER_DESLIGADO = LOW;
 const int NIVEL_RELE_LIGADO      = HIGH; // Comuta o módulo relé
 const int NIVEL_RELE_DESLIGADO   = LOW;
 
-// Filtro Temporal de Segurança (2.500 ms ininterruptos)
-const unsigned long LIMIAR_CABECA_BAIXA_MS = 2500;
+// Filtro Temporal de Segurança: 6 segundos de tolerância com bips progressivos
+const unsigned long LIMIAR_CABECA_BAIXA_MS = 6000;
 const unsigned long INTERVALO_TELEMETRIA_MS = 250; // 4 pacotes por segundo
 
 // ------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ void setup() {
   Serial.println(F("   Monitoramento de Postura e Fadiga Veicular     "));
   Serial.println(F("=================================================="));
   Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25 | Relé: GPIO 18"));
-  Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 2500 ms (2,5s)"));
+  Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 6000 ms (6s) com 1 bip/s"));
 
   // Mantém a rede Wi-Fi própria da ESP32 (ESP_900EC9 sem senha) sempre ativa
   WiFi.mode(WIFI_AP_STA);
