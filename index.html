@@ -2624,9 +2624,69 @@
 			text-transform: uppercase;
 			cursor: pointer;
 		}
+
+		/* Modo Tela Apagada (Standby OLED no Celular para Acordar no Alerta) */
+		.driver-black-standby {
+			position: fixed;
+			inset: 0;
+			width: 100vw;
+			height: 100dvh;
+			background: #000000;
+			z-index: 999990;
+			display: none;
+			align-items: center;
+			justify-content: center;
+			color: rgba(255, 255, 255, 0.08);
+			font-family: 'Space Mono', monospace;
+			font-size: 10px;
+			text-align: center;
+			cursor: pointer;
+			user-select: none;
+		}
+
+		.driver-black-standby.active {
+			display: flex;
+		}
+
+		.btn-mobile-standby {
+			position: fixed;
+			bottom: 16px;
+			left: 16px;
+			z-index: 9990;
+			padding: 9px 14px;
+			border-radius: 999px;
+			background: rgba(4, 18, 28, 0.92);
+			border: 1px solid var(--cyan);
+			color: var(--cyan);
+			font-family: 'Space Mono', monospace;
+			font-size: 10px;
+			font-weight: 700;
+			letter-spacing: 0.5px;
+			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+			cursor: pointer;
+			display: none;
+			align-items: center;
+			gap: 6px;
+		}
+
+		@media (max-width: 900px) {
+			.btn-mobile-standby {
+				display: inline-flex;
+			}
+		}
 	</style>
 </head>
 <body data-active-view="home">
+	<!-- Modo Tela Apagada no Celular (Fica 100% preta como celular desligado e acende sozinha no Alerta!) -->
+	<div class="driver-black-standby" id="driverBlackStandby" title="Toque duas vezes para sair do modo tela apagada">
+		<span>●</span>
+	</div>
+
+	<!-- Botão rápido no celular para deixar a tela apagada aguardando a chamada de emergência -->
+	<button class="btn-mobile-standby" id="btnMobileStandbyOff" type="button">
+		<span>🌙 Apagar Tela (Aguardar Alerta)</span>
+	</button>
+
 	<!-- Tela Inteira de Chamada de Segurança no Celular do Motorista (Estilo Ligação WhatsApp) -->
 	<div class="driver-fullscreen-call" id="driverFullscreenCall" role="dialog" aria-modal="true" aria-labelledby="driverCallTitle">
 		<div class="driver-call-top">
@@ -3598,15 +3658,20 @@ if (cornerAlertGoPainelBtn) {
 // CHAMADA DE EMERGÊNCIA EM TELA CHEIA NO CELULAR DO MOTORISTA (ESTILO WHATSAPP)
 // ==============================================================================
 var driverFullscreenCall = document.getElementById('driverFullscreenCall');
+var driverBlackStandby = document.getElementById('driverBlackStandby');
+var btnMobileStandbyOff = document.getElementById('btnMobileStandbyOff');
 var btnDriverAcceptRest = document.getElementById('btnDriverAcceptRest');
 var btnDriverDismissCall = document.getElementById('btnDriverDismissCall');
 var btnTestarChamadaCafe = document.getElementById('btnTestarChamadaCafe');
 var callRingtoneTimer = null;
 var callVibrationTimer = null;
+var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
+vozCafeAudio.preload = 'auto';
 
 function ehDispositivoCelular() {
 	var params = new URLSearchParams(window.location.search);
 	if (params.get('motorista') === '1' || params.get('chamada') === '1') return true;
+	if (driverBlackStandby && driverBlackStandby.classList.contains('active')) return true;
 	return window.innerWidth <= 900 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 }
 
@@ -3647,18 +3712,80 @@ function falarAvisoMotoristaCafe() {
 	try {
 		if ('speechSynthesis' in window) {
 			window.speechSynthesis.cancel();
-			var msg = new SpeechSynthesisUtterance('Atenção motorista! Fadiga detectada! Pare para descansar e tomar um café!');
-			msg.lang = 'pt-BR';
-			msg.rate = 1.05;
-			msg.pitch = 1.0;
-			window.speechSynthesis.speak(msg);
+		}
+		// Usa a nova voz feminina natural gravada em alerta-cafe-voz.mp3 com timbre suave e claro
+		vozCafeAudio.pause();
+		vozCafeAudio.currentTime = 0;
+		vozCafeAudio.preservesPitch = false;
+		vozCafeAudio.mozPreservesPitch = false;
+		vozCafeAudio.webkitPreservesPitch = false;
+		vozCafeAudio.playbackRate = 1.12;
+		vozCafeAudio.volume = 1.0;
+		var playPromise = vozCafeAudio.play();
+		if (playPromise !== undefined) {
+			playPromise.catch(function() {
+				// Fallback caso o áudio MP3 ainda esteja carregando: seleciona outra voz feminina (nunca a Maria padrão)
+				if ('speechSynthesis' in window) {
+					var msg = new SpeechSynthesisUtterance('Atenção motorista! Detectamos sinais de fadiga. Pare em um local seguro para descansar e tomar um café!');
+					msg.lang = 'pt-BR';
+					var vozes = window.speechSynthesis.getVoices() || [];
+					var vozAlt = vozes.find(function(v) {
+						return v.lang.indexOf('pt') !== -1 && (v.name.indexOf('Francisca') !== -1 || v.name.indexOf('Thalita') !== -1 || v.name.indexOf('Luciana') !== -1 || v.name.indexOf('Google') !== -1);
+					});
+					if (vozAlt) msg.voice = vozAlt;
+					msg.rate = 1.1;
+					msg.pitch = 1.32;
+					window.speechSynthesis.speak(msg);
+				}
+			});
 		}
 	} catch(e) {}
+}
+
+function ativarModoTelaApagadaCelular() {
+	if (!driverBlackStandby) return;
+	driverBlackStandby.classList.add('active');
+	// Desbloqueia previamente áudio, WakeLock e Tela Cheia para acordar instantaneamente no alerta
+	try {
+		if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+		if (audioCtx.state === 'suspended') audioCtx.resume();
+		vozCafeAudio.volume = 0;
+		vozCafeAudio.play().then(function() {
+			vozCafeAudio.pause();
+			vozCafeAudio.currentTime = 0;
+			vozCafeAudio.volume = 1.0;
+		}).catch(function(){});
+	} catch(e) {}
+	try {
+		if ('wakeLock' in navigator) {
+			navigator.wakeLock.request('screen').catch(function(){});
+		}
+		if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+			document.documentElement.requestFullscreen().catch(function(){});
+		}
+	} catch(e) {}
+}
+
+if (btnMobileStandbyOff) {
+	btnMobileStandbyOff.addEventListener('click', function() {
+		ativarModoTelaApagadaCelular();
+	});
+}
+
+if (driverBlackStandby) {
+	driverBlackStandby.addEventListener('click', function() {
+		driverBlackStandby.classList.remove('active');
+	});
 }
 
 function acionarChamadaTelaCheiaMotorista(forcarNesteDispositivo) {
 	if (!driverFullscreenCall) return;
 	if (!forcarNesteDispositivo && !ehDispositivoCelular()) return;
+
+	// Se o celular estava no Modo Tela Apagada, acende a tela imediatamente!
+	if (driverBlackStandby) {
+		driverBlackStandby.classList.remove('active');
+	}
 
 	if (!driverFullscreenCall.classList.contains('active')) {
 		driverFullscreenCall.classList.add('active');
@@ -3670,7 +3797,7 @@ function acionarChamadaTelaCheiaMotorista(forcarNesteDispositivo) {
 			}
 		} catch(e) {}
 
-		// Dispara toque de chamada contínuo e voz de alerta
+		// Dispara toque de chamada contínuo e nova voz feminina de alerta
 		tocarToqueLigacaoUnico();
 		falarAvisoMotoristaCafe();
 		if (callRingtoneTimer) clearInterval(callRingtoneTimer);
@@ -3714,6 +3841,10 @@ function encerrarChamadaTelaCheiaMotorista() {
 	if (navigator.vibrate) {
 		try { navigator.vibrate(0); } catch(e) {}
 	}
+	try {
+		vozCafeAudio.pause();
+		vozCafeAudio.currentTime = 0;
+	} catch(e) {}
 	if ('speechSynthesis' in window) {
 		try { window.speechSynthesis.cancel(); } catch(e) {}
 	}

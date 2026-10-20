@@ -240,12 +240,16 @@ const { execFile } = require('child_process');
 const ADB_PATH = path.join(frontendRoot, 'espelhamento-celular', 'adb.exe');
 let chamadaCelularAbertaViaAdb = false;
 
-// Abre obrigatoriamente a tela inteira de Chamada Café sobre o app Linklemo no celular conectado via USB/ADB
+// Abre obrigatoriamente a tela inteira de Chamada Café (mesmo com a tela do celular apagada/bloqueada!)
 function dispararChamadaCelularADB() {
   if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH)) return;
   chamadaCelularAbertaViaAdb = true;
   const urlChamada = 'https://inovatech-tcc.vercel.app/?chamada=1';
-  execFile(ADB_PATH, ['shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', urlChamada], { timeout: 3000 }, () => {});
+  // 1. Acende a tela física caso o celular esteja desligado/apagado (KEYCODE_WAKEUP = 224)
+  // 2. Desbloqueia a tela de bloqueio (wm dismiss-keyguard + KEYCODE_MENU = 82 + swipe)
+  // 3. Abre a Chamada de Café em Tela Inteira por cima de qualquer app
+  const cmdShell = `input keyevent 224 && wm dismiss-keyguard && input keyevent 82 && input swipe 500 1700 500 300 180 && am start -a android.intent.action.VIEW -d "${urlChamada}"`;
+  execFile(ADB_PATH, ['shell', cmdShell], { timeout: 6000 }, () => {});
 }
 
 // Quando o motorista clica em "Vou parar para descansar", retorna automaticamente para o app da câmera Linklemo
