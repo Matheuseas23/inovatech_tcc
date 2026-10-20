@@ -3,14 +3,10 @@
 
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>SMART DRIVER | App do Condutor</title>
 	<link rel="icon" type="image/svg+xml" href="favicon.svg">
 	<link rel="apple-touch-icon" href="favicon.svg">
-	<meta name="mobile-web-app-capable" content="yes">
-	<meta name="apple-mobile-web-app-capable" content="yes">
-	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<meta name="theme-color" content="#000000">
 	<link rel="stylesheet"
 		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 	<link rel="stylesheet" href="style.css">
@@ -61,14 +57,12 @@
 			z-index: 1;
 			max-width: 520px;
 			margin: 0 auto;
-			padding: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(30px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+			padding: 16px 16px 40px;
 			width: 100%;
-			min-height: 100vh;
 			flex: 1;
 			display: flex;
 			flex-direction: column;
 			gap: 16px;
-			box-sizing: border-box;
 		}
 
 		.driver-topbar {
@@ -146,7 +140,7 @@
 		.btn-toggle-shift {
 			width: 100%;
 			padding: 15px 16px;
-			background: linear-gradient(135deg, rgba(8, 222, 235, 0.22) 0%, rgba(4, 150, 185, 0.12) 100%);
+			background: linear-gradient(135deg, rgba(8, 222, 235, 0.28) 0%, rgba(4, 150, 185, 0.20) 100%);
 			border: 1.5px solid var(--cyan);
 			border-radius: 10px;
 			color: #ffffff;
@@ -157,11 +151,23 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			gap: 10px;
+			gap: 8px;
 			text-transform: uppercase;
 			letter-spacing: 0.5px;
 			transition: all 0.25s ease;
-			box-shadow: 0 4px 14px rgba(8, 222, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+			box-shadow: 0 4px 14px rgba(8, 222, 235, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+			user-select: none;
+			-webkit-tap-highlight-color: transparent;
+			touch-action: manipulation;
+		}
+
+		.btn-toggle-shift .g-icon {
+			font-size: 20px;
+			line-height: 1;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			vertical-align: middle;
 		}
 
 		.btn-toggle-shift:hover {
@@ -264,18 +270,20 @@
 			font-size: 28px;
 		}
 
-		/* Modo tela preta apagada (100% preta sem caixas para simular celular desligado) */
+		/* Modo tela preta apagada */
 		.driver-black-screen {
 			display: none;
 			position: fixed;
 			inset: 0;
-			background: #000000 !important;
+			background: #000000;
 			z-index: 99998;
 			cursor: pointer;
+			align-items: center;
+			justify-content: center;
 		}
 
 		.driver-black-screen.active {
-			display: block;
+			display: flex;
 		}
 
 		/* ==============================================================================
@@ -321,8 +329,11 @@
 		<div class="driver-bg-overlay"></div>
 	</div>
 
-	<!-- Modo Tela Apagada no Celular (Preto total simulando celular desligado) -->
-	<div class="driver-black-screen" id="driverBlackScreen"></div>
+	<!-- Modo Tela Apagada no Celular (Toque duplo para sair) -->
+	<div class="driver-black-screen" id="driverBlackScreen">
+		<span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:2px">● MONITORAMENTO ATIVO · TOQUE PARA
+			ACENDER</span>
+	</div>
 
 	<!-- Tela Inteira de Chamada de Segurança no Celular do Motorista (Estilo Ligação WhatsApp) -->
 	<div class="driver-fullscreen-call" id="driverFullscreenCall" role="dialog" aria-modal="true"
@@ -352,7 +363,9 @@
 			<h2 class="driver-call-title" id="driverCallTitle"><span class="material-symbols-outlined g-icon"
 					style="font-size:1.05em;margin-right:6px">local_cafe</span> PARE PARA DESCANSAR!</h2>
 			<p class="driver-call-message">
-				<strong>ATENÇÃO MOTORISTA:</strong> Cansaço detectado. Pare o veículo e descanse em uma área segura.
+				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong>4,0 segundos</strong>
+				detectada!<br>
+				Encoste em local seguro para descansar e tomar um café.
 			</p>
 			<div class="driver-call-escalation-box">
 				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span>
@@ -461,6 +474,8 @@
 		var callStartTimeMs = 0;
 		var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
 		vozCafeAudio.preload = 'auto';
+		var vozInicioAudio = new Audio('alerta-inicio-viagem.mp3');
+		vozInicioAudio.preload = 'auto';
 
 		var driverLiveCard = document.getElementById('driverLiveCard');
 		var driverStatusHeadline = document.getElementById('driverStatusHeadline');
@@ -503,7 +518,7 @@
 				btnToggleShift.className = 'btn-toggle-shift active-shift';
 				shiftStatusBadge.className = 'driver-badge-live';
 				shiftStatusBadge.innerHTML = '<span class="pulse-dot"></span><span>OPERANDO</span>';
-				shiftBtnText.innerHTML = '<span class="material-symbols-outlined g-icon">check_circle</span> TURNO ATIVO · MONITORAMENTO SEGURO LIGADO';
+				shiftBtnText.innerHTML = '<span class="material-symbols-outlined g-icon">power_settings_new</span> TURNO ATIVO · MONITORAMENTO SEGURO LIGADO';
 			} else {
 				btnToggleShift.className = 'btn-toggle-shift';
 				shiftStatusBadge.className = 'driver-badge-inactive';
@@ -512,39 +527,63 @@
 			}
 		}
 
-		if (btnToggleShift) {
-			btnToggleShift.addEventListener('click', function () {
-				var novoEstado = !turnoAtivo;
-				sincronizarEstadoTurnoUI(novoEstado, true);
+		function alternarEstadoTurno() {
+			var novoEstado = !turnoAtivo;
+			sincronizarEstadoTurnoUI(novoEstado, true);
 
-				// Feedback sonoro tático de ativação
-				try {
-					if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-					if (audioCtx.state === 'suspended') audioCtx.resume();
-					var now = audioCtx.currentTime;
-					var osc = audioCtx.createOscillator();
-					var gain = audioCtx.createGain();
-					osc.type = 'sine';
-					osc.frequency.setValueAtTime(novoEstado ? 523.25 : 392, now);
-					osc.frequency.exponentialRampToValueAtTime(novoEstado ? 1046.5 : 220, now + 0.22);
-					gain.gain.setValueAtTime(0.25, now);
-					gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-					osc.connect(gain); gain.connect(audioCtx.destination);
-					osc.start(now); osc.stop(now + 0.25);
-				} catch (e) { }
+			// Se ligou o monitoramento, toca a voz de conexão com a Central e orientações
+			if (novoEstado) {
+				tocarVozInicioViagem();
+			}
 
-				// Notifica backend caso WebSocket esteja aberto
-				if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-					try {
-						wsClient.send(JSON.stringify({
-							tipo: "STATUS_MOTORISTA",
-							motorista: "Matheus Garcia",
-							status_viagem: novoEstado ? "EM_VIAGEM" : "INATIVO",
-							timestamp: Date.now()
-						}));
-					} catch (e) { }
-				}
+			// Feedback sonoro tático de ativação
+			try {
+				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+				if (audioCtx.state === 'suspended') audioCtx.resume();
+				var now = audioCtx.currentTime;
+				var osc = audioCtx.createOscillator();
+				var gain = audioCtx.createGain();
+				osc.type = 'sine';
+				osc.frequency.setValueAtTime(novoEstado ? 523.25 : 392, now);
+				osc.frequency.exponentialRampToValueAtTime(novoEstado ? 1046.5 : 220, now + 0.22);
+				gain.gain.setValueAtTime(0.25, now);
+				gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+				osc.connect(gain); gain.connect(audioCtx.destination);
+				osc.start(now); osc.stop(now + 0.25);
+			} catch (e) { }
+
+			// Envio via REST imediato para redundância
+			var bodyPayload = JSON.stringify({
+				tipo: "STATUS_MOTORISTA",
+				motorista: "Matheus Garcia",
+				status_viagem: novoEstado ? "EM_VIAGEM" : "INATIVO",
+				timestamp: Date.now()
 			});
+			['http://localhost:3001/api/telemetry', 'https://inovatech-tcc.onrender.com/api/telemetry'].forEach(function(u) {
+				fetch(u, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: bodyPayload
+				}).catch(function() {});
+			});
+
+			// Notifica backend caso WebSocket esteja aberto
+			if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+				try {
+					wsClient.send(bodyPayload);
+				} catch (e) { }
+			}
+		}
+
+		if (btnToggleShift) {
+			btnToggleShift.addEventListener('click', function (e) {
+				e.preventDefault();
+				alternarEstadoTurno();
+			});
+			btnToggleShift.addEventListener('touchend', function (e) {
+				e.preventDefault();
+				alternarEstadoTurno();
+			}, { passive: false });
 		}
 
 		// Checa se já havia status salvo previamente no navegador
@@ -577,6 +616,24 @@
 			} catch (e) { }
 		}
 
+		function tocarVozInicioViagem() {
+			try {
+				vozInicioAudio.pause();
+				vozInicioAudio.currentTime = 0;
+				vozInicioAudio.playbackRate = 1.05;
+				vozInicioAudio.volume = 1.0;
+				vozInicioAudio.play().catch(function () {
+					if ('speechSynthesis' in window) {
+						var msg = new SpeechSynthesisUtterance('Conectado à Central Tech. Lembrete: ligue os faróis. Dirija com cuidado e boa viagem!');
+						msg.lang = 'pt-BR';
+						window.speechSynthesis.speak(msg);
+					}
+				});
+			} catch (e) { }
+		}
+			try {
+				vozCafeAudio.pause();
+				vozCafeAudio.currentTime = 0;
 		function tocarVozFemininaCafe() {
 			try {
 				vozCafeAudio.pause();
