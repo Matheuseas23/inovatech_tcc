@@ -396,8 +396,10 @@ function processarTelemetria(payload = {}) {
     }, houveTransicao);
   }
 
-  // Salva no disco
-  persistirEmDisco();
+  // Salva no disco apenas quando houver transição de estado (evita conflitos de sincronização contínua no OneDrive/VS Code)
+  if (houveTransicao) {
+    persistirEmDisco();
+  }
 }
 
 // Endpoint de telemetria recebida do ESP32 ou simulador

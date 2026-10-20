@@ -18,4 +18,8 @@ Thumbs.db
 # Áudios internos e arquivos temporários
 audios_professor/
 espelhamento-celular/
+**/compile_commands.json
+backend/data/
+
+
 
