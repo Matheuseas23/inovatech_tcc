@@ -131,7 +131,12 @@ void setup() {
 // 5. LOOP DE SEGURANÇA E SENSOR (CORE 1 — NUNCA TRAVA NEM ATRASA)
 // ------------------------------------------------------------------------------
 void loop() {
-  int estadoLeitura = digitalRead(PINO_SENSOR_IR);
+  // Amostragem com filtro anti-ruído (debouncing de precisão milimétrica)
+  int leitura1 = digitalRead(PINO_SENSOR_IR);
+  delayMicroseconds(500);
+  int leitura2 = digitalRead(PINO_SENSOR_IR);
+  int estadoLeitura = (leitura1 == leitura2) ? leitura1 : dadosGlobais.sensorIr;
+
   bool cabecaBaixaAgora = (estadoLeitura == NIVEL_CABECA_BAIXA);
   unsigned long tempoAtual = millis();
   unsigned long tempoDecorridoMs = 0;
@@ -141,7 +146,7 @@ void loop() {
     if (!cabecaEstavaBaixa) {
       cabecaEstavaBaixa = true;
       tempoInicioCabecaBaixa = tempoAtual;
-      Serial.println(F("Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)..."));
+      Serial.println(F("[SENSOR] Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)..."));
     } 
 
     tempoDecorridoMs = tempoAtual - tempoInicioCabecaBaixa;
@@ -151,7 +156,7 @@ void loop() {
         alarmeAtivo = true;
         ativarAlarmes();
         estadoAtualTexto = "ALARME_ATIVADO";
-        Serial.println(F("PERIGO: MOTORISTA ADORMECEU! BUZZER E RELE ACIONADOS!"));
+        Serial.println(F("[ALARME] PERIGO: MOTORISTA ADORMECEU! BUZZER E RELE ACIONADOS!"));
       } else {
         estadoAtualTexto = "PRE_ALERTA";
       }
@@ -165,7 +170,7 @@ void loop() {
       alarmeAtivo = false;
       cabecaEstavaBaixa = false;
       tempoInicioCabecaBaixa = 0;
-      Serial.println(F("Postura Normalizada: Cabeça Erguida (Alarmes cessados)."));
+      Serial.println(F("[SENSOR] Postura Normalizada: Cabeça Erguida (Alarmes cessados)."));
     }
     estadoAtualTexto = "NORMAL";
     tempoDecorridoMs = 0;

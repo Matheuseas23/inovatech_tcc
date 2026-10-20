@@ -106,8 +106,11 @@
 		}
 
 		.driver-shift-card {
-			background: linear-gradient(135deg, rgba(11, 34, 51, 0.95) 0%, rgba(6, 28, 43, 0.98) 100%);
-			border: 1px solid #16495b;
+			background: linear-gradient(135deg, rgba(11, 34, 51, 0.78) 0%, rgba(6, 28, 43, 0.88) 100%);
+			backdrop-filter: blur(20px) saturate(180%);
+			-webkit-backdrop-filter: blur(20px) saturate(180%);
+			border: 1px solid rgba(22, 73, 91, 0.85);
+			box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.15), 0 10px 28px rgba(0, 0, 0, 0.45);
 			border-radius: 12px;
 			padding: 16px 18px;
 			display: flex;
@@ -133,11 +136,11 @@
 
 		.btn-toggle-shift {
 			width: 100%;
-			padding: 12px;
-			background: rgba(8, 222, 235, 0.15);
-			border: 1px solid var(--cyan);
-			border-radius: 8px;
-			color: var(--cyan);
+			padding: 15px 16px;
+			background: linear-gradient(135deg, rgba(8, 222, 235, 0.22) 0%, rgba(4, 150, 185, 0.12) 100%);
+			border: 1.5px solid var(--cyan);
+			border-radius: 10px;
+			color: #ffffff;
 			font-family: 'Space Mono', monospace;
 			font-size: 11.5px;
 			font-weight: 700;
@@ -145,20 +148,30 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			gap: 8px;
+			gap: 10px;
 			text-transform: uppercase;
-			transition: all 0.2s ease;
+			letter-spacing: 0.5px;
+			transition: all 0.25s ease;
+			box-shadow: 0 4px 14px rgba(8, 222, 235, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+		}
+
+		.btn-toggle-shift:hover {
+			background: linear-gradient(135deg, rgba(8, 222, 235, 0.35) 0%, rgba(4, 150, 185, 0.22) 100%);
+			box-shadow: 0 0 22px rgba(8, 222, 235, 0.45);
+			transform: translateY(-1px);
 		}
 
 		.btn-toggle-shift.active-shift {
-			background: #10b981;
+			background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 			border-color: #55ee77;
 			color: #020b12;
-			box-shadow: 0 0 20px rgba(85, 238, 119, 0.4);
+			box-shadow: 0 0 25px rgba(85, 238, 119, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.5);
 		}
 
 		.driver-live-card {
-			background: linear-gradient(135deg, rgba(11, 34, 51, 0.95) 0%, rgba(5, 18, 28, 0.98) 100%);
+			background: linear-gradient(135deg, rgba(11, 34, 51, 0.75) 0%, rgba(5, 18, 28, 0.88) 100%);
+			backdrop-filter: blur(20px) saturate(180%);
+			-webkit-backdrop-filter: blur(20px) saturate(180%);
 			border: 2px solid #0052ff;
 			border-radius: 14px;
 			padding: 20px 18px;
@@ -166,6 +179,7 @@
 			flex-direction: column;
 			gap: 14px;
 			transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+			box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.15), 0 10px 28px rgba(0, 0, 0, 0.4);
 		}
 
 		.driver-live-card.estado-normal {
@@ -243,45 +257,50 @@
 		.driver-black-screen.active {
 			display: flex;
 		}
-	
-/* ==============================================================================
+
+		/* ==============================================================================
    BARRA DE ROLAGEM PERSONALIZADA (DARK TECH HUD SCROLLBAR)
    ============================================================================== */
-::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
-}
+		::-webkit-scrollbar {
+			width: 9px;
+			height: 9px;
+		}
 
-::-webkit-scrollbar-track {
-  background: #020c15;
-  border-left: 1px solid rgba(8, 222, 235, 0.12);
-}
+		::-webkit-scrollbar-track {
+			background: #020c15;
+			border-left: 1px solid rgba(8, 222, 235, 0.12);
+		}
 
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #103b4d 0%, #08deeb 50%, #0c3344 100%);
-  border-radius: 5px;
-  border: 1.5px solid #020c15;
-  box-shadow: inset 0 0 4px rgba(8, 222, 235, 0.6);
-}
+		::-webkit-scrollbar-thumb {
+			background: linear-gradient(180deg, #103b4d 0%, #08deeb 50%, #0c3344 100%);
+			border-radius: 5px;
+			border: 1.5px solid #020c15;
+			box-shadow: inset 0 0 4px rgba(8, 222, 235, 0.6);
+		}
 
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #12e3ee 0%, #08deeb 50%, #16a085 100%);
-  box-shadow: 0 0 10px rgba(8, 222, 235, 0.75), inset 0 0 4px #ffffff;
-}
+		::-webkit-scrollbar-thumb:hover {
+			background: linear-gradient(180deg, #12e3ee 0%, #08deeb 50%, #16a085 100%);
+			box-shadow: 0 0 10px rgba(8, 222, 235, 0.75), inset 0 0 4px #ffffff;
+		}
 
-::-webkit-scrollbar-corner {
-  background: #020c15;
-}
+		::-webkit-scrollbar-corner {
+			background: #020c15;
+		}
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #08deeb #020c15;
-}
-
-</style>
+		* {
+			scrollbar-width: thin;
+			scrollbar-color: #08deeb #020c15;
+		}
+	</style>
 </head>
 
 <body>
+	<!-- Camada de Fundo Dinâmico com o Caminhão Noturno -->
+	<div class="driver-bg-layer" aria-hidden="true">
+		<div class="driver-bg-image"></div>
+		<div class="driver-bg-overlay"></div>
+	</div>
+
 	<!-- Modo Tela Apagada no Celular (Toque duplo para sair) -->
 	<div class="driver-black-screen" id="driverBlackScreen">
 		<span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:2px">● MONITORAMENTO ATIVO · TOQUE PARA
@@ -363,14 +382,13 @@
 					<h1 class="shift-driver-name">Matheus Garcia</h1>
 					<span style="font-size:11px;color:var(--muted)">Veículo: Scania R-450 · Placa INO-2026</span>
 				</div>
-				<span class="driver-badge-live" id="shiftStatusBadge">
-					<span class="pulse-dot"></span>
-					<span>OPERANDO</span>
+				<span class="driver-badge-inactive" id="shiftStatusBadge">
+					<span>STANDBY / INATIVO</span>
 				</span>
 			</div>
-			<button class="btn-toggle-shift active-shift" id="btnToggleShift">
-				<span class="material-symbols-outlined g-icon">check_circle</span>
-				<span id="shiftBtnText">TURNO ATIVO · EM OPERAÇÃO NA ROTA</span>
+			<button class="btn-toggle-shift" id="btnToggleShift">
+				<span class="material-symbols-outlined g-icon">power_settings_new</span>
+				<span id="shiftBtnText">ATIVAR MONITORAMENTO SEGURO / INICIAR VIAGEM</span>
 			</button>
 		</section>
 
@@ -441,28 +459,81 @@
 		var alertaAtivoMotorista = false;
 		var inicioRecuperacaoLocalMs = 0;
 		var cooldownAntiRepiqueUntil = 0;
-		var turnoAtivo = true;
+		var turnoAtivo = false;
 
-		// Iniciar turno / Pausar turno
+		// Iniciar turno / Ativar Óculos
 		var btnToggleShift = document.getElementById('btnToggleShift');
 		var shiftStatusBadge = document.getElementById('shiftStatusBadge');
 		var shiftBtnText = document.getElementById('shiftBtnText');
 
+		function sincronizarEstadoTurnoUI(ativo, notificar) {
+			turnoAtivo = !!ativo;
+			try {
+				localStorage.setItem('inovatech_turno_matheus_garcia', turnoAtivo ? 'ATIVO' : 'INATIVO');
+				if (notificar) {
+					localStorage.setItem('inovatech_evento_viagem_' + Date.now(), JSON.stringify({
+						acao: turnoAtivo ? 'INICIOU_VIAGEM' : 'PAUSOU_VIAGEM',
+						motorista: 'Matheus Garcia',
+						veiculo: 'Scania R-450 (INO-2026)',
+						timestamp: Date.now()
+					}));
+				}
+			} catch (e) { }
+
+			if (turnoAtivo) {
+				btnToggleShift.className = 'btn-toggle-shift active-shift';
+				shiftStatusBadge.className = 'driver-badge-live';
+				shiftStatusBadge.innerHTML = '<span class="pulse-dot"></span><span>OPERANDO</span>';
+				shiftBtnText.innerHTML = '<span class="material-symbols-outlined g-icon">check_circle</span> TURNO ATIVO · MONITORAMENTO SEGURO LIGADO';
+			} else {
+				btnToggleShift.className = 'btn-toggle-shift';
+				shiftStatusBadge.className = 'driver-badge-inactive';
+				shiftStatusBadge.innerHTML = '<span>STANDBY / INATIVO</span>';
+				shiftBtnText.innerHTML = '<span class="material-symbols-outlined g-icon">power_settings_new</span> ATIVAR MONITORAMENTO SEGURO / INICIAR VIAGEM';
+			}
+		}
+
 		if (btnToggleShift) {
 			btnToggleShift.addEventListener('click', function () {
-				turnoAtivo = !turnoAtivo;
-				if (turnoAtivo) {
-					btnToggleShift.className = 'btn-toggle-shift active-shift';
-					shiftStatusBadge.className = 'driver-badge-live';
-					shiftStatusBadge.innerHTML = '<span class="pulse-dot"></span><span>OPERANDO</span>';
-					shiftBtnText.textContent = 'TURNO ATIVO · EM OPERAÇÃO NA ROTA';
-				} else {
-					btnToggleShift.className = 'btn-toggle-shift';
-					shiftStatusBadge.className = 'driver-badge-inactive';
-					shiftStatusBadge.innerHTML = '<span>TURNO EM PAUSA</span>';
-					shiftBtnText.textContent = 'INICIAR / RETOMAR OPERAÇÃO';
+				var novoEstado = !turnoAtivo;
+				sincronizarEstadoTurnoUI(novoEstado, true);
+
+				// Feedback sonoro tático de ativação
+				try {
+					if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+					if (audioCtx.state === 'suspended') audioCtx.resume();
+					var now = audioCtx.currentTime;
+					var osc = audioCtx.createOscillator();
+					var gain = audioCtx.createGain();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(novoEstado ? 523.25 : 392, now);
+					osc.frequency.exponentialRampToValueAtTime(novoEstado ? 1046.5 : 220, now + 0.22);
+					gain.gain.setValueAtTime(0.25, now);
+					gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(now); osc.stop(now + 0.25);
+				} catch (e) { }
+
+				// Notifica backend caso WebSocket esteja aberto
+				if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+					try {
+						wsClient.send(JSON.stringify({
+							tipo: "STATUS_MOTORISTA",
+							motorista: "Matheus Garcia",
+							status_viagem: novoEstado ? "EM_VIAGEM" : "INATIVO",
+							timestamp: Date.now()
+						}));
+					} catch (e) { }
 				}
 			});
+		}
+
+		// Checa se já havia status salvo previamente no navegador
+		var turnoSalvo = localStorage.getItem('inovatech_turno_matheus_garcia');
+		if (turnoSalvo === 'ATIVO') {
+			sincronizarEstadoTurnoUI(true, false);
+		} else {
+			sincronizarEstadoTurnoUI(false, false);
 		}
 
 		function tocarToqueChamada() {

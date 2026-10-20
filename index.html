@@ -3059,6 +3059,8 @@
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   opacity: 1;
   visibility: visible;
   transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -3077,14 +3079,47 @@
   padding: 34px 30px;
   max-width: 580px;
   width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
   box-shadow: 
     inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35),
     inset 0 -1px 2px rgba(8, 222, 235, 0.25),
     0 24px 60px rgba(0, 0, 0, 0.85),
     0 0 40px rgba(8, 222, 235, 0.20);
   position: relative;
-  overflow: hidden;
   animation: portalCardZoom 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (max-width: 600px) {
+  .portal-access-card {
+    padding: 22px 18px;
+    max-height: 95vh;
+  }
+  .portal-header h2 {
+    font-size: 23px !important;
+  }
+  .portal-btn-option {
+    padding: 12px 14px !important;
+    gap: 10px !important;
+  }
+  .portal-btn-icon {
+    width: 38px !important;
+    height: 38px !important;
+  }
+  #portalAuthForm {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  #portalPasswordInput {
+    font-size: 16px !important; /* Previne zoom automático e travamento de teclado no iOS/Android */
+    padding: 14px 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  #portalAuthForm .btn {
+    width: 100% !important;
+    padding: 12px !important;
+  }
 }
 
 @keyframes portalCardZoom {
@@ -3300,7 +3335,7 @@
 					AUTORIZAÇÃO NECESSÁRIA · INFORME A SENHA
 				</div>
 				<form id="portalAuthForm" onsubmit="validarSenhaPortal(event)" style="display:flex;gap:10px">
-					<input type="password" id="portalPasswordInput" placeholder="Senha de segurança..." autocomplete="off" style="flex:1;padding:12px 14px;background:rgba(2,11,18,0.92);border:1px solid var(--border);border-radius:8px;color:#fff;font-family:'Space Mono';font-size:13px;letter-spacing:2px;outline:none">
+					<input type="password" id="portalPasswordInput" placeholder="Senha de segurança..." autocomplete="current-password" inputmode="text" style="flex:1;padding:12px 14px;background:rgba(2,11,18,0.92);border:1px solid var(--border);border-radius:8px;color:#fff;font-family:'Space Mono',monospace;font-size:16px;letter-spacing:2px;outline:none;-webkit-user-select:text;user-select:text">
 					<button type="submit" class="btn" style="padding:0 22px">Acessar</button>
 					<button type="button" class="btn outline" onclick="cancelarSenhaPortal()">Voltar</button>
 				</form>
@@ -3866,10 +3901,16 @@ function pedirSenhaPortal(destino) {
 		label.textContent = 'AUTORIZAÇÃO NECESSÁRIA PARA: ' + nome;
 	}
 	if (erro) erro.style.display = 'none';
-	if (container) container.style.display = 'block';
+	if (container) {
+		container.style.display = 'block';
+		container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+	}
 	if (input) {
 		input.value = '';
-		input.focus();
+		setTimeout(function () {
+			input.focus();
+			input.click();
+		}, 150);
 	}
 }
 
