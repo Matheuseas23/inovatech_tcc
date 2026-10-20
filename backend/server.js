@@ -268,7 +268,8 @@ function espelharParaNuvem(payloadEspelho, forcarImediato = false) {
   if (IS_RENDER_CLOUD || payloadEspelho._fromLocalMirror) return;
   const agora = Date.now();
   const mudouEstado = payloadEspelho.estado !== ultimoEstadoEnviadoNuvem;
-  if (!forcarImediato && !mudouEstado && (agora - ultimoEnvioNuvemMs < 750)) {
+  const intervaloMin = (payloadEspelho.estado === 'PRE_ALERTA' || payloadEspelho.estado === 'ALARME_ATIVADO') ? 120 : 600;
+  if (!forcarImediato && !mudouEstado && (agora - ultimoEnvioNuvemMs < intervaloMin)) {
     return;
   }
   ultimoEnvioNuvemMs = agora;
@@ -358,10 +359,16 @@ function processarTelemetria(payload = {}) {
       registrarEvento('PRE_ALERTA', 'Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)', `Tempo decorrido: ${estado.tempo_cabeca_baixa_ms}ms`);
     } else if (estado.estado === 'ALARME_ATIVADO') {
       estado.contadores.totalAlarmesSessao++;
-      registrarEvento('ALARME_ATIVADO', 'PERIGO: MOTORISTA ADORMECEU COM A CABEÇA BAIXA!', `Limite de 2500ms ultrapassado. Buzzer e Relé acionados.`);
+      estado.chamada_celular_ativa = true;
+      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (2,5s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados via Backend.`);
       dispararChamadaCelularADB();
+      broadcast({
+        tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
+        dispararChamadaCafe: true,
+        estado
+      });
     } else if (estado.estado === 'NORMAL') {
-      registrarEvento('NORMAL', 'Postura Normalizada: Cabeça Erguida', 'Alarme cessado imediatamente.');
+      registrarEvento('NORMAL', 'Postura Normalizada: Cabeça Erguida', 'Alarme físico cessado imediatamente.');
     }
   }
 
@@ -373,6 +380,9 @@ function processarTelemetria(payload = {}) {
   });
 
   // Espelha imediatamente para a nuvem Render para que TODOS os dispositivos recebam o alerta
+  if (payload.chamada_celular_ativa !== undefined) {
+    estado.chamada_celular_ativa = Boolean(payload.chamada_celular_ativa);
+  }
   if (!payload._fromLocalMirror) {
     espelharParaNuvem({
       dispositivo: estado.dispositivo,
@@ -381,6 +391,7 @@ function processarTelemetria(payload = {}) {
       buzzer: estado.buzzer,
       rele: estado.rele,
       estado: estado.estado,
+      chamada_celular_ativa: Boolean(estado.chamada_celular_ativa),
       acelerometro: estado.acelerometro
     }, houveTransicao);
   }
@@ -430,14 +441,21 @@ app.post('/api/command', (req, res) => {
     estado.buzzer = 1;
     estado.rele = 1;
     estado.tempo_cabeca_baixa_ms = 2500;
+    estado.chamada_celular_ativa = true;
     estado.contadores.totalAlarmesSessao++;
-    registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alerta de Teste Disparado pela Central');
+    registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alerta Físico e Virtual no Celular Disparado');
     dispararChamadaCelularADB();
+    broadcast({
+      tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
+      dispararChamadaCafe: true,
+      estado
+    });
   } else if (comando === 'SILENCIAR_ALARME' || comando === 'RESET') {
     estado.estado = 'NORMAL';
     estado.buzzer = 0;
     estado.rele = 0;
     estado.tempo_cabeca_baixa_ms = 0;
+    estado.chamada_celular_ativa = false;
     registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alarme Silenciado/Resetado pela Central');
     voltarParaLinklemoCelularADB();
   }
@@ -527,14 +545,21 @@ wss.on('connection', (ws, req) => {
           estado.buzzer = 1;
           estado.rele = 1;
           estado.tempo_cabeca_baixa_ms = 2500;
+          estado.chamada_celular_ativa = true;
           estado.contadores.totalAlarmesSessao++;
-          registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alerta de Teste Disparado');
+          registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alerta Físico e Virtual Disparado');
           dispararChamadaCelularADB();
+          broadcast({
+            tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
+            dispararChamadaCafe: true,
+            estado
+          });
         } else if (parsed.comando === 'SILENCIAR_ALARME' || parsed.comando === 'RESET') {
           estado.estado = 'NORMAL';
           estado.buzzer = 0;
           estado.rele = 0;
           estado.tempo_cabeca_baixa_ms = 0;
+          estado.chamada_celular_ativa = false;
           registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alarme Silenciado/Resetado');
           voltarParaLinklemoCelularADB();
         }

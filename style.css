@@ -1802,8 +1802,162 @@ body.light-theme .btn-access.outline:hover {
 .painel-container {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 18px;
   width: 100%;
+  transition: max-width 0.3s ease, margin 0.3s ease;
+}
+
+/* Barra no margin-top exclusiva do Painel de Controle: Adaptação PC vs Adaptação Celular */
+.painel-adapt-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 10px 16px;
+  background: linear-gradient(90deg, rgba(6, 28, 43, 0.88) 0%, rgba(3, 21, 34, 0.92) 100%);
+  border: 1px solid rgba(8, 222, 235, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.painel-adapt-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.painel-adapt-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-adapt-mode {
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(2, 11, 18, 0.75);
+  color: var(--muted);
+  font-family: 'Space Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-adapt-mode.active {
+  background: rgba(8, 222, 235, 0.16);
+  border-color: var(--cyan);
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(8, 222, 235, 0.3);
+}
+
+/* Adaptação para Celular do Painel de Controle */
+.painel-container.painel-modo-celular {
+  max-width: 480px;
+  margin: 0 auto;
+  gap: 14px;
+}
+
+.painel-container.painel-modo-celular .painel-grid {
+  grid-template-columns: 1fr !important;
+  gap: 14px;
+}
+
+.painel-container.painel-modo-celular .painel-header-bar {
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 14px;
+  gap: 10px;
+}
+
+.painel-container.painel-modo-celular .alerta-display-large {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+}
+
+.painel-container.painel-modo-celular .alerta-display-large > div {
+  text-align: left !important;
+  width: 100%;
+}
+
+.painel-container.painel-modo-celular .alerta-status-text {
+  font-size: 22px;
+}
+
+.painel-container.painel-modo-celular .alerta-timer-count {
+  font-size: 21px;
+}
+
+.painel-container.painel-modo-celular .camera-controls-bar {
+  flex-direction: column;
+}
+
+.painel-container.painel-modo-celular .camera-controls-bar .btn-tactical {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Adaptação forçada para PC do Painel de Controle */
+.painel-container.painel-modo-pc {
+  max-width: 100%;
+}
+
+.painel-container.painel-modo-pc .painel-grid {
+  grid-template-columns: 1.15fr 0.85fr !important;
+}
+
+/* Faixa de Alta Precisão do Estado do Condutor em Tempo Real */
+.precisao-live-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(8, 222, 235, 0.22);
+}
+
+.precisao-pill {
+  background: rgba(2, 11, 18, 0.65);
+  border: 1px solid rgba(8, 222, 235, 0.2);
+  border-radius: 7px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.precisao-pill-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 8.5px;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.precisao-pill-val {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.painel-container.painel-modo-celular .precisao-live-strip {
+  grid-template-columns: 1fr;
 }
 
 .painel-header-bar {

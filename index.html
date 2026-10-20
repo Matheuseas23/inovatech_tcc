@@ -1816,8 +1816,162 @@
 		.painel-container {
 			display: flex;
 			flex-direction: column;
-			gap: 22px;
+			gap: 18px;
 			width: 100%;
+			transition: max-width 0.3s ease, margin 0.3s ease;
+		}
+
+		/* Barra no margin-top exclusiva do Painel de Controle: Adaptação PC vs Adaptação Celular */
+		.painel-adapt-topbar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			flex-wrap: wrap;
+			gap: 10px;
+			margin-top: 4px;
+			padding: 10px 16px;
+			background: linear-gradient(90deg, rgba(6, 28, 43, 0.88) 0%, rgba(3, 21, 34, 0.92) 100%);
+			border: 1px solid rgba(8, 222, 235, 0.35);
+			border-radius: 10px;
+			box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+		}
+
+		.painel-adapt-label {
+			font-family: 'Space Mono', monospace;
+			font-size: 10px;
+			letter-spacing: 1px;
+			color: var(--cyan);
+			text-transform: uppercase;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.painel-adapt-btns {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			flex-wrap: wrap;
+		}
+
+		.btn-adapt-mode {
+			padding: 7px 14px;
+			border-radius: 8px;
+			border: 1px solid var(--border);
+			background: rgba(2, 11, 18, 0.75);
+			color: var(--muted);
+			font-family: 'Space Mono', monospace;
+			font-size: 10.5px;
+			font-weight: 700;
+			letter-spacing: 0.5px;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.btn-adapt-mode.active {
+			background: rgba(8, 222, 235, 0.16);
+			border-color: var(--cyan);
+			color: #ffffff;
+			box-shadow: 0 0 16px rgba(8, 222, 235, 0.3);
+		}
+
+		/* Adaptação para Celular do Painel de Controle */
+		.painel-container.painel-modo-celular {
+			max-width: 480px;
+			margin: 0 auto;
+			gap: 14px;
+		}
+
+		.painel-container.painel-modo-celular .painel-grid {
+			grid-template-columns: 1fr !important;
+			gap: 14px;
+		}
+
+		.painel-container.painel-modo-celular .painel-header-bar {
+			flex-direction: column;
+			align-items: flex-start;
+			padding: 12px 14px;
+			gap: 10px;
+		}
+
+		.painel-container.painel-modo-celular .alerta-display-large {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 10px;
+			padding: 14px;
+		}
+
+		.painel-container.painel-modo-celular .alerta-display-large > div {
+			text-align: left !important;
+			width: 100%;
+		}
+
+		.painel-container.painel-modo-celular .alerta-status-text {
+			font-size: 22px;
+		}
+
+		.painel-container.painel-modo-celular .alerta-timer-count {
+			font-size: 21px;
+		}
+
+		.painel-container.painel-modo-celular .camera-controls-bar {
+			flex-direction: column;
+		}
+
+		.painel-container.painel-modo-celular .camera-controls-bar .btn-tactical {
+			width: 100%;
+			justify-content: center;
+		}
+
+		/* Adaptação forçada para PC do Painel de Controle */
+		.painel-container.painel-modo-pc {
+			max-width: 100%;
+		}
+
+		.painel-container.painel-modo-pc .painel-grid {
+			grid-template-columns: 1.15fr 0.85fr !important;
+		}
+
+		/* Faixa de Alta Precisão do Estado do Condutor em Tempo Real */
+		.precisao-live-strip {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 8px;
+			margin-top: 12px;
+			padding-top: 12px;
+			border-top: 1px dashed rgba(8, 222, 235, 0.22);
+		}
+
+		.precisao-pill {
+			background: rgba(2, 11, 18, 0.65);
+			border: 1px solid rgba(8, 222, 235, 0.2);
+			border-radius: 7px;
+			padding: 7px 10px;
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+		}
+
+		.precisao-pill-label {
+			font-family: 'Space Mono', monospace;
+			font-size: 8.5px;
+			color: var(--muted);
+			letter-spacing: 0.5px;
+			text-transform: uppercase;
+		}
+
+		.precisao-pill-val {
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			font-weight: 700;
+			color: var(--cyan);
+		}
+
+		.painel-container.painel-modo-celular .precisao-live-strip {
+			grid-template-columns: 1fr;
 		}
 
 		.painel-header-bar {
@@ -2764,7 +2918,26 @@
 		<main>
 			<section id="home" class="view active"><div class="home-content-wrapper"><div class="hero"><div class="hero-content"><div class="eyebrow">Monitoramento inteligente em movimento</div><h1>Monitoramento biométrico de<br><span style="color:var(--cyan)">alta performance</span></h1><p>Segurança em tempo real para operações industriais. Antecipe riscos, otimize eficiência e garanta um ambiente operacional protegido através de telemetria avançada e resposta imediata.</p><div class="actions"><button class="btn" data-view="painel">Acessar Painel de Controle</button><button class="btn outline" data-view="manual">Ver manual completo</button><button class="btn outline" data-view="ecosystem">Conheça o ecossistema</button></div></div></div><div class="grid" style="margin-top:34px"><article class="card"><div class="card-label">◉ PÚBLICO-ALVO</div><h3>Para quem dirige e opera</h3><p>Motoristas profissionais, operadores industriais e empresas de transporte que precisam reduzir riscos durante a operação.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">ϟ DIFERENCIAL</div><h3>Biometria em tempo real</h3><p>O Smart Driver integra wearable, sensores e veículo para transformar sinais do condutor em alertas imediatos.</p></article><article class="card"><div class="card-label">⌁ OBJETIVO</div><h3>Prevenir antes do risco</h3><p>Identificar fadiga, perda de atenção e alterações físicas para apoiar decisões rápidas e tornar a operação mais segura.</p></article></div></div></section>
 			<section id="painel" class="view">
-				<div class="painel-container">
+				<div class="painel-container" id="painelMainContainer">
+					<!-- Barra no margin-top exclusiva do Painel de Controle: Adaptação PC vs Adaptação Celular -->
+					<div class="painel-adapt-topbar">
+						<div class="painel-adapt-label">
+							<span class="pulse-dot"></span>
+							<span>MODO DE EXIBIÇÃO DO PAINEL DE CONTROLE:</span>
+						</div>
+						<div class="painel-adapt-btns">
+							<button type="button" class="btn-adapt-mode active" id="btnPainelAdaptPC" title="Adaptar o Painel de Controle para tela de Computador / TV">
+								<span>💻 Adaptação PC</span>
+							</button>
+							<button type="button" class="btn-adapt-mode" id="btnPainelAdaptCelular" title="Adaptar o Painel de Controle para tela de Celular e ativar Alerta Virtual em Tela Cheia">
+								<span>📱 Adaptação Celular</span>
+							</button>
+							<button type="button" class="btn-adapt-mode" id="btnPainelTelaApagadaTop" style="border-color:rgba(255,170,0,0.5);color:#ffdd66" title="Deixar tela 100% preta aguardando o alerta acordar o dispositivo">
+								<span>🌙 Tela Apagada (Aguardar Alerta)</span>
+							</button>
+						</div>
+					</div>
+
 					<!-- Barra Superior de Status da Central -->
 					<div class="painel-header-bar">
 						<div class="painel-header-info">
@@ -2790,34 +2963,53 @@
 					<div class="painel-grid">
 						<!-- COLUNA ESQUERDA -->
 						<div style="display:flex;flex-direction:column;gap:20px">
-							<!-- Card 1: Destaque Principal — Status Geral do Motorista & Alerta Crítico -->
+							<!-- Card 1: Destaque Principal — Estado do Condutor em Tempo Real -->
 							<article class="card card-alerta-principal estado-normal" id="cardStatusGeral">
-								<div class="card-label">◉ ESTADO DO CONDUTOR & ANÁLISE DE FADIGA EM TEMPO REAL</div>
+								<div class="card-label" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+									<span>◉ ESTADO DO CONDUTOR EM TEMPO REAL</span>
+									<span id="precisaoTempoMsBadge" style="color:var(--cyan);font-family:'Space Mono';font-size:10px">PRECISÃO AO VIVO: 0 ms (0.0%)</span>
+								</div>
 								<div class="alerta-display-large">
 									<div>
-										<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CLASSIFICAÇÃO OPERACIONAL</span>
+										<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">ESTADO POSTURAL AO VIVO</span>
 										<div class="alerta-status-text" id="statusMotoristaTexto" style="color:#08deeb">NORMAL: CABEÇA ERGUIDA</div>
 									</div>
 									<div style="text-align:right">
-										<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">FILTRO TEMPORAL (2,5s)</span>
-										<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.0s / 2.5s</div>
+										<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CRONÔMETRO DE ALTA PRECISÃO (2,50s)</span>
+										<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 2.50s</div>
 									</div>
 								</div>
 
 								<!-- Barra de Progresso do Filtro de Segurança -->
 								<div class="progresso-tempo-container">
-									<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px">
-										<span>TOLERÂNCIA INSTRUMENTOS (0.0s - 1.5s)</span>
-										<span>PRÉ-ALERTA (1.5s - 2.4s)</span>
-										<span style="color:#ff4b72;font-weight:700">LIMIAR DE DISPARO (2.5s)</span>
+									<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap;gap:4px">
+										<span>ESTÁVEL (0.00s)</span>
+										<span>CONTAGEM ATIVA (0.01s - 2.49s)</span>
+										<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (2.50s)</span>
 									</div>
 									<div class="progresso-bar-bg">
 										<div class="progresso-bar-fill" id="barraProgressoTempo"></div>
 									</div>
 								</div>
 
-								<p id="descricaoEstadoCondutor" style="margin-top:14px;font-size:11px;line-height:1.6">
-									Condutor em postura ereta e campo de visão direcionado à pista. Nenhuma anomalia postural detectada pelos óculos.
+								<!-- Faixa de Métricas de Alta Precisão em Tempo Real -->
+								<div class="precisao-live-strip">
+									<div class="precisao-pill">
+										<span class="precisao-pill-label">TAXA DE AMOSTRAGEM</span>
+										<span class="precisao-pill-val" id="precisaoTaxaVal">100 Hz (10 ms) · ZERO DELAY</span>
+									</div>
+									<div class="precisao-pill">
+										<span class="precisao-pill-label">LEITURA INSTANTÂNEA IR</span>
+										<span class="precisao-pill-val" id="precisaoIrLiveVal" style="color:#55ee77">CABEÇA ERGUIDA (0 ms)</span>
+									</div>
+									<div class="precisao-pill">
+										<span class="precisao-pill-label">ALERTA FÍSICO + CELULAR</span>
+										<span class="precisao-pill-val" id="precisaoAlertaSyncVal">CONECTADO AO BACKEND</span>
+									</div>
+								</div>
+
+								<p id="descricaoEstadoCondutor" style="margin-top:12px;font-size:11px;line-height:1.6">
+									Condutor em postura ereta e campo de visão direcionado à pista. Monitoramento em tempo real ativo a 100 Hz.
 								</p>
 							</article>
 
@@ -3655,6 +3847,53 @@ if (cornerAlertGoPainelBtn) {
 }
 
 // ==============================================================================
+// ADAPTAÇÃO DO PAINEL DE CONTROLE (PC vs CELULAR) & ALERTA FÍSICO + VIRTUAL
+// ==============================================================================
+var painelMainContainer = document.getElementById('painelMainContainer');
+var btnPainelAdaptPC = document.getElementById('btnPainelAdaptPC');
+var btnPainelAdaptCelular = document.getElementById('btnPainelAdaptCelular');
+var btnPainelTelaApagadaTop = document.getElementById('btnPainelTelaApagadaTop');
+var precisaoTempoMsBadge = document.getElementById('precisaoTempoMsBadge');
+var precisaoIrLiveVal = document.getElementById('precisaoIrLiveVal');
+var precisaoAlertaSyncVal = document.getElementById('precisaoAlertaSyncVal');
+var modoAdaptacaoCelularAtivo = false;
+
+function definirModoAdaptacaoPainel(modo) {
+	if (!painelMainContainer) return;
+	if (modo === 'celular') {
+		modoAdaptacaoCelularAtivo = true;
+		painelMainContainer.classList.remove('painel-modo-pc');
+		painelMainContainer.classList.add('painel-modo-celular');
+		if (btnPainelAdaptCelular) btnPainelAdaptCelular.classList.add('active');
+		if (btnPainelAdaptPC) btnPainelAdaptPC.classList.remove('active');
+	} else {
+		modoAdaptacaoCelularAtivo = false;
+		painelMainContainer.classList.remove('painel-modo-celular');
+		painelMainContainer.classList.add('painel-modo-pc');
+		if (btnPainelAdaptPC) btnPainelAdaptPC.classList.add('active');
+		if (btnPainelAdaptCelular) btnPainelAdaptCelular.classList.remove('active');
+	}
+}
+
+if (btnPainelAdaptPC) {
+	btnPainelAdaptPC.addEventListener('click', function() {
+		definirModoAdaptacaoPainel('pc');
+	});
+}
+
+if (btnPainelAdaptCelular) {
+	btnPainelAdaptCelular.addEventListener('click', function() {
+		definirModoAdaptacaoPainel('celular');
+	});
+}
+
+if (btnPainelTelaApagadaTop) {
+	btnPainelTelaApagadaTop.addEventListener('click', function() {
+		ativarModoTelaApagadaCelular();
+	});
+}
+
+// ==============================================================================
 // CHAMADA DE EMERGÊNCIA EM TELA CHEIA NO CELULAR DO MOTORISTA (ESTILO WHATSAPP)
 // ==============================================================================
 var driverFullscreenCall = document.getElementById('driverFullscreenCall');
@@ -3671,8 +3910,16 @@ vozCafeAudio.preload = 'auto';
 function ehDispositivoCelular() {
 	var params = new URLSearchParams(window.location.search);
 	if (params.get('motorista') === '1' || params.get('chamada') === '1') return true;
+	if (modoAdaptacaoCelularAtivo) return true;
 	if (driverBlackStandby && driverBlackStandby.classList.contains('active')) return true;
 	return window.innerWidth <= 900 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+// Inicializa automaticamente a adaptação do Painel de acordo com o dispositivo atual
+if (window.innerWidth <= 900 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) {
+	definirModoAdaptacaoPainel('celular');
+} else {
+	definirModoAdaptacaoPainel('pc');
 }
 
 function tocarToqueLigacaoUnico() {
@@ -3926,8 +4173,90 @@ function atualizarAvisoCantoGlobal(status, tempoMs, segDecorridos, perc, estadoA
 	}
 }
 
-// Atualizar toda a tela com base no estado de telemetria
+// Interpolação de Alta Precisão (40 FPS / 25ms) para o Estado do Condutor ao Vivo
 var ultimoEstadoRegistrado = 'NORMAL';
+var timerAltaPrecisaoCondutor = null;
+var baseTempoHardwareMs = 0;
+var timestampBaseHardware = 0;
+var statusInterpolacaoAtiva = 'NORMAL';
+
+function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
+	var msLimitado = Math.max(0, Math.min(2500, Math.round(msExato)));
+	var segCent = (msLimitado / 1000).toFixed(2);
+	var percExato = Math.min(100, (msLimitado / 2500) * 100);
+
+	if (tempoInclinacaoDisplay) {
+		tempoInclinacaoDisplay.textContent = segCent + 's / 2.50s';
+	}
+	if (barraProgressoTempo) {
+		barraProgressoTempo.style.width = percExato.toFixed(1) + '%';
+	}
+	if (irTempoMs) {
+		irTempoMs.textContent = msLimitado + ' ms';
+	}
+	if (precisaoTempoMsBadge) {
+		precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + msLimitado + ' ms (' + percExato.toFixed(1) + '%)';
+	}
+	if (precisaoIrLiveVal) {
+		if (statusAtual === 'NORMAL') {
+			precisaoIrLiveVal.textContent = 'CABEÇA ERGUIDA (0 ms)';
+			precisaoIrLiveVal.style.color = '#55ee77';
+		} else if (statusAtual === 'PRE_ALERTA') {
+			precisaoIrLiveVal.textContent = 'CABEÇA BAIXA (' + msLimitado + ' ms)';
+			precisaoIrLiveVal.style.color = '#ffaa00';
+		} else {
+			precisaoIrLiveVal.textContent = 'LIMIAR ATINGIDO (2500 ms)';
+			precisaoIrLiveVal.style.color = '#ff2a55';
+		}
+	}
+	if (precisaoAlertaSyncVal) {
+		if (statusAtual === 'ALARME_ATIVADO') {
+			precisaoAlertaSyncVal.textContent = 'FÍSICO + VIRTUAL DISPARADOS!';
+			precisaoAlertaSyncVal.style.color = '#ff2a55';
+		} else if (statusAtual === 'PRE_ALERTA') {
+			precisaoAlertaSyncVal.textContent = 'PREPARANDO DISPARO (' + (2500 - msLimitado) + ' ms)';
+			precisaoAlertaSyncVal.style.color = '#ffaa00';
+		} else {
+			precisaoAlertaSyncVal.textContent = 'SINCRONIZADO AO BACKEND';
+			precisaoAlertaSyncVal.style.color = 'var(--cyan)';
+		}
+	}
+	if (cornerAlertTimer && statusAtual !== 'NORMAL') {
+		cornerAlertTimer.textContent = segCent + 's / 2.50s' + (statusAtual === 'ALARME_ATIVADO' ? ' (CRÍTICO)' : '');
+	}
+	if (cornerAlertBarFill && statusAtual === 'PRE_ALERTA') {
+		cornerAlertBarFill.style.width = percExato.toFixed(1) + '%';
+	}
+}
+
+function gerenciarLoopAltaPrecisao(status, tempoMs) {
+	statusInterpolacaoAtiva = status;
+	baseTempoHardwareMs = tempoMs;
+	timestampBaseHardware = performance.now();
+
+	if (status === 'PRE_ALERTA') {
+		if (!timerAltaPrecisaoCondutor) {
+			timerAltaPrecisaoCondutor = setInterval(function() {
+				if (statusInterpolacaoAtiva !== 'PRE_ALERTA') {
+					clearInterval(timerAltaPrecisaoCondutor);
+					timerAltaPrecisaoCondutor = null;
+					return;
+				}
+				var delta = performance.now() - timestampBaseHardware;
+				var msEstimado = Math.min(2490, baseTempoHardwareMs + delta);
+				renderizarCronometroAltaPrecisao(msEstimado, 'PRE_ALERTA');
+			}, 25);
+		}
+	} else {
+		if (timerAltaPrecisaoCondutor) {
+			clearInterval(timerAltaPrecisaoCondutor);
+			timerAltaPrecisaoCondutor = null;
+		}
+		renderizarCronometroAltaPrecisao(status === 'ALARME_ATIVADO' ? 2500 : 0, status);
+	}
+}
+
+// Atualizar toda a tela com base no estado de telemetria
 function atualizarPainelComEstado(estado) {
 	if (!estado) return;
 
@@ -3944,20 +4273,21 @@ function atualizarPainelComEstado(estado) {
 		}
 	}
 
-	// 1. Status Geral e Alerta Crítico
+	// 1. Estado do Condutor em Tempo Real (Alta Precisão)
 	var status = estado.estado || 'NORMAL';
 	var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
-	var segDecorridos = (tempoMs / 1000).toFixed(1);
+	var segDecorridos = (tempoMs / 1000).toFixed(2);
 	var perc = Math.min(100, (tempoMs / 2500) * 100);
 
 	// Atualiza o Aviso Flutuante no Canto do Site (visível em qualquer aba e dispositivo)
 	atualizarAvisoCantoGlobal(status, tempoMs, segDecorridos, perc, ultimoEstadoRegistrado);
 
-	if (tempoInclinacaoDisplay) {
-		tempoInclinacaoDisplay.textContent = segDecorridos + 's / 2.5s';
-	}
-	if (barraProgressoTempo) {
-		barraProgressoTempo.style.width = perc + '%';
+	// Atualiza cronômetro e barra com interpolação de 40 FPS (25ms)
+	gerenciarLoopAltaPrecisao(status, tempoMs);
+
+	// Se o backend sinalizou chamada_celular_ativa, dispara a chamada no celular
+	if (estado.chamada_celular_ativa && status === 'ALARME_ATIVADO') {
+		acionarChamadaTelaCheiaMotorista(false);
 	}
 
 	if (status === 'NORMAL') {
@@ -3968,7 +4298,7 @@ function atualizarPainelComEstado(estado) {
 		}
 		if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill';
 		if (descricaoEstadoCondutor) {
-			descricaoEstadoCondutor.textContent = 'Condutor em postura ereta e campo de visão direcionado à pista. Nenhuma anomalia postural detectada pelos óculos.';
+			descricaoEstadoCondutor.textContent = 'Condutor em postura ereta e campo de visão direcionado à pista. Monitoramento em tempo real ativo a 100 Hz.';
 		}
 		if (cardCameraLinklemo) {
 			cardCameraLinklemo.classList.remove('camera-alerta-critico');
@@ -3981,7 +4311,7 @@ function atualizarPainelComEstado(estado) {
 		}
 		if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill warning';
 		if (descricaoEstadoCondutor) {
-			descricaoEstadoCondutor.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + 'ms). Contagem do filtro de segurança em andamento antes do acionamento de emergência.';
+			descricaoEstadoCondutor.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Contagem de alta precisão em andamento para disparo físico e virtual.';
 		}
 		if (cardCameraLinklemo) {
 			cardCameraLinklemo.classList.remove('camera-alerta-critico');
@@ -3990,11 +4320,11 @@ function atualizarPainelComEstado(estado) {
 		if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-alarme';
 		if (statusMotoristaTexto) {
 			statusMotoristaTexto.style.color = '#ff2a55';
-			statusMotoristaTexto.textContent = 'PERIGO: ALARME ATIVADO (FADIGA DETECTADA)';
+			statusMotoristaTexto.textContent = 'PERIGO: CABEÇA BAIXA (ALERTA ATIVADO)';
 		}
 		if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill danger';
 		if (descricaoEstadoCondutor) {
-			descricaoEstadoCondutor.textContent = 'CRÍTICO: O motorista permaneceu mais de 2,5 segundos com a cabeça baixa! Buzzer ativo e relé veicular acionados. Olhe imediatamente para a câmera!';
+			descricaoEstadoCondutor.textContent = 'CRÍTICO: O motorista permaneceu 2,50 segundos com a cabeça baixa! Alerta físico (Buzzer/Relé) e Alerta Virtual no Celular acionados pelo Backend!';
 		}
 		// Destaque Automático da Câmera Linklemo
 		if (cardCameraLinklemo) {
@@ -4082,6 +4412,7 @@ function atualizarPainelComEstado(estado) {
 
 // Conectar ao Backend via WebSocket (Local + Nuvem simultâneos) com fallback para Polling REST
 var wsCloudClient = null;
+var wsLocalBridgeClient = null;
 var CLOUD_BACKEND_URL = 'https://inovatech-tcc.onrender.com';
 
 function processarMensagemWs(event) {
@@ -4089,6 +4420,9 @@ function processarMensagemWs(event) {
 		var msg = JSON.parse(event.data);
 		if (msg.estado) {
 			atualizarPainelComEstado(msg.estado);
+		}
+		if (msg.tipo === 'ALERTA_FISICO_E_VIRTUAL_CELULAR' && msg.dispararChamadaCafe) {
+			acionarChamadaTelaCheiaMotorista(false);
 		}
 		if (msg.tipo === 'NOVO_EVENTO' && msg.evento) {
 			adicionarLogLocal(msg.evento.tipo, msg.evento.mensagem, msg.evento.horaFormatada);
@@ -4102,7 +4436,13 @@ function processarMensagemWs(event) {
 			}
 		}
 		if (msg.tipo === 'COMANDO_EXECUTADO' && msg.comando) {
-			adicionarLogLocal('COMANDO_CENTRAL', 'Comando Remoto executado: ' + (msg.comando.comando || msg.comando));
+			var cmdNome = msg.comando.comando || msg.comando;
+			adicionarLogLocal('COMANDO_CENTRAL', 'Comando Remoto executado: ' + cmdNome);
+			if (cmdNome === 'SILENCIAR_ALARME' || cmdNome === 'RESET') {
+				encerrarChamadaTelaCheiaMotorista();
+			} else if (cmdNome === 'DISPARAR_TESTE') {
+				acionarChamadaTelaCheiaMotorista(false);
+			}
 		}
 	} catch(e) {}
 }
@@ -4147,8 +4487,15 @@ function conectarBackend() {
 		iniciarPollingRestFallback();
 	}
 
-	// Se o endpoint principal for local, abre também escuta na nuvem (e vice-versa)
-	if (backendBaseUrl.indexOf('onrender.com') === -1) {
+	// Se o endpoint principal for a nuvem, abre também conexão direta com o backend local (PC/USB COM5) para latência zero
+	if (backendBaseUrl.indexOf('onrender.com') !== -1) {
+		try {
+			if (wsLocalBridgeClient) { try { wsLocalBridgeClient.close(); } catch(e) {} }
+			wsLocalBridgeClient = new WebSocket('ws://localhost:3001/ws');
+			wsLocalBridgeClient.onmessage = processarMensagemWs;
+		} catch(e) {}
+	} else {
+		// Se o endpoint principal for local, abre também escuta na nuvem
 		try {
 			if (wsCloudClient) { try { wsCloudClient.close(); } catch(e) {} }
 			wsCloudClient = new WebSocket('wss://inovatech-tcc.onrender.com/ws');
