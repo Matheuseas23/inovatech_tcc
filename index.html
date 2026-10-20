@@ -3009,17 +3009,247 @@
 			color: #ffdd66;
 			line-height: 1.45;
 		}
-	</style>
+	
+/* ==============================================================================
+   BARRA DE ROLAGEM PERSONALIZADA (DARK TECH HUD SCROLLBAR)
+   ============================================================================== */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020c15;
+  border-left: 1px solid rgba(8, 222, 235, 0.12);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #103b4d 0%, #08deeb 50%, #0c3344 100%);
+  border-radius: 5px;
+  border: 1.5px solid #020c15;
+  box-shadow: inset 0 0 4px rgba(8, 222, 235, 0.6);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #12e3ee 0%, #08deeb 50%, #16a085 100%);
+  box-shadow: 0 0 10px rgba(8, 222, 235, 0.75), inset 0 0 4px #ffffff;
+}
+
+::-webkit-scrollbar-corner {
+  background: #020c15;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #08deeb #020c15;
+}
+
+
+/* ==============================================================================
+   MODAL SELETOR DE TERMINAL DE ACESSO (PORTAL ACCESS MODAL)
+   ============================================================================== */
+.portal-access-modal {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(3, 21, 34, 0.96) 0%, rgba(2, 11, 18, 0.98) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  z-index: 9999999 !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.portal-access-modal.hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.portal-access-card {
+  background: linear-gradient(160deg, rgba(14, 42, 62, 0.95) 0%, rgba(6, 25, 38, 0.98) 55%, rgba(2, 14, 23, 0.99) 100%);
+  border: 1px solid rgba(8, 222, 235, 0.45);
+  border-radius: 20px;
+  padding: 34px 30px;
+  max-width: 580px;
+  width: 100%;
+  box-shadow: 
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 2px rgba(8, 222, 235, 0.25),
+    0 24px 60px rgba(0, 0, 0, 0.85),
+    0 0 40px rgba(8, 222, 235, 0.20);
+  position: relative;
+  overflow: hidden;
+  animation: portalCardZoom 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes portalCardZoom {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.portal-access-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 0%, #08deeb 50%, transparent 100%);
+  box-shadow: 0 0 12px #08deeb;
+}
+
+.portal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.portal-eyebrow {
+  color: var(--cyan, #08deeb);
+  font: 700 10px/1 'Space Mono', monospace;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.portal-header h2 {
+  font: 800 28px/1.1 'Barlow Condensed', sans-serif;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 6px 0 10px;
+}
+
+.portal-header p {
+  color: #9bb0b8;
+  font: 11.5px/1.5 'Space Mono', monospace;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.portal-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.portal-btn-option {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(7, 28, 43, 0.70);
+  border: 1px solid rgba(22, 73, 91, 0.8);
+  border-radius: 12px;
+  color: #e6f4f6;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.35);
+  position: relative;
+  width: 100%;
+}
+
+.portal-btn-option:hover {
+  background: linear-gradient(90deg, rgba(8, 222, 235, 0.16) 0%, rgba(10, 36, 56, 0.85) 100%);
+  border-color: #08deeb;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(8, 222, 235, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.portal-btn-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(2, 14, 24, 0.85);
+  border: 1px solid rgba(8, 222, 235, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #08deeb;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.portal-btn-option:hover .portal-btn-icon {
+  border-color: #08deeb;
+  background: #08deeb;
+  color: #020c15;
+  box-shadow: 0 0 14px rgba(8, 222, 235, 0.7);
+}
+
+.portal-btn-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-btn-title {
+  font: 700 15px 'Barlow Condensed', sans-serif;
+  color: #ffffff;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.portal-btn-desc {
+  font: 10.5px/1.4 'Space Mono', monospace;
+  color: #8ca4ad;
+}
+
+.portal-btn-badge {
+  font: 700 10px 'Space Mono', monospace;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.portal-btn-badge.badge-free {
+  background: rgba(85, 238, 119, 0.15);
+  color: #55ee77;
+  border: 1px solid rgba(85, 238, 119, 0.5);
+}
+
+.portal-btn-badge.badge-lock {
+  background: rgba(255, 170, 0, 0.15);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.5);
+}
+
+.portal-footer {
+  margin-top: 22px;
+  text-align: center;
+  font: 9.5px 'Space Mono', monospace;
+  color: #5b7987;
+  letter-spacing: 1.5px;
+}
+
+</style>
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+	<link rel="stylesheet" href="style.css">
 </head>
 <body data-active-view="home">
 
-	<!-- MODAL SELETOR DE PORTAIS DE ACESSO INOVATECH (CONTROLE OPERACIONAL) -->
+	<!-- MODAL SELETOR DE TERMINAIS DE ACESSO INOVATECH (CONTROLE OPERACIONAL) -->
 	<div class="portal-access-modal" id="portalAccessModal">
 		<div class="portal-access-card">
 			<div class="portal-header">
 				<div class="portal-eyebrow">INOVA TECH · ECOSSISTEMA SMART DRIVER</div>
 				<h2>Selecione o Terminal de Acesso</h2>
-				<p>Selecione o ambiente desejado para esta estação de trabalho ou apresentação.</p>
+				<p>Selecione o ambiente operacional desejado para esta estação ou apresentação:</p>
 			</div>
 
 			<div class="portal-options-grid">
@@ -3065,12 +3295,12 @@
 			</div>
 
 			<!-- Área de autenticação com senha para acessos restritos -->
-			<div id="portalAuthContainer" style="display:none;margin-top:20px;padding-top:18px;border-top:1px solid rgba(8,222,235,0.2)">
+			<div id="portalAuthContainer" style="display:none;margin-top:20px;padding-top:18px;border-top:1px solid rgba(8,222,235,0.25)">
 				<div style="font-size:11px;color:var(--cyan);font-family:'Space Mono';letter-spacing:1px;margin-bottom:8px" id="portalAuthDestinoLabel">
 					AUTORIZAÇÃO NECESSÁRIA · INFORME A SENHA
 				</div>
 				<form id="portalAuthForm" onsubmit="validarSenhaPortal(event)" style="display:flex;gap:10px">
-					<input type="password" id="portalPasswordInput" placeholder="Senha de segurança..." autocomplete="off" style="flex:1;padding:12px 14px;background:rgba(2,11,18,0.9);border:1px solid var(--border);border-radius:8px;color:#fff;font-family:'Space Mono';font-size:13px;letter-spacing:2px;outline:none">
+					<input type="password" id="portalPasswordInput" placeholder="Senha de segurança..." autocomplete="off" style="flex:1;padding:12px 14px;background:rgba(2,11,18,0.92);border:1px solid var(--border);border-radius:8px;color:#fff;font-family:'Space Mono';font-size:13px;letter-spacing:2px;outline:none">
 					<button type="submit" class="btn" style="padding:0 22px">Acessar</button>
 					<button type="button" class="btn outline" onclick="cancelarSenhaPortal()">Voltar</button>
 				</form>
@@ -3083,94 +3313,6 @@
 				INOVA TECH SMART DRIVER · SEGURANÇA E TELEMETRIA BIOMÉTRICA AVANÇADA
 			</div>
 		</div>
-	</div>
-
-	<!-- Modo Tela Apagada no Celular (Fica 100% preta como celular desligado e acende sozinha no Alerta!) -->
-	<div class="driver-black-standby" id="driverBlackStandby" title="Toque duas vezes para sair do modo tela apagada">
-		<span>●</span>
-	</div>
-
-	<!-- Botão rápido no celular para deixar a tela apagada aguardando a chamada de emergência -->
-	<button class="btn-mobile-standby" id="btnMobileStandbyOff" type="button">
-		<span><span class="material-symbols-outlined g-icon" style="margin-right:4px">dark_mode</span> Apagar Tela (Aguardar Alerta)</span>
-	</button>
-
-	<!-- Tela Inteira de Chamada de Segurança no Celular do Motorista (Estilo Ligação WhatsApp) -->
-	<div class="driver-fullscreen-call" id="driverFullscreenCall" role="dialog" aria-modal="true" aria-labelledby="driverCallTitle">
-		<div class="driver-call-top">
-			<div class="driver-call-badge">
-				<span class="pulse-dot danger"></span>
-				<span>CHAMADA DE EMERGÊNCIA · SMART DRIVER</span>
-			</div>
-			<span class="driver-call-sub">ALERTA DE FADIGA E SONOLÊNCIA AO VOLANTE</span>
-		</div>
-
-		<div class="driver-call-center">
-			<div class="coffee-ring-wrapper">
-				<div class="coffee-ring-pulse"></div>
-				<div class="coffee-ring-pulse-2"></div>
-				<div class="coffee-avatar-circle" aria-hidden="true">
-					<!-- Ícone Xícara de Café Quente -->
-					<svg viewBox="0 0 24 24">
-						<path d="M17 8h1a4 4 0 1 1 0 8h-1"/>
-						<path d="M3 8h14v7a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"/>
-						<line x1="6" y1="2" x2="6" y2="5"/>
-						<line x1="10" y1="2" x2="10" y2="5"/>
-						<line x1="14" y1="2" x2="14" y2="5"/>
-					</svg>
-				</div>
-			</div>
-			<h2 class="driver-call-title" id="driverCallTitle"><span class="material-symbols-outlined g-icon" style="font-size:1.05em;margin-right:6px">local_cafe</span> PARE PARA DESCANSAR!</h2>
-			<p class="driver-call-message">
-				<strong>ATENÇÃO MOTORISTA:</strong> Detectamos queda de cabeça por mais de <strong>2,5 segundos</strong>.<br>
-				Encoste o veículo em um local seguro, faça uma pausa para descansar e tome um café!
-			</p>
-			<div class="driver-call-escalation-box" id="driverCallEscalationBox">
-				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span> <strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 10.0s</span><br>
-				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Aperte o botão verde abaixo! Em 10s sem resposta, um Alerta Crítico será enviado à Central da Empresa!</span>
-			</div>
-		</div>
-
-		<div class="driver-call-bottom">
-			<button class="btn-call-accept" id="btnDriverAcceptRest">
-				<span><span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> VOU PARAR PARA DESCANSAR</span>
-			</button>
-			<button class="btn-call-dismiss" id="btnDriverDismissCall">
-				<span>ESTOU ALERTA · SILENCIAR CHAMADA</span>
-			</button>
-		</div>
-	</div>
-
-	<!-- Aviso Flutuante Global no Canto (Aparece em todas as abas e dispositivos) -->
-	<aside class="global-corner-alert" id="globalCornerAlert" role="alert" aria-live="assertive">
-		<div class="corner-alert-header">
-			<span class="corner-alert-tag" id="cornerAlertTag">
-				<span class="pulse-dot danger" id="cornerAlertDot"></span>
-				<span id="cornerAlertTagText">CENTRAL INOVATECH · ALERTA</span>
-			</span>
-			<button class="corner-alert-close" id="cornerAlertCloseBtn" title="Fechar aviso"></button>
-		</div>
-		<h4 class="corner-alert-title" id="cornerAlertTitle">ALARME ATIVADO: FADIGA DETECTADA</h4>
-		<p class="corner-alert-desc" id="cornerAlertDesc">Motorista permaneceu com a cabeça baixa por 2,5s. Buzzer e Relé acionados!</p>
-		<div class="corner-alert-bar-wrap">
-			<div class="corner-alert-bar-fill" id="cornerAlertBarFill"></div>
-		</div>
-		<div class="corner-alert-actions">
-			<span class="corner-alert-timer" id="cornerAlertTimer">2.5s / 2.5s</span>
-			<button class="btn-tactical danger" id="cornerAlertGoPainelBtn" style="padding:5px 12px;font-size:10px">
-				<span><span class="material-symbols-outlined g-icon" style="margin-right:4px">bolt</span> Abrir Painel da Central</span>
-			</button>
-		</div>
-	</aside>
-
-	<!-- Vídeo e Imagem de Fundo Global do Site -->
-	<div class="site-bg-video-wrapper" id="siteBgWrapper" aria-hidden="true">
-		<div id="siteBgImage" class="site-bg-image"></div>
-		<video id="siteVideoBg" class="site-bg-video" autoplay muted playsinline poster="oculos.png">
-			<source src="oculos.mp4" type="video/mp4">
-			<source src="oculos.mp4.mp4" type="video/mp4">
-		</video>
-		<div class="site-bg-video-overlay"></div>
 	</div>
 	<div class="shell"><header><div class="brand"><img id="brandLogo" src="image.png" alt="INOVA TECH"><div>INOVA TECH<small>SMART DRIVER</small></div></div><nav aria-label="Navegação principal"><button class="active" data-view="home">HOME</button><button data-view="manual">MANUAL DE OPERAÇÕES</button><button data-view="ecosystem">ECOSSISTEMA DE SEGURANÇA</button><button data-view="about">QUEM SOMOS</button><button data-view="references">REFERÊNCIAS</button><button data-view="game">O JOGO</button></nav><div class="tools"><button class="theme-toggle" id="themeToggle" aria-label="Alternar tema"><img id="themeIcon" src="moon.svg" alt="Modo escuro"></button></div></header>
 		<main>
@@ -3681,11 +3823,13 @@ if (painelAuthForm) {
 
 // ==============================================================================
 
+// ============================================================================
 // ==============================================================================
 // GESTÃO DO PORTAL DE ACESSO INOVATECH (CONTROLE OPERACIONAL)
 // ==============================================================================
-// REGRA: Deixar true para exibir o modal. Quando desejar fechar para a banca do professor,
-// basta definir MOSTRAR_PORTAL_SELETOR = false ou chamar ocultarPortalPermanente().
+// REGRA: Controla a exibição da caixinha de acesso inicial.
+// true  = Exibe sempre logo de cara ao abrir o site.
+// false = Oculta totalmente para a apresentação do professor.
 const MOSTRAR_PORTAL_SELETOR = true;
 const SENHA_MESTRE_INOVATECH = "inovatech26";
 let destinoPortalPendente = null;
@@ -3694,19 +3838,19 @@ function inicializarPortalSeletor() {
 	var modal = document.getElementById('portalAccessModal');
 	if (!modal) return;
 	
-	if (!MOSTRAR_PORTAL_SELETOR || sessionStorage.getItem('inovatech_portal_dismissed') === 'true') {
+	if (MOSTRAR_PORTAL_SELETOR) {
+		modal.classList.remove('hidden');
+	} else {
 		modal.classList.add('hidden');
-		return;
 	}
-	
-	modal.classList.remove('hidden');
 }
 
 function selecionarPortal(tipo) {
 	var modal = document.getElementById('portalAccessModal');
 	if (tipo === 'apresentacao') {
-		if (modal) modal.classList.add('hidden');
-		sessionStorage.setItem('inovatech_portal_dismissed', 'true');
+		if (modal) {
+			modal.classList.add('hidden');
+		}
 	}
 }
 
@@ -3761,12 +3905,10 @@ function validarSenhaPortal(e) {
 	}
 }
 
-// Inicializa o seletor ao carregar a página
+// Dispara imediatamente e no DOMContentLoaded para garantir aparição logo de cara
+inicializarPortalSeletor();
 window.addEventListener('DOMContentLoaded', inicializarPortalSeletor);
-// Fallback caso DOMContentLoaded já tenha disparado
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-	inicializarPortalSeletor();
-}
+window.addEventListener('load', inicializarPortalSeletor);
 
 </script>
 </body>
