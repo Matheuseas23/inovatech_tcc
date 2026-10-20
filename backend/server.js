@@ -100,7 +100,7 @@ let comandosPendentes = [];
 // ------------------------------------------------------------------------------
 const DATA_DIR = path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) {
-  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) { }
 }
 const EVENTOS_FILE = path.join(DATA_DIR, 'historico_eventos.json');
 const ESTADO_FILE = path.join(DATA_DIR, 'ultimo_estado.json');
@@ -270,14 +270,14 @@ function dispararChamadaCelularADB() {
   // 3. Desbloqueia a tela de bloqueio (wm dismiss-keyguard + KEYCODE_MENU = 82 + swipe)
   // 4. Abre a Chamada de Café em Tela Inteira por cima de qualquer app
   const cmdShell = `input keyevent 224 && settings put system screen_brightness 255 && media volume --show --stream 3 --set 15 ; wm dismiss-keyguard && input keyevent 82 && input swipe 500 1750 500 250 180 && am start -a android.intent.action.VIEW -d "${urlChamada}"`;
-  execFile(ADB_PATH, ['shell', cmdShell], { timeout: 7000 }, () => {});
+  execFile(ADB_PATH, ['shell', cmdShell], { timeout: 7000 }, () => { });
 }
 
 // Quando o motorista clica em "Vou parar para descansar", retorna automaticamente para o app da câmera Linklemo
 function voltarParaLinklemoCelularADB() {
   if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH) || !chamadaCelularAbertaViaAdb) return;
   chamadaCelularAbertaViaAdb = false;
-  execFile(ADB_PATH, ['shell', 'input', 'keyevent', '4'], { timeout: 3000 }, () => {});
+  execFile(ADB_PATH, ['shell', 'input', 'keyevent', '4'], { timeout: 3000 }, () => { });
 }
 
 // ------------------------------------------------------------------------------
@@ -452,10 +452,10 @@ function espelharParaNuvem(payloadEspelho, forcarImediato = false) {
     }, (res) => {
       res.resume();
     });
-    req.on('error', () => {});
+    req.on('error', () => { });
     req.write(bodyStr);
     req.end();
-  } catch (e) {}
+  } catch (e) { }
 }
 
 // Função centralizada de processamento de telemetria (HTTP, WebSocket e USB Serial)
@@ -756,7 +756,7 @@ wss.on('connection', (ws, req) => {
   ws.on('message', (message) => {
     try {
       const parsed = JSON.parse(message);
-      
+
       // Se for telemetria enviada via WebSocket direto do ESP32/cliente
       if (parsed.tipo === 'TELEMETRIA') {
         // Redireciona para o mesmo fluxo
@@ -881,7 +881,7 @@ function iniciarPonteSerialUSB() {
           const jsonStr = line.substring('TELEMETRY:'.length).trim();
           const dados = JSON.parse(jsonStr);
           processarTelemetria(dados);
-        } catch (e) {}
+        } catch (e) { }
       }
     }
   });
@@ -912,10 +912,10 @@ server.listen(PORT, '0.0.0.0', () => {
 function encerrarGraciosamente(sinal) {
   console.log(`[SERVER] Sinal ${sinal} recebido. Encerrando conexões graciosamente...`);
   if (serialBridgeProc) {
-    try { serialBridgeProc.kill(); } catch (e) {}
+    try { serialBridgeProc.kill(); } catch (e) { }
   }
   wss.clients.forEach(client => {
-    try { client.close(1001, 'Servidor reiniciando'); } catch (e) {}
+    try { client.close(1001, 'Servidor reiniciando'); } catch (e) { }
   });
   server.close(() => {
     console.log('[SERVER] Servidor HTTP e WebSocket finalizados com sucesso.');
