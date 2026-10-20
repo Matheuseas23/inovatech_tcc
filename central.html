@@ -1123,13 +1123,8 @@
 		}
 
 		function tocarAudioVoz(audioObj) {
-			try {
-				[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) { if (a !== audioObj) { a.pause(); a.currentTime = 0; } });
-				audioObj.currentTime = 0;
-				audioObj.playbackRate = 1.12;
-				audioObj.volume = 1.0;
-				audioObj.play().catch(function () { });
-			} catch (e) { }
+			// Diretriz de Operação: Voz desativada na Central Tech (voz ativa exclusivamente no App do Motorista)
+			return;
 		}
 
 		function atualizarPainelEscalonamentoUI(decorridoMs) {
