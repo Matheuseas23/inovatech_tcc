@@ -287,104 +287,9 @@
 			transition: all 0.2s;
 		}
 
-		/* Card de Localização Satelital em Tempo Real */
-		.satellite-location-card {
-			display: none;
-			background: linear-gradient(135deg, rgba(8, 222, 235, 0.12) 0%, rgba(6, 28, 43, 0.90) 45%, rgba(2, 14, 24, 0.95) 100%);
-			border: 1.5px solid var(--cyan);
-			border-radius: 14px;
-			padding: 20px;
-			margin-bottom: 22px;
-			backdrop-filter: blur(24px) saturate(190%);
-			-webkit-backdrop-filter: blur(24px) saturate(190%);
-			box-shadow: 0 14px 40px rgba(8, 222, 235, 0.25), inset 0 1.5px 1px #ffffff;
-			animation: slideDownSatellite 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-			position: relative;
-			overflow: hidden;
-		}
-
-		.satellite-location-card.visible {
-			display: block;
-		}
-
-		@keyframes slideDownSatellite {
-			from { opacity: 0; transform: translateY(-16px); }
-			to { opacity: 1; transform: translateY(0); }
-		}
-
-		.satellite-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			flex-wrap: wrap;
-			gap: 12px;
-			border-bottom: 1px solid rgba(8, 222, 235, 0.25);
-			padding-bottom: 12px;
-			margin-bottom: 14px;
-		}
-
-		.satellite-badge {
-			display: inline-flex;
-			align-items: center;
-			gap: 8px;
-			padding: 5px 12px;
-			background: rgba(8, 222, 235, 0.15);
-			border: 1px solid var(--cyan);
-			border-radius: 20px;
-			color: var(--cyan);
-			font-family: 'Space Mono', monospace;
-			font-size: 11px;
-			font-weight: 700;
-			letter-spacing: 1px;
-		}
-
-		.satellite-data-grid {
-			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-			gap: 14px;
-		}
-
-		.satellite-data-item {
-			background: rgba(2, 11, 18, 0.7);
-			border: 1px solid rgba(22, 73, 91, 0.8);
-			border-radius: 8px;
-			padding: 10px 14px;
-		}
-
-		.satellite-data-label {
-			font-size: 9.5px;
-			color: var(--muted);
-			letter-spacing: 1px;
-			text-transform: uppercase;
-			display: block;
-			margin-bottom: 4px;
-		}
-
-		.satellite-data-value {
-			font-family: 'Space Mono', monospace;
-			font-size: 13px;
-			color: #ffffff;
-			font-weight: 700;
-		}
-
-		.btn-toggle-satellite {
-			background: rgba(2, 11, 18, 0.85);
-			border: 1px solid var(--border);
-			border-radius: 6px;
-			color: var(--muted);
-			padding: 6px 14px;
-			font-family: 'Space Mono', monospace;
-			font-size: 11px;
-			cursor: pointer;
-			display: inline-flex;
-			align-items: center;
-			gap: 6px;
-			transition: all 0.2s;
-		}
-
-		.btn-toggle-satellite:hover {
-			color: #ffffff;
+		.btn-back-fleet:hover {
 			border-color: var(--cyan);
+			background: rgba(8, 222, 235, 0.15);
 		}
 
 		/* Toast de Notificação Tática da Central no Canto Superior Direito */
@@ -656,7 +561,7 @@
 				</div>
 			</div>
 
-			<!-- PAINEL DE ESCALONAMENTO DE EMERGÊNCIA DA CENTRAL TECH (20s POSSÍVEL ACIDENTE -> 35s ALERTA CRÍTICO SOS) -->
+			<!-- PAINEL DE ESCALONAMENTO DE EMERGÊNCIA DA CENTRAL TECH (17s ALERTA CRÍTICO -> 27s POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS) -->
 			<div class="central-escalation-panel" id="centralEscalationPanel" role="alert" aria-live="assertive">
 				<div class="central-esc-header">
 					<span class="central-esc-badge" id="centralEscBadge">
@@ -665,66 +570,23 @@
 								style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA DESATIVAR
 							ALERTA NO CELULAR</span>
 					</span>
-					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s / 20.0s</span>
+					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s / 17.0s</span>
 				</div>
 
 				<h3 class="central-esc-title" id="centralEscTitle"><span class="material-symbols-outlined g-icon"
 						style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA
 				</h3>
 				<p class="central-esc-desc" id="centralEscDesc">
-					O alerta físico (Buzzer com 1 bip/s nos óculos e relé veicular) e a chamada em tela inteira no celular foram disparados após 6,00
+					O alerta físico (Buzzer/Relé) e a chamada em tela inteira no celular foram disparados após 4,00
 					segundos de cabeça baixa. Caso o motorista não aperte para desativar ou não erga a cabeça por 3
-					segundos, a Central considerará POSSÍVEL ACIDENTE aos 20 segundos com transmissão satelital imediata!
+					segundos, a Central entrará em Alerta Crítico aos 17 segundos!
 				</p>
 
 				<div class="progresso-bar-bg" style="height:10px">
 					<div class="progresso-bar-fill danger" id="centralEscBarFill" style="width:0%"></div>
 				</div>
 
-				<!-- CARD DE LOCALIZAÇÃO EXATA VIA SATÉLITE GNSS EM TEMPO REAL -->
-				<div class="satellite-location-card" id="satelliteLocationCard">
-					<div class="satellite-header">
-						<div style="display:flex;align-items:center;gap:10px">
-							<span class="satellite-badge">
-								<span class="material-symbols-outlined g-icon" style="font-size:16px">satellite_alt</span>
-								LOCALIZAÇÃO EXATA VIA SATÉLITE (OFFLINE GNSS / IRIDIUM)
-							</span>
-							<span style="font-size:10px;color:#55ee77;letter-spacing:1px">● CONEXÃO DIRETA ATIVA</span>
-						</div>
-						<button type="button" class="btn-toggle-satellite" id="btnToggleSatellite" title="Ocultar ou exibir detalhes de localização">
-							<span class="material-symbols-outlined g-icon" style="font-size:14px">visibility_off</span>
-							<span>Ocultar Localização</span>
-						</button>
-					</div>
-					<div class="satellite-data-grid">
-						<div class="satellite-data-item">
-							<span class="satellite-data-label">Rodovia / Via Atual</span>
-							<div class="satellite-data-value" id="satRodoviaVal" style="color:var(--cyan)">Rodovia BR-116 (Régis Bittencourt)</div>
-						</div>
-						<div class="satellite-data-item">
-							<span class="satellite-data-label">Quilometragem & Ponto</span>
-							<div class="satellite-data-value" id="satKmVal">KM 284 · Sentido Sul</div>
-						</div>
-						<div class="satellite-data-item">
-							<span class="satellite-data-label">Município / Endereço</span>
-							<div class="satellite-data-value" id="satEnderecoVal">Trecho Serra do Cafezal - Juquitiba / SP</div>
-						</div>
-						<div class="satellite-data-item">
-							<span class="satellite-data-label">Coordenadas Satelitais</span>
-							<div class="satellite-data-value" id="satCoordsVal" style="color:#55ee77">-23.928412°, -47.067341°</div>
-						</div>
-						<div class="satellite-data-item">
-							<span class="satellite-data-label">Constelação GNSS</span>
-							<div class="satellite-data-value" id="satStatusVal">9 Satélites · Precisão 1.2 m</div>
-						</div>
-						<div class="satellite-data-item">
-							<span class="satellite-data-label">Canal de Emergência</span>
-							<div class="satellite-data-value" style="color:#ffdd66">Link Satelital Autônomo (Sem Internet)</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- PROTOCOLO AUTÔNOMO SAFE-STOP & RESGATE SOS (Acionado aos 20s/35s sem resposta) -->
+				<!-- PROTOCOLO AUTÔNOMO SAFE-STOP & RESGATE SOS (Acionado aos 20s sem resposta) -->
 				<div class="sos-protocol-board" id="sosProtocolBoard">
 					<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
 						<span
@@ -791,7 +653,7 @@
 			<div class="painel-grid">
 				<!-- COLUNA ESQUERDA -->
 				<div style="display:flex;flex-direction:column;gap:20px">
-					<!-- Card 1: Destaque Principal — Estado do Condutor em Tempo Real (6,00s) -->
+					<!-- Card 1: Destaque Principal — Estado do Condutor em Tempo Real (4,00s) -->
 					<article class="card card-alerta-principal estado-normal" id="cardStatusGeral">
 						<div class="card-label"
 							style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
@@ -810,8 +672,8 @@
 							<div style="text-align:right">
 								<span
 									style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CRONÔMETRO
-									DE TOLERÂNCIA (6,00s)</span>
-								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 6.00s</div>
+									DE TOLERÂNCIA (4,00s)</span>
+								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 4.00s</div>
 							</div>
 						</div>
 
@@ -820,8 +682,8 @@
 							<div
 								style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap;gap:4px">
 								<span>ESTÁVEL (0.00s)</span>
-								<span>CONTAGEM ATIVA (1 BIP/S)</span>
-								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (6.00s)</span>
+								<span>CONTAGEM ATIVA (0.01s - 3.99s)</span>
+								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (4.00s)</span>
 							</div>
 							<div class="progresso-bar-bg">
 								<div class="progresso-bar-fill" id="barraProgressoTempo"></div>
@@ -847,8 +709,8 @@
 						</div>
 
 						<p id="descricaoEstadoCondutor" style="margin-top:12px;font-size:11px;line-height:1.6">
-							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de 6,00s (com 1 bip por segundo nos óculos) para
-							evitar alarmes falsos ao checar painel e retrovisores.
+							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de 4,00s para
+							evitar alarmes falsos ao checar painel e espelhos.
 						</p>
 					</article>
 
@@ -924,7 +786,7 @@
 							<div class="axis-item">
 								<div class="axis-label">TEMPO DE REFLEXÃO</div>
 								<div class="axis-val" id="irTempoMs">0 ms</div>
-								<span style="font-size:10px;color:var(--muted)">Limite: 6000 ms</span>
+								<span style="font-size:10px;color:var(--muted)">Limite: 4000 ms</span>
 							</div>
 						</div>
 						<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
@@ -1042,7 +904,7 @@
 							<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
 								<span style="font-size:10px;color:var(--muted)">TESTE RÁPIDO:</span>
 								<button class="btn-tactical" id="btnSimularCabecaBaixa"
-									style="padding:4px 10px;font-size:10px">Simular Cabeça Baixa (6,0s)</button>
+									style="padding:4px 10px;font-size:10px">Simular Cabeça Baixa (4,0s)</button>
 								<button class="btn-tactical" id="btnSimularCabecaErguida"
 									style="padding:4px 10px;font-size:10px">Erguer Cabeça</button>
 							</div>
@@ -1060,7 +922,7 @@
 		var wsLocalBridgeClient = null;
 		var pollingTimer = null;
 		var audioCtx = null;
-		var LIMIAR_TOLERANCIA_MS = 6000; // Tolerância oficial de 6 segundos (com 1 bip por segundo nos óculos)
+		var LIMIAR_TOLERANCIA_MS = 4000; // Tolerância oficial de 4 segundos
 
 		// Alternância entre Seleção de Frota e Cockpit da Cabine
 		var fleetView = document.getElementById('fleetSelectionView');
@@ -1273,94 +1135,43 @@
 			} catch (e) { }
 		}
 
-		function atualizarDadosLocalizacaoSatelital(loc) {
-			if (!loc) return;
-			var rod = document.getElementById('satRodoviaVal');
-			var km = document.getElementById('satKmVal');
-			var end = document.getElementById('satEnderecoVal');
-			var crd = document.getElementById('satCoordsVal');
-			var sts = document.getElementById('satStatusVal');
-			if (rod && loc.rodovia) rod.textContent = loc.rodovia;
-			if (km && loc.km) km.textContent = loc.km;
-			if (end && loc.endereco) end.textContent = loc.endereco;
-			if (crd && loc.latitude) crd.textContent = loc.latitude.toFixed(6) + '°, ' + loc.longitude.toFixed(6) + '°';
-			if (sts && loc.satelites_conectados) sts.textContent = loc.satelites_conectados + ' Satélites · Precisão ' + (loc.precisao_metros || 1.2) + ' m';
-		}
-		var btnToggleSatellite = document.getElementById('btnToggleSatellite');
-		var localizacaoOcultadaPeloOperador = false;
-
-		if (btnToggleSatellite) {
-			btnToggleSatellite.addEventListener('click', function () {
-				if (!satelliteLocationCard) return;
-				var grid = satelliteLocationCard.querySelector('.satellite-data-grid');
-				var txt = btnToggleSatellite.querySelector('span:not(.material-symbols-outlined)');
-				var icon = btnToggleSatellite.querySelector('.material-symbols-outlined');
-
-				if (grid.style.display === 'none') {
-					grid.style.display = 'grid';
-					localizacaoOcultadaPeloOperador = false;
-					if (txt) txt.textContent = 'Ocultar Localização';
-					if (icon) icon.textContent = 'visibility_off';
-				} else {
-					grid.style.display = 'none';
-					localizacaoOcultadaPeloOperador = true;
-					if (txt) txt.textContent = 'Exibir Localização';
-					if (icon) icon.textContent = 'visibility';
-				}
-			});
-		}
-
 		function atualizarPainelEscalonamentoUI(decorridoMs) {
 			var segTotal = (decorridoMs / 1000).toFixed(1);
 			var nivel = 1;
-			if (decorridoMs >= 35000) nivel = 3;
-			else if (decorridoMs >= 20000) nivel = 2;
+			if (decorridoMs >= 27000) nivel = 3;
+			else if (decorridoMs >= 17000) nivel = 2;
 
 			if (centralEscalationPanel) {
 				centralEscalationPanel.classList.add('visible');
 				if (nivel === 1) {
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
 					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA DESATIVAR ALERTA NO CELULAR';
-					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + segTotal + 's / 20.0s';
+					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + segTotal + 's / 17.0s';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
-					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico (Buzzer com 1 bip por segundo e relé) e a chamada no celular foram disparados (tolerância de 6,00s). Se o condutor não desativar ou mantiver a cabeça erguida por 3s, a Central considerará POSSÍVEL ACIDENTE aos 20 segundos!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 20000) * 100).toFixed(1) + '%';
+					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico e a chamada no celular foram disparados (limite de 4,00s). Se o condutor não desativar ou mantiver a cabeça erguida por 3s, a Central entrará em Alerta Crítico aos 17 segundos!';
+					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 17000) * 100).toFixed(1) + '%';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
-					if (satelliteLocationCard) satelliteLocationCard.classList.remove('visible');
 				} else if (nivel === 2) {
-					var segFase2 = ((decorridoMs - 20000) / 1000).toFixed(1);
+					var segFase2 = ((decorridoMs - 17000) / 1000).toFixed(1);
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">satellite_alt</span> FASE 2 · POSSÍVEL ACIDENTE (20s SEM RESPOSTA)';
-					if (centralEscTimer) centralEscTimer.textContent = 'TEMPO DE RISCO: ' + segFase2 + 's / 15.0s (Total: ' + segTotal + 's / 35.0s)';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> POSSÍVEL ACIDENTE DETECTADO — LOCALIZAÇÃO VIA SATÉLITE ATIVADA!';
-					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: O motorista não respondeu ao alerta após 20 segundos! O módulo GNSS satelital autônomo transmitiu o endereço exato da cabine para a Central. Caso atinja 35s ininterruptos sem confirmação, será considerado ALERTA CRÍTICO com despacho imediato de socorro!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 20000) / 15000) * 100).toFixed(1) + '%';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (17s SEM RESPOSTA)';
+					if (centralEscTimer) centralEscTimer.textContent = 'CONTAGEM ACIDENTE: ' + segFase2 + 's / 10.0s (Total: ' + segTotal + 's / 27.0s)';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> ALERTA CRÍTICO NA CENTRAL: MOTORISTA INATIVO!';
+					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: O motorista não respondeu ao alerta no celular após 17 segundos! Caso permaneça até 27s sem resposta, o sistema acionará Protocolo de Possível Acidente!';
+					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 17000) / 10000) * 100).toFixed(1) + '%';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
-
-					// Exibe card de localização satelital em tempo real (respeita toggle se o operador ocultou nesta mesma situação)
-					if (satelliteLocationCard) {
-						satelliteLocationCard.classList.add('visible');
-						var grid = satelliteLocationCard.querySelector('.satellite-data-grid');
-						if (grid && !localizacaoOcultadaPeloOperador) grid.style.display = 'grid';
-					}
 				} else if (nivel === 3) {
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 3 · EMERGÊNCIA MÁXIMA: ALERTA CRÍTICO DE ACIDENTE (35s)';
-					if (centralEscTimer) centralEscTimer.textContent = 'INATIVO HÁ: ' + segTotal + 's / 35.0s · PROTOCOLO SOS ATIVO';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">emergency</span> ALERTA CRÍTICO CONFIRMADO — PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
-					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA MÁXIMA NA FROTA: Condutor inativo por 35 segundos ininterruptos! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e coordenadas de satélite transmitidas com prioridade absoluta ao SAMU 192 e PRF!';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE DETECTADO (27s)';
+					if (centralEscTimer) centralEscTimer.textContent = 'INATIVO HÁ: ' + segTotal + 's / 27.0s · PROTOCOLO SOS ATIVO';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> POSSÍVEL ACIDENTE DETECTADO — PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
+					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Condutor inativo por 27 segundos ininterruptos! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e envio de GPS ao Resgate SAMU 192 / PRF!';
 					if (centralEscBarFill) centralEscBarFill.style.width = '100%';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
 
-					if (satelliteLocationCard) {
-						satelliteLocationCard.classList.add('visible');
-						var grid = satelliteLocationCard.querySelector('.satellite-data-grid');
-						if (grid && !localizacaoOcultadaPeloOperador) grid.style.display = 'grid';
-					}
-
 					if (sosVelocidadeVal) {
-						var segApos35 = Math.max(0, (decorridoMs - 35000) / 1000);
-						var velAtual = Math.max(0, Math.round(64 - segApos35 * 8));
+						var segApos27 = Math.max(0, (decorridoMs - 27000) / 1000);
+						var velAtual = Math.max(0, Math.round(64 - segApos27 * 8));
 						sosVelocidadeVal.textContent = 'Corte gradual de tração ativo · Velocidade: ' + velAtual + ' km/h ' + (velAtual === 0 ? '(VEÍCULO IMOBILIZADO COM SEGURANÇA)' : '(REDUZINDO...)') + ' · Pisca-Alerta LIGADO';
 					}
 				}
@@ -1368,9 +1179,11 @@
 
 			if (nivel !== ultimoNivelEscalonamento) {
 				if (nivel === 2 && ultimoNivelEscalonamento < 2) {
-					adicionarLogLocal('ALARME_ATIVADO', 'POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA): Localização satelital transmitida à Central!');
+					tocarAudioVoz(vozCritico10sAudio);
+					adicionarLogLocal('ALARME_ATIVADO', 'ALERTA CRÍTICO NA CENTRAL: Motorista não desativou alerta após 17s!');
 				} else if (nivel === 3 && ultimoNivelEscalonamento < 3) {
-					adicionarLogLocal('ALARME_ATIVADO', 'ALERTA CRÍTICO DE EMERGÊNCIA (35s SEM RESPOSTA): Protocolo Safe-Stop e SOS acionados!');
+					tocarAudioVoz(vozAcidente20sAudio);
+					adicionarLogLocal('ALARME_ATIVADO', 'POSSÍVEL ACIDENTE DETECTADO (27s SEM RESPOSTA): Protocolo Safe-Stop e SOS acionados!');
 				}
 				ultimoNivelEscalonamento = nivel;
 			}
@@ -1398,18 +1211,8 @@
 			alertaTravadoLocal = false;
 			inicioSemRespostaLocalMs = 0;
 			ultimoNivelEscalonamento = 0;
-			localizacaoOcultadaPeloOperador = false; // Reseta flag para que, se a situação se repetir, a localização apareça novamente
 			if (timerEscalonamentoLocal) { clearInterval(timerEscalonamentoLocal); timerEscalonamentoLocal = null; }
 			if (centralEscalationPanel) centralEscalationPanel.classList.remove('visible', 'nivel-1-celular', 'nivel-2-critico', 'nivel-3-acidente');
-			if (satelliteLocationCard) {
-				satelliteLocationCard.classList.remove('visible');
-				var grid = satelliteLocationCard.querySelector('.satellite-data-grid');
-				if (grid) grid.style.display = 'grid';
-				var txt = btnToggleSatellite ? btnToggleSatellite.querySelector('span:not(.material-symbols-outlined)') : null;
-				var icon = btnToggleSatellite ? btnToggleSatellite.querySelector('.material-symbols-outlined') : null;
-				if (txt) txt.textContent = 'Ocultar Localização';
-				if (icon) icon.textContent = 'visibility_off';
-			}
 			[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) { try { a.pause(); a.currentTime = 0; } catch (e) { } });
 		}
 
@@ -1429,13 +1232,13 @@
 			});
 		}
 
-		// Interpolação de 40 FPS com limite de 6,00s
+		// Interpolação de 40 FPS com limite de 4,00s
 		function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
 			var msLimitado = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(msExato)));
 			var segCent = (msLimitado / 1000).toFixed(2);
 			var percExato = Math.min(100, (msLimitado / LIMIAR_TOLERANCIA_MS) * 100);
 
-			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 6.00s';
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 4.00s';
 			if (barraProgressoTempo) barraProgressoTempo.style.width = percExato.toFixed(1) + '%';
 			if (irTempoMs) irTempoMs.textContent = msLimitado + ' ms';
 			if (precisaoTempoMsBadge) precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + msLimitado + ' ms (' + percExato.toFixed(1) + '%)';
@@ -1444,10 +1247,6 @@
 		// Atualizar todo o estado na Central Tech
 		function atualizarPainelComEstado(estado) {
 			if (!estado) return;
-
-			if (estado.motoristas && estado.motoristas.matheus_garcia && estado.motoristas.matheus_garcia.localizacao) {
-				atualizarDadosLocalizacaoSatelital(estado.motoristas.matheus_garcia.localizacao);
-			}
 
 			if (esp32StatusLabel && esp32StatusChip && esp32PulseDot) {
 				if (estado.online) {
@@ -1498,7 +1297,7 @@
 				}
 			}
 
-			renderizarCronometroAltaPrecisao(status === 'ALARME_ATIVADO' ? 6000 : tempoMs, status);
+			renderizarCronometroAltaPrecisao(status === 'ALARME_ATIVADO' ? 4000 : tempoMs, status);
 
 			if (status === 'RECUPERANDO') {
 				var segR = (decorridoRecupMs / 1000).toFixed(1);

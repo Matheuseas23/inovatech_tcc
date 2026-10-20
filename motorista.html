@@ -351,13 +351,13 @@
 			<h2 class="driver-call-title" id="driverCallTitle"><span class="material-symbols-outlined g-icon"
 					style="font-size:1.05em;margin-right:6px">local_cafe</span> PARE PARA DESCANSAR!</h2>
 			<p class="driver-call-message">
-				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong>6,0 segundos</strong>
+				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong>4,0 segundos</strong>
 				detectada!<br>
 				Encoste em local seguro para descansar e tomar um café.
 			</p>
 			<div class="driver-call-escalation-box">
 				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span>
-				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 20.0s</span><br>
+				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 17.0s</span><br>
 				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos ou
 					aperte abaixo para desativar o alerta!</span>
 			</div>
@@ -408,7 +408,7 @@
 			</button>
 		</section>
 
-		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 6,00s) -->
+		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 4,00s) -->
 		<section class="driver-live-card estado-normal" id="driverLiveCard">
 			<div style="display:flex;justify-content:space-between;align-items:center">
 				<span class="card-label">◉ MONITORAMENTO BIOMÉTRICO AO VIVO</span>
@@ -424,7 +424,7 @@
 
 			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
 				<span style="font-size:11px;color:var(--muted)">CRONÔMETRO DE TOLERÂNCIA:</span>
-				<div class="driver-timer-large" id="driverTimerCount">0.00s / 6.00s</div>
+				<div class="driver-timer-large" id="driverTimerCount">0.00s / 4.00s</div>
 			</div>
 
 			<div class="progresso-bar-bg" style="height:12px">
@@ -453,7 +453,7 @@
 
 	<!-- SCRIPTS EXCLUSIVOS DO APP DO MOTORISTA -->
 	<script>
-		var LIMIAR_TOLERANCIA_MS = 6000;
+		var LIMIAR_TOLERANCIA_MS = 4000;
 		var wsClient = null;
 		var audioCtx = null;
 		var callRingtoneTimer = null;
@@ -633,19 +633,16 @@
 					}, 2400);
 				}
 
-				// Cronômetro dinâmico de confirmação de 20.0s (antes de considerar possível acidente na Central)
+				// Cronômetro dinâmico de confirmação de 17.0s
 				var timerEl = document.getElementById('driverCallEscalationTimer');
 				if (driverEscalationInterval) clearInterval(driverEscalationInterval);
 				driverEscalationInterval = setInterval(function () {
 					var decorrido = ((Date.now() - callStartTimeMs) / 1000).toFixed(1);
 					if (timerEl) {
-						timerEl.textContent = decorrido + 's / 20.0s';
-						if (Number(decorrido) >= 20.0 && Number(decorrido) < 35.0) {
-							timerEl.style.color = '#ffaa00';
-							timerEl.textContent = decorrido + 's / 35.0s (POSSÍVEL ACIDENTE NA CENTRAL)';
-						} else if (Number(decorrido) >= 35.0) {
+						timerEl.textContent = decorrido + 's / 17.0s';
+						if (Number(decorrido) >= 17.0) {
 							timerEl.style.color = '#ff2a55';
-							timerEl.textContent = '35.0s (ALERTA CRÍTICO DE EMERGÊNCIA)';
+							timerEl.textContent = '17.0s / 17.0s (CRÍTICO NA CENTRAL)';
 						}
 					}
 				}, 100);
@@ -661,7 +658,7 @@
 			var timerEl = document.getElementById('driverCallEscalationTimer');
 			if (timerEl) {
 				timerEl.style.color = '#ffdd66';
-				timerEl.textContent = '0.0s / 20.0s';
+				timerEl.textContent = '0.0s / 17.0s';
 			}
 			if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
 			try { vozCafeAudio.pause(); vozCafeAudio.currentTime = 0; } catch (e) { }
@@ -751,7 +748,7 @@
 				}
 			}
 
-			var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 6000 : tempoMs)));
+			var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 4000 : tempoMs)));
 			var seg = (msLim / 1000).toFixed(2);
 			var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
 
@@ -769,7 +766,7 @@
 				driverLiveCard.className = 'driver-live-card estado-normal';
 				driverStatusHeadline.style.color = '#08deeb';
 				driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
-				driverTimerCount.textContent = '0.00s / 6.00s';
+				driverTimerCount.textContent = '0.00s / 4.00s';
 				driverBarFill.className = 'progresso-bar-fill';
 				driverBarFill.style.width = '0%';
 				driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
@@ -777,7 +774,7 @@
 				driverLiveCard.className = 'driver-live-card estado-pre-alerta';
 				driverStatusHeadline.style.color = '#ffaa00';
 				driverStatusHeadline.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA';
-				driverTimerCount.textContent = seg + 's / 6.00s';
+				driverTimerCount.textContent = seg + 's / 4.00s';
 				driverBarFill.className = 'progresso-bar-fill warning';
 				driverBarFill.style.width = perc + '%';
 				driverFeedbackMsg.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Erga a cabeça para evitar o alarme.';
@@ -786,7 +783,7 @@
 				driverLiveCard.className = 'driver-live-card estado-alarme';
 				driverStatusHeadline.style.color = '#ff2a55';
 				driverStatusHeadline.textContent = 'PERIGO: CABEÇA BAIXA!';
-				driverTimerCount.textContent = '6.00s / 6.00s (CRÍTICO)';
+				driverTimerCount.textContent = '4.00s / 4.00s (CRÍTICO)';
 				driverBarFill.className = 'progresso-bar-fill danger';
 				driverBarFill.style.width = '100%';
 				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por 3 segundos para desligar automaticamente.';

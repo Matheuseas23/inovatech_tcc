@@ -1,10 +1,31 @@
 {
   "dispositivo": "ESP32_SMART_DRIVER_01",
-  "online": true,
-  "ultimoVisto": "2026-10-20T13:03:55.285Z",
+  "online": false,
+  "ultimoVisto": "2026-10-20T14:32:50.228Z",
+  "motoristas": {
+    "matheus_garcia": {
+      "nome": "Matheus Garcia",
+      "status": "INATIVO",
+      "veiculo": "Scania R-450 (Placa INO-2026)",
+      "rota": "Rodovia BR-116 KM 284 · Régis Bittencourt",
+      "localizacao": {
+        "rodovia": "Rodovia BR-116 (Régis Bittencourt)",
+        "km": "KM 284, Sentido Sul",
+        "endereco": "Trecho Serra do Cafezal - Juquitiba / SP",
+        "latitude": -23.928412,
+        "longitude": -47.067341,
+        "altitude": "648 m",
+        "satelites_conectados": 9,
+        "link_satelital": "ATIVO (IRIDIUM / GPS L1/L5)",
+        "precisao_metros": 1.2,
+        "origem": "Satelite GNSS Autônomo (Offline Bridge)",
+        "ultima_atualizacao": "2026-10-20T14:15:42.801Z"
+      }
+    }
+  },
   "sensor_ir": 1,
   "tempo_cabeca_baixa_ms": 0,
-  "limiar_seguranca_ms": 4000,
+  "limiar_seguranca_ms": 6000,
   "estado": "NORMAL",
   "buzzer": 0,
   "rele": 0,
@@ -16,8 +37,8 @@
     "status": "Ativo"
   },
   "contadores": {
-    "totalAlarmesSessao": 34,
-    "inicioSessao": "2026-10-20T12:41:02.572Z"
+    "totalAlarmesSessao": 66,
+    "inicioSessao": "2026-10-20T14:15:42.809Z"
   },
   "tempo_recuperacao_ms": 0,
   "chamada_celular_ativa": false,
