@@ -586,7 +586,8 @@
 				status_viagem: novoEstado ? "EM_VIAGEM" : "INATIVO",
 				timestamp: Date.now()
 			});
-			['http://localhost:3001/api/telemetry', 'https://inovatech-tcc.onrender.com/api/telemetry'].forEach(function (u) {
+			['http://localhost:3001/api/telemetry', 'https://inovatech-tcc.onrender.com/api/telemetry',
+			'http://localhost:3001/api/driver/shift', 'https://inovatech-tcc.onrender.com/api/driver/shift'].forEach(function (u) {
 				fetch(u, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },

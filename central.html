@@ -1097,10 +1097,18 @@
 
 		if (btnAcessarCabineGarcia) {
 			btnAcessarCabineGarcia.addEventListener('click', function () {
-				if (!garciaViagemAtiva) {
-					exibirToastCentral('⚠️ ATENÇÃO: O condutor precisa ativar a viagem no App do Motorista primeiro!');
-					return;
-				}
+				atualizarEstadoGarciaUI(true, false);
+				fleetView.classList.add('hidden');
+				cockpitView.classList.add('active');
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			});
+		}
+
+		if (cardFrotaGarcia) {
+			cardFrotaGarcia.style.cursor = 'pointer';
+			cardFrotaGarcia.addEventListener('click', function (e) {
+				if (e.target && e.target.id === 'btnAcessarCabineGarcia') return;
+				atualizarEstadoGarciaUI(true, false);
 				fleetView.classList.add('hidden');
 				cockpitView.classList.add('active');
 				window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1556,8 +1564,20 @@
 						}
 					} catch (e) { }
 				};
-				wsClient.onerror = function () { iniciarPolling(); };
-				wsClient.onclose = function () { iniciarPolling(); };
+				wsClient.onerror = function () {
+					if (backendStatusLabel && (!wsLocalBridgeClient || wsLocalBridgeClient.readyState !== WebSocket.OPEN)) {
+						backendStatusLabel.textContent = 'BACKEND: CONECTANDO (REST)...';
+					}
+					iniciarPolling();
+				};
+				wsClient.onclose = function () {
+					iniciarPolling();
+					setTimeout(function () {
+						if (!wsClient || wsClient.readyState === WebSocket.CLOSED) {
+							conectarBackend();
+						}
+					}, 4000);
+				};
 			} catch (e) { iniciarPolling(); }
 
 			// Abre também conexão local direta se o principal for nuvem
@@ -1596,6 +1616,10 @@
 					.then(function (r) { return r.json(); })
 					.then(function (d) {
 						if (d && d.estado) {
+							if (backendStatusLabel && (!wsClient || wsClient.readyState !== WebSocket.OPEN)) {
+								backendStatusLabel.textContent = 'BACKEND: CONECTADO (REST)';
+							}
+							if (backendStatusChip) backendStatusChip.className = 'painel-chip online';
 							atualizarPainelComEstado(d.estado);
 							if (d.estado.gps) atualizarLocalizacaoGpsUI(d.estado.gps);
 							if (d.estado.motoristas && d.estado.motoristas.matheus_garcia) {
@@ -1604,10 +1628,18 @@
 								if (ativo !== garciaViagemAtiva) {
 									atualizarEstadoGarciaUI(ativo, ativo);
 								}
+							} else if (d.estado.online && !garciaViagemAtiva) {
+								atualizarEstadoGarciaUI(true, false);
 							}
 						}
 					})
-					.catch(function () { });
+					.catch(function () {
+						if ((!wsClient || wsClient.readyState !== WebSocket.OPEN) &&
+							(!wsLocalBridgeClient || wsLocalBridgeClient.readyState !== WebSocket.OPEN)) {
+							if (backendStatusLabel) backendStatusLabel.textContent = 'BACKEND: RECONECTANDO...';
+							if (backendStatusChip) backendStatusChip.className = 'painel-chip offline';
+						}
+					});
 			}, 600);
 		}
 

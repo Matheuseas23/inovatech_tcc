@@ -69,6 +69,15 @@ const estado = {
     totalAlarmesSessao: 0,
     inicioSessao: new Date().toISOString()
   },
+  motoristas: {
+    matheus_garcia: {
+      nome: 'Matheus Garcia',
+      status: 'EM_VIAGEM',
+      veiculo: 'Scania R-450 (Placa INO-2026)',
+      rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt',
+      atualizadoEm: new Date().toISOString()
+    }
+  },
   gps: {
     lat: -23.682138,
     lon: -46.875412,
@@ -420,6 +429,30 @@ function processarTelemetria(payload = {}) {
 
   if (payload.dispositivo) estado.dispositivo = payload.dispositivo;
 
+  // Sincronização de Turno / Viagem do Motorista
+  if (payload.tipo === 'STATUS_MOTORISTA' || payload.status_viagem !== undefined) {
+    if (!estado.motoristas) estado.motoristas = {};
+    if (!estado.motoristas.matheus_garcia) {
+      estado.motoristas.matheus_garcia = {
+        nome: 'Matheus Garcia',
+        status: 'EM_VIAGEM',
+        veiculo: 'Scania R-450 (Placa INO-2026)',
+        rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
+      };
+    }
+    const novoStatus = payload.status_viagem || (payload.ativo ? 'EM_VIAGEM' : 'INATIVO');
+    estado.motoristas.matheus_garcia.status = novoStatus;
+    estado.motoristas.matheus_garcia.atualizadoEm = new Date().toISOString();
+    registrarEvento('TURNO_MOTORISTA', `Condutor Matheus Garcia: Viagem ${novoStatus === 'EM_VIAGEM' ? 'Ativada' : 'Pausada'}`, `Origem: ${payload.origem || 'App do Motorista'}`);
+    broadcast({
+      tipo: 'STATUS_MOTORISTA',
+      motorista: 'Matheus Garcia',
+      status_viagem: novoStatus,
+      estado
+    });
+    persistirEmDisco();
+  }
+
   // Sensor IR (GPIO 32)
   if (payload.sensor_ir !== undefined) {
     estado.sensor_ir = Number(payload.sensor_ir);
@@ -547,6 +580,32 @@ app.post('/api/telemetry', (req, res) => {
     estado_processado: estado.estado,
     comandos_pendentes: comandosPendentes
   });
+});
+
+// Endpoint dedicado para ligar/desligar turno do motorista via REST
+app.post(['/api/driver/shift', '/api/driver/status'], (req, res) => {
+  const { status_viagem = 'EM_VIAGEM', motorista = 'Matheus Garcia' } = req.body || {};
+  if (!estado.motoristas) estado.motoristas = {};
+  if (!estado.motoristas.matheus_garcia) {
+    estado.motoristas.matheus_garcia = {
+      nome: 'Matheus Garcia',
+      status: 'EM_VIAGEM',
+      veiculo: 'Scania R-450 (Placa INO-2026)',
+      rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
+    };
+  }
+  const novoStatus = (status_viagem === 'INATIVO') ? 'INATIVO' : 'EM_VIAGEM';
+  estado.motoristas.matheus_garcia.status = novoStatus;
+  estado.motoristas.matheus_garcia.atualizadoEm = new Date().toISOString();
+  registrarEvento('TURNO_MOTORISTA', `Condutor ${motorista}: Turno ${novoStatus === 'EM_VIAGEM' ? 'Iniciado' : 'Pausado'} (REST)`);
+  broadcast({
+    tipo: 'STATUS_MOTORISTA',
+    motorista,
+    status_viagem: novoStatus,
+    estado
+  });
+  persistirEmDisco();
+  return res.json({ sucesso: true, motoristas: estado.motoristas });
 });
 
 // Endpoint para o Painel obter o estado atual
@@ -731,6 +790,27 @@ wss.on('connection', (ws, req) => {
           tipo: 'GPS_UPDATE',
           gps: estado.gps
         });
+      } else if (parsed.tipo === 'STATUS_MOTORISTA') {
+        const statusViagem = parsed.status_viagem || (parsed.ativo ? 'EM_VIAGEM' : 'INATIVO');
+        if (!estado.motoristas) estado.motoristas = {};
+        if (!estado.motoristas.matheus_garcia) {
+          estado.motoristas.matheus_garcia = {
+            nome: 'Matheus Garcia',
+            status: 'EM_VIAGEM',
+            veiculo: 'Scania R-450 (Placa INO-2026)',
+            rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
+          };
+        }
+        estado.motoristas.matheus_garcia.status = statusViagem;
+        estado.motoristas.matheus_garcia.atualizadoEm = new Date().toISOString();
+        registrarEvento('TURNO_MOTORISTA', `Condutor Matheus Garcia: Turno ${statusViagem === 'EM_VIAGEM' ? 'Iniciado' : 'Pausado'} (WS)`);
+        broadcast({
+          tipo: 'STATUS_MOTORISTA',
+          motorista: 'Matheus Garcia',
+          status_viagem: statusViagem,
+          estado
+        });
+        persistirEmDisco();
       }
     } catch (err) {
       console.error('[WS PARSE ERROR]:', err.message);
