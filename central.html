@@ -779,6 +779,19 @@
 						</p>
 					</article>
 
+					<!-- PAINEL DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA DA CENTRAL -->
+					<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:10px;margin-top:-6px;margin-bottom:6px">
+						<button class="btn" id="btnSimularAlertaCentral" type="button" style="padding:14px;background:linear-gradient(90deg, #ff2a55 0%, #b30026 100%);color:#fff;border:none;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 16px rgba(255,42,85,0.4)">
+							<span class="material-symbols-outlined g-icon">warning</span>
+							<span>SIMULAR ALERTA DE FADIGA (1.5s)</span>
+						</button>
+						<button class="btn outline" id="btnNormalizarCentral" type="button" style="padding:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+							<span class="material-symbols-outlined g-icon">check_circle</span>
+							<span>NORMALIZAR POSTURA</span>
+						</button>
+					</div>
+
+
 					<!-- Card 2: Rastreamento Satelital e Localização GPS em Tempo Real -->
 					<article class="card gps-tracker-card" id="cardLocalizacaoVeicular">
 						<div class="camera-alerta-banner" id="bannerAlertaAcidente" style="display:none;background:linear-gradient(90deg, #ff1a4b 0%, #b30026 100%);color:#fff;padding:10px 14px;border-radius:8px;font-family:'Space Mono';font-size:11px;font-weight:700;margin-bottom:12px;box-shadow:0 0 20px rgba(255,26,75,0.6)">
