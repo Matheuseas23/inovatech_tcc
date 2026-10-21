@@ -54,8 +54,8 @@ const estado = {
   ultimoVisto: null,
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
   tempo_cabeca_baixa_ms: 0,
-  limiar_seguranca_ms: 3000,
-  limiar_seguranca_ms: 3500,
+  limiar_seguranca_ms: 4000,
+  limiar_seguranca_ms: 4000,
   estado: 'NORMAL', // 'NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'
   buzzer: 0, // 0 = Desligado, 1 = Ligado
   rele: 0, // 0 = Desligado, 1 = Acionado
@@ -574,6 +574,47 @@ function processarTelemetria(payload = {}) {
 }
 
 // Endpoint de telemetria recebida do ESP32 ou simulador
+
+// ------------------------------------------------------------------------------
+// MOTOR DE ALTA FREQUÊNCIA PARA CONTAGEM SUAVE DO CRONÔMETRO (20 FPS / 50ms)
+// ------------------------------------------------------------------------------
+let inicioCabecaBaixaServerMs = 0;
+
+setInterval(() => {
+  if (estado.sensor_ir === 0 && estado.estado !== 'ALARME_ATIVADO' && !estado.alerta_travado) {
+    if (!inicioCabecaBaixaServerMs) {
+      inicioCabecaBaixaServerMs = Date.now() - (estado.tempo_cabeca_baixa_ms || 0);
+    }
+    const decorrido = Date.now() - inicioCabecaBaixaServerMs;
+    estado.tempo_cabeca_baixa_ms = decorrido;
+
+    if (decorrido >= estado.limiar_seguranca_ms) {
+      estado.estado = 'ALARME_ATIVADO';
+      estado.buzzer = 1;
+      estado.rele = 1;
+      estado.contadores.totalAlarmesSessao++;
+      iniciarProtocoloAlertaTravado();
+      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (4,0s)!', 'Alerta Físico e Virtual acionados.');
+      broadcast({
+        tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
+        dispararChamadaCafe: true,
+        estado
+      });
+    } else {
+      estado.estado = 'PRE_ALERTA';
+    }
+
+    // Transmite a cada 50ms para Central e Celular acompanharem com fluidez total
+    broadcast({
+      tipo: 'TELEMETRIA_UPDATE',
+      estado,
+      comandosPendentesParaESP32: comandosPendentes.length
+    });
+  } else if (estado.sensor_ir === 1) {
+    inicioCabecaBaixaServerMs = 0;
+  }
+}, 50);
+
 app.post('/api/telemetry', (req, res) => {
   processarTelemetria(req.body || {});
   return res.status(200).json({

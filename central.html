@@ -987,7 +987,7 @@
 		var wsLocalBridgeClient = null;
 		var pollingTimer = null;
 		var audioCtx = null;
-		var LIMIAR_TOLERANCIA_MS = 3500; // Tolerância oficial de 3 segundos (3 bips de aviso)
+		var LIMIAR_TOLERANCIA_MS = 4000; // Tolerância oficial de 3 segundos (3 bips de aviso)
 
 		// Alternância entre Seleção de Frota e Cockpit da Cabine
 		var fleetView = document.getElementById('fleetSelectionView');
@@ -1383,12 +1383,32 @@
 		}
 
 		// Interpolação de 40 FPS com limite de 4,00s
-		function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
+		
+		// Motor de Interpolação a 60 FPS no Navegador (Garante fluidez visual absoluta)
+		var inicioAnimacaoCabecaBaixa = 0;
+		var statusAtualAnimacao = 'NORMAL';
+		var tempoMsRecebido = 0;
+
+		function animarCronometroFrame() {
+			if (statusAtualAnimacao === 'PRE_ALERTA' || (ultimoEstadoRecebido && ultimoEstadoRecebido.sensor_ir === 0 && statusAtualAnimacao !== 'ALARME_ATIVADO')) {
+				if (!inicioAnimacaoCabecaBaixa) {
+					inicioAnimacaoCabecaBaixa = performance.now() - tempoMsRecebido;
+				}
+				var decorridoMs = Math.max(0, performance.now() - inicioAnimacaoCabecaBaixa);
+				renderizarCronometroAltaPrecisao(decorridoMs, 'PRE_ALERTA');
+			} else if (statusAtualAnimacao === 'NORMAL') {
+				inicioAnimacaoCabecaBaixa = 0;
+			}
+			requestAnimationFrame(animarCronometroFrame);
+		}
+		requestAnimationFrame(animarCronometroFrame);
+
+function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
 			var msLimitado = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(msExato)));
 			var segCent = (msLimitado / 1000).toFixed(2);
 			var percExato = Math.min(100, (msLimitado / LIMIAR_TOLERANCIA_MS) * 100);
 
-			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 3.50s';
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 4.00s';
 			if (barraProgressoTempo) barraProgressoTempo.style.width = percExato.toFixed(1) + '%';
 			if (irTempoMs) irTempoMs.textContent = msLimitado + ' ms';
 			if (precisaoTempoMsBadge) precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + msLimitado + ' ms (' + percExato.toFixed(1) + '%)';
@@ -1413,6 +1433,9 @@
 			var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
 			var status = estado.estado || 'NORMAL';
 			var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
+			tempoMsRecebido = tempoMs;
+			statusAtualAnimacao = status;
+			if (status !== "PRE_ALERTA" && status !== "ALARME_ATIVADO") inicioAnimacaoCabecaBaixa = 0;
 			var decorridoRecupMs = 0;
 
 			// Recuperação Automática de 3 segundos quando ergue a cabeça (ir === 1)
@@ -1454,9 +1477,9 @@
 				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-recuperando';
 				if (statusMotoristaTexto) {
 					statusMotoristaTexto.style.color = '#55ee77';
-					statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + segR + 's / 3.5s';
+					statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + segR + 's / 4.0s';
 				}
-				if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segR + 's / 3.5s (NORMALIZANDO)';
+				if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segR + 's / 4.0s (NORMALIZANDO)';
 				if (barraProgressoTempo) {
 					barraProgressoTempo.className = 'progresso-bar-fill';
 					barraProgressoTempo.style.width = Math.min(100, (decorridoRecupMs / 3500) * 100) + '%';
@@ -1676,7 +1699,7 @@
 			});
 		}
 
-		// Simulação Local com 3.50s
+		// Simulação Local com 4.00s
 		var simTimer = null;
 		var btnSimularCabecaBaixa = document.getElementById('btnSimularCabecaBaixa');
 		if (btnSimularCabecaBaixa) {
