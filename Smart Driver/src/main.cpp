@@ -32,6 +32,7 @@ const char* WIFI_2_PASS = "MMarcos12@";
 
 // Endereço do Servidor de Telemetria:
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
+const char* BACKEND_URL_LOCAL = "http://192.168.33.216:3001/api/telemetry";
 const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
@@ -331,8 +332,17 @@ void taskTelemetria(void *pvParameters) {
       }
     }
 
-    // 3. Se estiver conectado a um Wi-Fi com internet, envia para a nuvem Render
+    // 3. Se estiver conectado ao ponto de acesso do celular (Wi-Fi), envia direto para o IP do notebook local e para a nuvem
     if (WiFi.status() == WL_CONNECTED) {
+      // Envio local ultra-rápido para o notebook na mesma rede do celular
+      http.setTimeout(400);
+      if (http.begin(plainClient, BACKEND_URL_LOCAL)) {
+        http.addHeader("Content-Type", "application/json");
+        http.POST(payload);
+        http.end();
+      }
+
+      // Envio para a nuvem Render
       http.setTimeout(2500);
       if (http.begin(secureClient, BACKEND_URL_CLOUD)) {
         http.addHeader("Content-Type", "application/json");
