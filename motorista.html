@@ -586,7 +586,7 @@
 				status_viagem: novoEstado ? "EM_VIAGEM" : "INATIVO",
 				timestamp: Date.now()
 			});
-			['http://localhost:3001/api/telemetry', 'https://inovatech-tcc.onrender.com/api/telemetry',
+			['http://localhost:3001/api/telemetry', 'http://172.20.10.2:3001/api/telemetry',
 			'http://localhost:3001/api/driver/shift', 'https://inovatech-tcc.onrender.com/api/driver/shift'].forEach(function (u) {
 				fetch(u, {
 					method: 'POST',
@@ -941,8 +941,22 @@ function atualizarEstadoNoApp(estado) {
 		// Conexão WebSocket com fallback para Polling REST
 		var pollingFallbackTimer = null;
 
+		// Sincronização Local Instantânea via BroadcastChannel (Zero Latência)
+		var liveBroadcastMotorista = null;
+		try {
+			liveBroadcastMotorista = new BroadcastChannel('inovatech_telemetry_live');
+			liveBroadcastMotorista.onmessage = function(ev) {
+				if (ev.data && ev.data.estado) {
+					ultimoEstadoRecebido = ev.data.estado;
+					atualizarEstadoNoApp(ev.data.estado);
+				}
+			};
+		} catch(e) {}
+
 		function conectarWebSocketMotorista() {
-			var wsUrl = (window.location.protocol === 'https:') ? 'wss://inovatech-tcc.onrender.com/ws' : 'ws://localhost:3001/ws';
+			var isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+			var wsHost = isLocal ? 'ws://localhost:3001/ws' : 'ws://172.20.10.2:3001/ws';
+			var wsUrl = wsHost;
 			try {
 				wsClient = new WebSocket(wsUrl);
 				wsClient.onopen = function () {

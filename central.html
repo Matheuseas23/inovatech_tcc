@@ -961,7 +961,7 @@
 						<!-- Configuração de Conexão & Teste Rápido de 4 segundos -->
 						<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
 							<div style="display:flex;gap:8px;align-items:center">
-								<input type="text" id="inputBackendUrl" value="https://inovatech-tcc.onrender.com"
+								<input type="text" id="inputBackendUrl" value="http://localhost:3001"
 									placeholder="URL do Backend"
 									style="flex:1;background:rgba(2,11,18,0.7);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'Space Mono';font-size:11px">
 								<button class="btn-tactical" id="btnReconectarBackend">Conectar</button>
@@ -1552,9 +1552,27 @@ function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
 		}
 
 		// Conexão WebSocket e REST
+		// Sincronização Local Instantânea via BroadcastChannel (Zero Latência)
+		var liveBroadcast = null;
+		try {
+			liveBroadcast = new BroadcastChannel('inovatech_telemetry_live');
+			liveBroadcast.onmessage = function(ev) {
+				if (ev.data && ev.data.estado) {
+					atualizarPainelComEstado(ev.data.estado);
+				}
+			};
+		} catch(e) {}
+
 		function conectarBackend() {
+			var isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
+			var hostPadrao = isLocal ? 'http://localhost:3001' : 'http://172.20.10.2:3001';
 			if (inputBackendUrl) {
-				backendBaseUrl = inputBackendUrl.value.trim().replace(/\/$/, '') || 'http://localhost:3001';
+				if (!inputBackendUrl.value || inputBackendUrl.value.indexOf('onrender.com') !== -1) {
+					inputBackendUrl.value = hostPadrao;
+				}
+				backendBaseUrl = inputBackendUrl.value.trim().replace(/\/$/, '') || hostPadrao;
+			} else {
+				backendBaseUrl = hostPadrao;
 			}
 			var wsUrl = backendBaseUrl.replace(/^http/, 'ws') + '/ws';
 			if (backendStatusLabel) backendStatusLabel.textContent = 'CONECTANDO...';

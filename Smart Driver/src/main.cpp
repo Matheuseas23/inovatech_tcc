@@ -27,6 +27,7 @@ const char* WIFI_1_PASS = "12345678910";
 
 // Endereço do Servidor de Telemetria:
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
+const char* BACKEND_URL_IPHONE_PC = "http://172.20.10.2:3001/api/telemetry";
 const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
@@ -325,10 +326,10 @@ void taskTelemetria(void *pvParameters) {
       }
     }
 
-    // 3. Se estiver conectado a um Wi-Fi com internet, envia para a nuvem Render
+    // 3. Envio ultra rápido para o notebook conectado no Wi-Fi do iPhone (172.20.10.2:3001)
     if (WiFi.status() == WL_CONNECTED) {
-      http.setTimeout(2500);
-      if (http.begin(secureClient, BACKEND_URL_CLOUD)) {
+      http.setTimeout(150);
+      if (http.begin(plainClient, BACKEND_URL_IPHONE_PC)) {
         http.addHeader("Content-Type", "application/json");
         http.POST(payload);
         http.end();
