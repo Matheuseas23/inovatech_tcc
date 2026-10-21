@@ -981,7 +981,8 @@ server.listen(PORT, '0.0.0.0', () => {
   ✔ Health Check:          http://0.0.0.0:${PORT}/health
   ===================================================================
   `);
-  iniciarPonteSerialUSB();
+  // Ponte serial desativada para a porta COM5 ficar 100% livre para o PlatformIO gravar
+  // iniciarPonteSerialUSB();
 });
 
 // Encerramento gracioso para orquestradores de nuvem (Render, Docker, Kubernetes)
