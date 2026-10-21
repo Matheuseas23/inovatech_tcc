@@ -24,13 +24,20 @@ const uint16_t UDP_PORT_DESTINO = 3002;
 // Rede própria da ESP32 (Access Point sem senha sempre ativo):
 const char* AP_SSID = "ESP_900EC9";
 
-// 1. Rede Wi-Fi Principal (Roteador Redmi Note 15):
+// 1. Rede Wi-Fi Principal (Roteador Redmi Note 15 5G):
 const char* WIFI_1_SSID = "REDMI Note 15 5G";
 const char* WIFI_1_PASS = "Garcia2026";
 
-// 2. Rede Wi-Fi Secundária (iPhone de contingência):
-const char* WIFI_2_SSID = "iPhone de Matheus";
-const char* WIFI_2_PASS = "12345678910";
+// Variações de maiúsculas/minúsculas do Redmi:
+const char* WIFI_2_SSID = "Redmi Note 15 5G";
+const char* WIFI_2_PASS = "Garcia2026";
+
+const char* WIFI_3_SSID = "REDMI Note 15";
+const char* WIFI_3_PASS = "Garcia2026";
+
+// Rede iPhone de contingência:
+const char* WIFI_4_SSID = "iPhone de Matheus";
+const char* WIFI_4_PASS = "12345678910";
 
 // Endereço do Servidor de Telemetria:
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
@@ -117,16 +124,19 @@ void setup() {
   Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 3000 ms (3.0s)"));
   Serial.println(F("[AVISO] Contagem progressiva: 1 bip por segundo (3 bips antes do alarme)"));
 
-  // Mantém a rede Wi-Fi própria da ESP32 (ESP_900EC9 sem senha) sempre ativa
-  WiFi.mode(WIFI_AP_STA);
-  WiFi.softAP(AP_SSID); // Sem senha (rede aberta)
-  Serial.print(F("[WIFI AP] Rede ativa sem senha: "));
-  Serial.print(AP_SSID);
-  Serial.print(F(" | IP da ESP32: "));
-  Serial.println(WiFi.softAPIP());
+  // Modo Station puro (dedica 100% da antena para sintonizar o canal do Redmi Note 15)
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.persistent(true);
 
-  // Registra a rede no gerenciador inteligente WiFiMulti
+  // Registra as redes e variações no WiFiMulti
   wifiMulti.addAP(WIFI_1_SSID, WIFI_1_PASS);
+  wifiMulti.addAP(WIFI_2_SSID, WIFI_2_PASS);
+  wifiMulti.addAP(WIFI_3_SSID, WIFI_3_PASS);
+  wifiMulti.addAP(WIFI_4_SSID, WIFI_4_PASS);
+
+  // Disparo direto de conexão na rede do Redmi
+  WiFi.begin(WIFI_1_SSID, WIFI_1_PASS);
 
   Serial.println(F("[WIFI MULTI] Rede registrada no sistema:"));
   Serial.print(F("  1. ")); Serial.println(WIFI_1_SSID);
