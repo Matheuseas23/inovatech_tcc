@@ -651,6 +651,17 @@ app.post(['/api/driver/shift', '/api/driver/status'], (req, res) => {
 });
 
 // Endpoint para o Painel obter o estado atual
+
+// Endpoint de telemetria atual compatível (/api/telemetry/current e /api/telemetry)
+app.get(['/api/telemetry/current', '/api/telemetry/latest'], (req, res) => {
+  res.json({
+    sucesso: true,
+    estado,
+    comandosPendentesParaESP32: comandosPendentes.length,
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.get('/api/telemetry', (req, res) => {
   res.json({
     sucesso: true,

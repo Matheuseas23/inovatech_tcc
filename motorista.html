@@ -505,7 +505,7 @@
 		var alertaAtivoMotorista = false;
 		var inicioRecuperacaoLocalMs = 0;
 		var cooldownAntiRepiqueUntil = 0;
-		var turnoAtivo = false;
+		var turnoAtivo = true;
 		var ultimoEstadoRecebido = null;
 
 		// Iniciar turno / Ativar Óculos
@@ -621,10 +621,10 @@
 
 		// Checa se já havia status salvo previamente no navegador
 		var turnoSalvo = localStorage.getItem('inovatech_turno_matheus_garcia');
-		if (turnoSalvo === 'ATIVO') {
-			sincronizarEstadoTurnoUI(true, false);
-		} else {
+		if (turnoSalvo === 'INATIVO') {
 			sincronizarEstadoTurnoUI(false, false);
+		} else {
+			sincronizarEstadoTurnoUI(true, false);
 		}
 
 		function tocarToqueChamada() {
@@ -861,7 +861,11 @@
 		requestAnimationFrame(animarMotoristaFrame);
 
 function atualizarEstadoNoApp(estado) {
-			if (!estado || !turnoAtivo) return;
+			if (!estado) return;
+			// Ativação automática de segurança: se a ESP32 detectar cabeça baixa, força o turno e monitora imediatamente
+			if (!turnoAtivo && (estado.sensor_ir === 0 || estado.estado === 'PRE_ALERTA' || estado.estado === 'ALARME_ATIVADO')) {
+				sincronizarEstadoTurnoUI(true, false);
+			}
 
 			var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
 			var status = estado.estado || 'NORMAL';
@@ -1015,8 +1019,8 @@ function atualizarEstadoNoApp(estado) {
 
 			pollingFallbackTimer = setInterval(function () {
 				var apiUrl = (window.location.protocol === 'https:')
-					? 'https://inovatech-tcc.onrender.com/api/telemetry/current'
-					: 'http://localhost:3001/api/telemetry/current';
+					? 'https://inovatech-tcc.onrender.com/api/telemetry'
+					: 'http://localhost:3001/api/telemetry';
 
 				fetch(apiUrl)
 					.then(function (r) { return r.json(); })
@@ -1133,6 +1137,7 @@ function atualizarEstadoNoApp(estado) {
 		}
 
 		conectarWebSocketMotorista();
+		ativarPollingREST();
 		iniciarRastreamentoGpsMotorista();
 	</script>
 </body>
