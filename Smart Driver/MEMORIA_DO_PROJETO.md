@@ -37,9 +37,9 @@ O **Inova Tech Smart Driver** é um dispositivo de segurança ativa montado em �
 | **Buzzer Ativo** | Positivo (`+`) | **`D25` (GPIO 25)** | Saída digital | Ativação a nível `HIGH` (3,3V). |
 | **Buzzer Ativo** | Negativo (`-`) | **`GND`** | Retorno de terra | Ligado diretamente ao GND comum. |
 | **Módulo Relé (2 Canais)** | `VCC` | **`VIN`** / **`5V`** | Alimentação da bobina | Conectar no pino 5V para acionamento eletromecânico seguro. |
-| **Módulo Relé (2 Canais)** | `GND` | **`GND`** | Referência de terra | Ligado ao GND da ESP32. |
-| **Módulo Relé (Canal 1)** | `IN1` | **`D18` (GPIO 18)** | Saída digital | Reservado para atuar comandos no veículo (buzina auxiliar / luz de emergência). |
-| **Módulo Relé (Canal 2)** | `IN2` | *(Livre / Reserva)* | Saída digital | Fica disponível para expansões futuras. |
+| **Módulo Relé (2 Canais)** | `GND` | **`D13` (GPIO 13)** | GND Virtual (0V permanente) | Solução técnica para escassez de pinos GND físicos: pino digital configurado em `OUTPUT` com `LOW` contínuo. |
+| **Módulo Relé (Canal 1)** | `IN1` | **`D18` (GPIO 18)** | Saída digital | Reservado para atuar comandos no veículo (corte de tração Safe-Stop). |
+| **Módulo Relé (Canal 2)** | `IN2` | **`D19` (GPIO 19)** | Saída digital | Acionamento de luz de emergência / pisca-alerta veicular. |
 
 > [!IMPORTANT]
 > **Calibração do Trimpot Azul do Sensor IR:**

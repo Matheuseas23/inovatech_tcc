@@ -168,6 +168,12 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 ## 8. Status Atual de Hardware & Gravação da ESP32 (Outubro/2026)
 - **Status do Código & Frontend**: 100% revisado, polido, validado no navegador e commitado no GitHub (`origin/main`).
 - **Autenticação**: Senha mestra do sistema `inovatech26` (minúsculo).
+- **Mapeamento Oficial de Pinagem da ESP32**:
+  - `GPIO 32 (D32)`: Sensor de Obstáculo Infravermelho (Leitura digital com pull-up interno).
+  - `GPIO 25 (D25)`: Buzzer Sonoro Ativo (Saída digital 3.3V).
+  - `GPIO 18 (D18)`: Módulo Relé Canal 1 - Safe-Stop / Corte de Tração.
+  - `GPIO 19 (D19)`: Módulo Relé Canal 2 - Pisca-Alerta Veicular.
+  - `GPIO 13 (D13)`: **GND Virtual (0V contínuo)** para o Módulo Relé (`OUTPUT` com `LOW` permanente), solucionando a limitação física de apenas 2 pinos GND na ESP32 (já ocupados pelo IR e Buzzer).
 - **Diagnóstico USB Realizado**:
   - Testado diretamente na USB do notebook: a placa ESP32 recebe energia e acende o LED perfeitamente.
   - O Windows não tocou o som de conexão USB e nenhuma porta COM apareceu porque o cabo utilizado é **apenas de carga** (sem os fios internos de dados D+/D-).
@@ -214,7 +220,8 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
      - Botão minimalista de **Viagem Noturna / Apagar Tela** contendo estritamente o ícone do smartphone (`smartphone`), sem texto.
      - **Alerta Coffee Call em Tela Cheia**: Ao atingir a fadiga, cobre a tela com visual pulsante e toca mensagem sintetizada em voz feminina em português sincronizada com vibração contínua no celular e cronômetro de confirmação de 17,0s.
 - **Calibração de Tolerância e Recuperação Temporal**:
-  - **Tolerância Inicial de Cabeça Baixa**: **4,00 segundos (4000 ms)** tanto no backend Node.js (`server.js`) quanto nos scripts do navegador. Evita falsos positivos em pequenas olhadas no painel do caminhão.
+  - **Tolerância Inicial de Cabeça Baixa**: **3,00 segundos (3000 ms)** tanto no firmware ESP32 quanto no backend Node.js (`server.js`) e scripts do navegador.
+  - **Contagem Sonora Progressiva (Pré-Alerta)**: Durante os 3 segundos de cabeça baixa, o buzzer emite **1 bip por segundo (total de 3 bips)** aos 1,0s, 2,0s e 3,0s funcionando como contagem regressiva ergonômica antes do alarme contínuo e atuação dos relés.
   - **Tempo de Alerta Crítico na Central**: **17,0 segundos** ininterruptos de alarme sem reação.
   - **Tempo de Possível Acidente (SOS)**: **27,0 segundos** ininterruptos de alarme sem reação.
   - **Recuperação Automática de Postura**: Se o motorista mantiver a cabeça erguida por **3,00 segundos contínuos**, todos os alarmes (sonoros, visuais, Coffee Call e vibração) cessam instantaneamente de forma automática, dispensando a necessidade de apertar a tela durante a condução.

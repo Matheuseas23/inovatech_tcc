@@ -1,5 +1,509 @@
 [
   {
+    "id": "evt_1792543974455_ngnk",
+    "timestamp": "2026-10-21T00:52:54.465Z",
+    "horaFormatada": "21:52:54",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543943494_9m4m",
+    "timestamp": "2026-10-21T00:52:23.514Z",
+    "horaFormatada": "21:52:23",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543846412_df2t",
+    "timestamp": "2026-10-21T00:50:46.430Z",
+    "horaFormatada": "21:50:46",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543755751_e6no",
+    "timestamp": "2026-10-21T00:49:15.751Z",
+    "horaFormatada": "21:49:15",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543748109_kzle",
+    "timestamp": "2026-10-21T00:49:08.109Z",
+    "horaFormatada": "21:49:08",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543747879_t8sx",
+    "timestamp": "2026-10-21T00:49:07.885Z",
+    "horaFormatada": "21:49:07",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 190ms"
+  },
+  {
+    "id": "evt_1792543733807_cf7e",
+    "timestamp": "2026-10-21T00:48:53.839Z",
+    "horaFormatada": "21:48:53",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543715554_r6lk",
+    "timestamp": "2026-10-21T00:48:35.570Z",
+    "horaFormatada": "21:48:35",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543673903_yra4",
+    "timestamp": "2026-10-21T00:47:54.731Z",
+    "horaFormatada": "21:47:54",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543642183_uom4",
+    "timestamp": "2026-10-21T00:47:22.212Z",
+    "horaFormatada": "21:47:22",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543612891_hxtr",
+    "timestamp": "2026-10-21T00:46:52.925Z",
+    "horaFormatada": "21:46:52",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543571693_eea1",
+    "timestamp": "2026-10-21T00:46:11.739Z",
+    "horaFormatada": "21:46:11",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792543521904_dexv",
+    "timestamp": "2026-10-21T00:45:21.904Z",
+    "horaFormatada": "21:45:21",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543518461_rp6x",
+    "timestamp": "2026-10-21T00:45:18.461Z",
+    "horaFormatada": "21:45:18",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 263ms"
+  },
+  {
+    "id": "evt_1792543509310_z662",
+    "timestamp": "2026-10-21T00:45:09.311Z",
+    "horaFormatada": "21:45:09",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543509014_cjlx",
+    "timestamp": "2026-10-21T00:45:09.021Z",
+    "horaFormatada": "21:45:09",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 20ms"
+  },
+  {
+    "id": "evt_1792543477045_rv0c",
+    "timestamp": "2026-10-21T00:44:37.045Z",
+    "horaFormatada": "21:44:37",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543476778_tekt",
+    "timestamp": "2026-10-21T00:44:36.778Z",
+    "horaFormatada": "21:44:36",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 90ms"
+  },
+  {
+    "id": "evt_1792543476747_8lq8",
+    "timestamp": "2026-10-21T00:44:36.747Z",
+    "horaFormatada": "21:44:36",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543475992_eted",
+    "timestamp": "2026-10-21T00:44:35.992Z",
+    "horaFormatada": "21:44:35",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 190ms"
+  },
+  {
+    "id": "evt_1792543474944_h1zw",
+    "timestamp": "2026-10-21T00:44:34.944Z",
+    "horaFormatada": "21:44:34",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543474158_sj1f",
+    "timestamp": "2026-10-21T00:44:34.158Z",
+    "horaFormatada": "21:44:34",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 40ms"
+  },
+  {
+    "id": "evt_1792543472408_zvmv",
+    "timestamp": "2026-10-21T00:44:32.408Z",
+    "horaFormatada": "21:44:32",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543472407_1dvs",
+    "timestamp": "2026-10-21T00:44:32.407Z",
+    "horaFormatada": "21:44:32",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 180ms"
+  },
+  {
+    "id": "evt_1792543469444_gws0",
+    "timestamp": "2026-10-21T00:44:29.444Z",
+    "horaFormatada": "21:44:29",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543468922_ikp0",
+    "timestamp": "2026-10-21T00:44:28.922Z",
+    "horaFormatada": "21:44:28",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 110ms"
+  },
+  {
+    "id": "evt_1792543468396_nwkh",
+    "timestamp": "2026-10-21T00:44:28.396Z",
+    "horaFormatada": "21:44:28",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543467379_evbm",
+    "timestamp": "2026-10-21T00:44:27.379Z",
+    "horaFormatada": "21:44:27",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 50ms"
+  },
+  {
+    "id": "evt_1792543465783_cf67",
+    "timestamp": "2026-10-21T00:44:25.783Z",
+    "horaFormatada": "21:44:25",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543462891_rkfe",
+    "timestamp": "2026-10-21T00:44:22.891Z",
+    "horaFormatada": "21:44:22",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 10ms"
+  },
+  {
+    "id": "evt_1792543462629_x0jn",
+    "timestamp": "2026-10-21T00:44:22.629Z",
+    "horaFormatada": "21:44:22",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543462369_5d46",
+    "timestamp": "2026-10-21T00:44:22.369Z",
+    "horaFormatada": "21:44:22",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 190ms"
+  },
+  {
+    "id": "evt_1792543460514_n7fz",
+    "timestamp": "2026-10-21T00:44:20.514Z",
+    "horaFormatada": "21:44:20",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543460484_061e",
+    "timestamp": "2026-10-21T00:44:20.484Z",
+    "horaFormatada": "21:44:20",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 240ms"
+  },
+  {
+    "id": "evt_1792543460483_azgf",
+    "timestamp": "2026-10-21T00:44:20.483Z",
+    "horaFormatada": "21:44:20",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543454237_wdro",
+    "timestamp": "2026-10-21T00:44:14.237Z",
+    "horaFormatada": "21:44:14",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 10ms"
+  },
+  {
+    "id": "evt_1792543453186_myzw",
+    "timestamp": "2026-10-21T00:44:13.186Z",
+    "horaFormatada": "21:44:13",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543452925_dd8s",
+    "timestamp": "2026-10-21T00:44:12.925Z",
+    "horaFormatada": "21:44:12",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 60ms"
+  },
+  {
+    "id": "evt_1792543451350_u4cm",
+    "timestamp": "2026-10-21T00:44:11.350Z",
+    "horaFormatada": "21:44:11",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543450825_bftr",
+    "timestamp": "2026-10-21T00:44:10.825Z",
+    "horaFormatada": "21:44:10",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 150ms"
+  },
+  {
+    "id": "evt_1792543447957_9w7j",
+    "timestamp": "2026-10-21T00:44:07.957Z",
+    "horaFormatada": "21:44:07",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543446888_s5e7",
+    "timestamp": "2026-10-21T00:44:06.888Z",
+    "horaFormatada": "21:44:06",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 60ms"
+  },
+  {
+    "id": "evt_1792543442858_btdo",
+    "timestamp": "2026-10-21T00:44:02.858Z",
+    "horaFormatada": "21:44:02",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543442449_j8ei",
+    "timestamp": "2026-10-21T00:44:02.449Z",
+    "horaFormatada": "21:44:02",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 90ms"
+  },
+  {
+    "id": "evt_1792543439812_740y",
+    "timestamp": "2026-10-21T00:43:59.812Z",
+    "horaFormatada": "21:43:59",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543439553_3i71",
+    "timestamp": "2026-10-21T00:43:59.553Z",
+    "horaFormatada": "21:43:59",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 70ms"
+  },
+  {
+    "id": "evt_1792543424355_96ar",
+    "timestamp": "2026-10-21T00:43:44.355Z",
+    "horaFormatada": "21:43:44",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação Automática: Condutor ergueu a cabeça por 3 segundos. Alerta cancelado automaticamente.",
+    "detalhes": "Postura segura restabelecida. Alarme físico e chamada virtual desligados."
+  },
+  {
+    "id": "evt_1792543412828_7jlk",
+    "timestamp": "2026-10-21T00:43:32.828Z",
+    "horaFormatada": "21:43:32",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 90ms"
+  },
+  {
+    "id": "evt_1792543412804_f7yd",
+    "timestamp": "2026-10-21T00:43:32.804Z",
+    "horaFormatada": "21:43:32",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (2,5s)!",
+    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
+  },
+  {
+    "id": "evt_1792543403653_4fx3",
+    "timestamp": "2026-10-21T00:43:23.653Z",
+    "horaFormatada": "21:43:23",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 50ms"
+  },
+  {
+    "id": "evt_1792543403391_3tma",
+    "timestamp": "2026-10-21T00:43:23.391Z",
+    "horaFormatada": "21:43:23",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543402343_k0ju",
+    "timestamp": "2026-10-21T00:43:22.369Z",
+    "horaFormatada": "21:43:22",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 230ms"
+  },
+  {
+    "id": "evt_1792543400516_0yzp",
+    "timestamp": "2026-10-21T00:43:20.517Z",
+    "horaFormatada": "21:43:20",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543399216_573m",
+    "timestamp": "2026-10-21T00:43:19.217Z",
+    "horaFormatada": "21:43:19",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 230ms"
+  },
+  {
+    "id": "evt_1792543391876_ueog",
+    "timestamp": "2026-10-21T00:43:11.876Z",
+    "horaFormatada": "21:43:11",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543390432_h5vv",
+    "timestamp": "2026-10-21T00:43:10.435Z",
+    "horaFormatada": "21:43:10",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 30ms"
+  },
+  {
+    "id": "evt_1792543386566_0xew",
+    "timestamp": "2026-10-21T00:43:06.567Z",
+    "horaFormatada": "21:43:06",
+    "tipo": "NORMAL",
+    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
+    "detalhes": "Alarme físico e virtual encerrados."
+  },
+  {
+    "id": "evt_1792543386493_4xhh",
+    "timestamp": "2026-10-21T00:43:06.493Z",
+    "horaFormatada": "21:43:06",
+    "tipo": "PRE_ALERTA",
+    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
+    "detalhes": "Tempo decorrido: 180ms"
+  },
+  {
+    "id": "evt_1792543385145_gjnq",
+    "timestamp": "2026-10-21T00:43:05.163Z",
+    "horaFormatada": "21:43:05",
+    "tipo": "NORMAL",
+    "mensagem": "ESP32 conectada via USB Serial (COM5)",
+    "detalhes": "Leitura em tempo real ativa."
+  },
+  {
+    "id": "evt_1792539265236_0hma",
+    "timestamp": "2026-10-20T23:34:25.244Z",
+    "horaFormatada": "20:34:25",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792539151244_h181",
+    "timestamp": "2026-10-20T23:32:31.292Z",
+    "horaFormatada": "20:32:31",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792538977919_oi0b",
+    "timestamp": "2026-10-20T23:29:37.980Z",
+    "horaFormatada": "20:29:37",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792538731062_ovxn",
+    "timestamp": "2026-10-20T23:25:31.068Z",
+    "horaFormatada": "20:25:31",
+    "tipo": "NORMAL",
+    "mensagem": "ESP32 conectada via USB Serial (COM5)",
+    "detalhes": "Leitura em tempo real ativa."
+  },
+  {
     "id": "evt_1792516026574_d9gt",
     "timestamp": "2026-10-20T17:07:10.125Z",
     "horaFormatada": "14:07:10",
@@ -294,509 +798,5 @@
     "tipo": "PRE_ALERTA",
     "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
     "detalhes": "Tempo decorrido: 10ms"
-  },
-  {
-    "id": "evt_1792515907438_bc4e",
-    "timestamp": "2026-10-20T17:05:07.438Z",
-    "horaFormatada": "14:05:07",
-    "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
-  },
-  {
-    "id": "evt_1792515906456_6jyn",
-    "timestamp": "2026-10-20T17:05:06.456Z",
-    "horaFormatada": "14:05:06",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 130ms"
-  },
-  {
-    "id": "evt_1792515906029_7qvv",
-    "timestamp": "2026-10-20T17:05:06.029Z",
-    "horaFormatada": "14:05:06",
-    "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
-  },
-  {
-    "id": "evt_1792515906027_6yjw",
-    "timestamp": "2026-10-20T17:05:06.027Z",
-    "horaFormatada": "14:05:06",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 140ms"
-  },
-  {
-    "id": "evt_1792515902666_79p4",
-    "timestamp": "2026-10-20T17:05:02.666Z",
-    "horaFormatada": "14:05:02",
-    "tipo": "NORMAL",
-    "mensagem": "Recuperação Automática: Condutor ergueu a cabeça por 3 segundos. Alerta cancelado automaticamente.",
-    "detalhes": "Postura segura restabelecida. Alarme físico e chamada virtual desligados."
-  },
-  {
-    "id": "evt_1792515897048_y5c3",
-    "timestamp": "2026-10-20T17:04:57.048Z",
-    "horaFormatada": "14:04:57",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 110ms"
-  },
-  {
-    "id": "evt_1792515888632_ie08",
-    "timestamp": "2026-10-20T17:04:48.632Z",
-    "horaFormatada": "14:04:48",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3830ms"
-  },
-  {
-    "id": "evt_1792515888370_0ljv",
-    "timestamp": "2026-10-20T17:04:48.370Z",
-    "horaFormatada": "14:04:48",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3570ms"
-  },
-  {
-    "id": "evt_1792515888112_8oyh",
-    "timestamp": "2026-10-20T17:04:48.112Z",
-    "horaFormatada": "14:04:48",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3310ms"
-  },
-  {
-    "id": "evt_1792515887846_6ut5",
-    "timestamp": "2026-10-20T17:04:47.847Z",
-    "horaFormatada": "14:04:47",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3050ms"
-  },
-  {
-    "id": "evt_1792515887585_nzmf",
-    "timestamp": "2026-10-20T17:04:47.585Z",
-    "horaFormatada": "14:04:47",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2780ms"
-  },
-  {
-    "id": "evt_1792515887321_68qi",
-    "timestamp": "2026-10-20T17:04:47.321Z",
-    "horaFormatada": "14:04:47",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2520ms"
-  },
-  {
-    "id": "evt_1792515887064_45ow",
-    "timestamp": "2026-10-20T17:04:47.064Z",
-    "horaFormatada": "14:04:47",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2260ms"
-  },
-  {
-    "id": "evt_1792515886798_pabu",
-    "timestamp": "2026-10-20T17:04:46.798Z",
-    "horaFormatada": "14:04:46",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2000ms"
-  },
-  {
-    "id": "evt_1792515886535_0j3h",
-    "timestamp": "2026-10-20T17:04:46.535Z",
-    "horaFormatada": "14:04:46",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1740ms"
-  },
-  {
-    "id": "evt_1792515886286_65cm",
-    "timestamp": "2026-10-20T17:04:46.286Z",
-    "horaFormatada": "14:04:46",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1470ms"
-  },
-  {
-    "id": "evt_1792515886012_rfl0",
-    "timestamp": "2026-10-20T17:04:46.012Z",
-    "horaFormatada": "14:04:46",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1210ms"
-  },
-  {
-    "id": "evt_1792515885749_ud23",
-    "timestamp": "2026-10-20T17:04:45.749Z",
-    "horaFormatada": "14:04:45",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 950ms"
-  },
-  {
-    "id": "evt_1792515885488_e6p7",
-    "timestamp": "2026-10-20T17:04:45.488Z",
-    "horaFormatada": "14:04:45",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 690ms"
-  },
-  {
-    "id": "evt_1792515885229_r0yd",
-    "timestamp": "2026-10-20T17:04:45.229Z",
-    "horaFormatada": "14:04:45",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 430ms"
-  },
-  {
-    "id": "evt_1792515884965_33yq",
-    "timestamp": "2026-10-20T17:04:44.965Z",
-    "horaFormatada": "14:04:44",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 160ms"
-  },
-  {
-    "id": "evt_1792515884446_udys",
-    "timestamp": "2026-10-20T17:04:44.446Z",
-    "horaFormatada": "14:04:44",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 210ms"
-  },
-  {
-    "id": "evt_1792515876840_zh27",
-    "timestamp": "2026-10-20T17:04:36.840Z",
-    "horaFormatada": "14:04:36",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3760ms"
-  },
-  {
-    "id": "evt_1792515876584_xpn6",
-    "timestamp": "2026-10-20T17:04:36.584Z",
-    "horaFormatada": "14:04:36",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3500ms"
-  },
-  {
-    "id": "evt_1792515876319_1woa",
-    "timestamp": "2026-10-20T17:04:36.319Z",
-    "horaFormatada": "14:04:36",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3240ms"
-  },
-  {
-    "id": "evt_1792515876071_pjmc",
-    "timestamp": "2026-10-20T17:04:36.071Z",
-    "horaFormatada": "14:04:36",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2980ms"
-  },
-  {
-    "id": "evt_1792515875792_adrx",
-    "timestamp": "2026-10-20T17:04:35.792Z",
-    "horaFormatada": "14:04:35",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2710ms"
-  },
-  {
-    "id": "evt_1792515875565_2f4o",
-    "timestamp": "2026-10-20T17:04:35.566Z",
-    "horaFormatada": "14:04:35",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2450ms"
-  },
-  {
-    "id": "evt_1792515875269_td0f",
-    "timestamp": "2026-10-20T17:04:35.269Z",
-    "horaFormatada": "14:04:35",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2190ms"
-  },
-  {
-    "id": "evt_1792515875009_ogbx",
-    "timestamp": "2026-10-20T17:04:35.009Z",
-    "horaFormatada": "14:04:35",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1930ms"
-  },
-  {
-    "id": "evt_1792515874744_sipq",
-    "timestamp": "2026-10-20T17:04:34.744Z",
-    "horaFormatada": "14:04:34",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1670ms"
-  },
-  {
-    "id": "evt_1792515874487_0qw2",
-    "timestamp": "2026-10-20T17:04:34.487Z",
-    "horaFormatada": "14:04:34",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1400ms"
-  },
-  {
-    "id": "evt_1792515874220_ff5j",
-    "timestamp": "2026-10-20T17:04:34.220Z",
-    "horaFormatada": "14:04:34",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1140ms"
-  },
-  {
-    "id": "evt_1792515873958_nfvg",
-    "timestamp": "2026-10-20T17:04:33.958Z",
-    "horaFormatada": "14:04:33",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 880ms"
-  },
-  {
-    "id": "evt_1792515873770_7vdq",
-    "timestamp": "2026-10-20T17:04:33.770Z",
-    "horaFormatada": "14:04:33",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 620ms"
-  },
-  {
-    "id": "evt_1792515873451_hidy",
-    "timestamp": "2026-10-20T17:04:33.451Z",
-    "horaFormatada": "14:04:33",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 360ms"
-  },
-  {
-    "id": "evt_1792515873185_omp6",
-    "timestamp": "2026-10-20T17:04:33.185Z",
-    "horaFormatada": "14:04:33",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 90ms"
-  },
-  {
-    "id": "evt_1792515872665_cs0m",
-    "timestamp": "2026-10-20T17:04:32.665Z",
-    "horaFormatada": "14:04:32",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 480ms"
-  },
-  {
-    "id": "evt_1792515872442_to6g",
-    "timestamp": "2026-10-20T17:04:32.442Z",
-    "horaFormatada": "14:04:32",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 220ms"
-  },
-  {
-    "id": "evt_1792515871888_n78o",
-    "timestamp": "2026-10-20T17:04:31.888Z",
-    "horaFormatada": "14:04:31",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3671ms"
-  },
-  {
-    "id": "evt_1792515871606_jhvo",
-    "timestamp": "2026-10-20T17:04:31.606Z",
-    "horaFormatada": "14:04:31",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3151ms"
-  },
-  {
-    "id": "evt_1792515871469_uzm3",
-    "timestamp": "2026-10-20T17:04:31.469Z",
-    "horaFormatada": "14:04:31",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2891ms"
-  },
-  {
-    "id": "evt_1792515870823_s0q7",
-    "timestamp": "2026-10-20T17:04:30.823Z",
-    "horaFormatada": "14:04:30",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2631ms"
-  },
-  {
-    "id": "evt_1792515870689_b1i3",
-    "timestamp": "2026-10-20T17:04:30.689Z",
-    "horaFormatada": "14:04:30",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2101ms"
-  },
-  {
-    "id": "evt_1792515870416_ffol",
-    "timestamp": "2026-10-20T17:04:30.416Z",
-    "horaFormatada": "14:04:30",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1841ms"
-  },
-  {
-    "id": "evt_1792515869602_vbjj",
-    "timestamp": "2026-10-20T17:04:29.603Z",
-    "horaFormatada": "14:04:29",
-    "tipo": "NORMAL",
-    "mensagem": "ESP32 conectada via USB Serial (COM5)",
-    "detalhes": "Leitura em tempo real ativa."
-  },
-  {
-    "id": "evt_1792515866316_ky83",
-    "timestamp": "2026-10-20T17:04:26.316Z",
-    "horaFormatada": "14:04:26",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 240ms"
-  },
-  {
-    "id": "evt_1792515839562_ruqb",
-    "timestamp": "2026-10-20T17:03:59.562Z",
-    "horaFormatada": "14:03:59",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "EMERGÊNCIA MÁXIMA SOS (35s SEM RESPOSTA)! Protocolo Safe-Stop & Resgate SOS Acionado na Central!",
-    "detalhes": "Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e acionamento de Resgate SAMU 192 / PRF."
-  },
-  {
-    "id": "evt_1792515824687_p0rl",
-    "timestamp": "2026-10-20T17:03:44.687Z",
-    "horaFormatada": "14:03:44",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "SUSPEITA DE ACIDENTE NA CENTRAL (20s SEM RESPOSTA): Motorista inativo!",
-    "detalhes": "Localização satelital transmitida na BR-116 KM 284. Iniciando contagem para intervenção Safe-Stop aos 35s."
-  },
-  {
-    "id": "evt_1792515822286_99x3",
-    "timestamp": "2026-10-20T17:03:42.287Z",
-    "horaFormatada": "14:03:42",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3740ms"
-  },
-  {
-    "id": "evt_1792515822024_aqpr",
-    "timestamp": "2026-10-20T17:03:42.024Z",
-    "horaFormatada": "14:03:42",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3480ms"
-  },
-  {
-    "id": "evt_1792515821789_afop",
-    "timestamp": "2026-10-20T17:03:41.789Z",
-    "horaFormatada": "14:03:41",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 3210ms"
-  },
-  {
-    "id": "evt_1792515821506_ythw",
-    "timestamp": "2026-10-20T17:03:41.506Z",
-    "horaFormatada": "14:03:41",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2950ms"
-  },
-  {
-    "id": "evt_1792515821243_4krd",
-    "timestamp": "2026-10-20T17:03:41.243Z",
-    "horaFormatada": "14:03:41",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2690ms"
-  },
-  {
-    "id": "evt_1792515820992_hadf",
-    "timestamp": "2026-10-20T17:03:40.992Z",
-    "horaFormatada": "14:03:40",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2430ms"
-  },
-  {
-    "id": "evt_1792515820712_k4fw",
-    "timestamp": "2026-10-20T17:03:40.712Z",
-    "horaFormatada": "14:03:40",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2170ms"
-  },
-  {
-    "id": "evt_1792515820452_stks",
-    "timestamp": "2026-10-20T17:03:40.452Z",
-    "horaFormatada": "14:03:40",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1900ms"
-  },
-  {
-    "id": "evt_1792515820188_0fi9",
-    "timestamp": "2026-10-20T17:03:40.188Z",
-    "horaFormatada": "14:03:40",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1640ms"
-  },
-  {
-    "id": "evt_1792515819840_ipci",
-    "timestamp": "2026-10-20T17:03:39.840Z",
-    "horaFormatada": "14:03:39",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1120ms"
-  },
-  {
-    "id": "evt_1792515819405_q78l",
-    "timestamp": "2026-10-20T17:03:39.405Z",
-    "horaFormatada": "14:03:39",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 860ms"
-  },
-  {
-    "id": "evt_1792515819275_dgdo",
-    "timestamp": "2026-10-20T17:03:39.275Z",
-    "horaFormatada": "14:03:39",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 590ms"
-  },
-  {
-    "id": "evt_1792515818878_zobs",
-    "timestamp": "2026-10-20T17:03:38.878Z",
-    "horaFormatada": "14:03:38",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 330ms"
-  },
-  {
-    "id": "evt_1792515818624_4ptj",
-    "timestamp": "2026-10-20T17:03:38.624Z",
-    "horaFormatada": "14:03:38",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 70ms"
   }
 ]

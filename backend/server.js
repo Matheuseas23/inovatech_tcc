@@ -52,17 +52,9 @@ const estado = {
   dispositivo: 'ESP32_SMART_DRIVER_01',
   online: false,
   ultimoVisto: null,
-  motoristas: {
-    matheus_garcia: {
-      nome: 'Matheus Garcia',
-      status: 'INATIVO', // 'EM_VIAGEM' ou 'INATIVO'
-      veiculo: 'Scania R-450 (Placa INO-2026)',
-      rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
-    }
-  },
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
   tempo_cabeca_baixa_ms: 0,
-  limiar_seguranca_ms: 4000,
+  limiar_seguranca_ms: 3000,
   estado: 'NORMAL', // 'NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'
   buzzer: 0, // 0 = Desligado, 1 = Ligado
   rele: 0, // 0 = Desligado, 1 = Acionado
@@ -76,6 +68,15 @@ const estado = {
   contadores: {
     totalAlarmesSessao: 0,
     inicioSessao: new Date().toISOString()
+  },
+  gps: {
+    lat: -23.682138,
+    lon: -46.875412,
+    precisao: 1.8,
+    velocidade: 0,
+    heading: 0,
+    origem: 'PADRAO_BR116',
+    atualizadoEm: null
   }
 };
 
@@ -217,18 +218,6 @@ setInterval(() => {
 // ROTAS HTTP (REST API)
 // ------------------------------------------------------------------------------
 
-app.get('/central', (req, res) => {
-  const centralPath = path.join(frontendRoot, 'central.html');
-  if (fs.existsSync(centralPath)) return res.sendFile(centralPath);
-  res.redirect('/central.html');
-});
-
-app.get('/motorista', (req, res) => {
-  const motoristaPath = path.join(frontendRoot, 'motorista.html');
-  if (fs.existsSync(motoristaPath)) return res.sendFile(motoristaPath);
-  res.redirect('/motorista.html');
-});
-
 // Rota raiz inteligente: serve o frontend para navegadores ou JSON descritivo para APIs
 app.get(['/', '/api'], (req, res) => {
   const wantsHtml = req.accepts(['html', 'json']) === 'html';
@@ -281,19 +270,16 @@ function voltarParaLinklemoCelularADB() {
 }
 
 // ------------------------------------------------------------------------------
-// MOTOR DE ESCALONAMENTO E RECUPERAÇÃO AUTOMÁTICA (3s DE CABEÇA ERGUIDA DESLIGA ALERTA)
+// MOTOR DE ESCALONAMENTO DE EMERGÊNCIA (FASE 1: CELULAR -> FASE 2: +10s CRÍTICO -> FASE 3: +10s POSSÍVEL ACIDENTE)
 // ------------------------------------------------------------------------------
 let inicioSemRespostaTimestamp = 0;
-let inicioRecuperacaoPosturaTimestamp = 0;
-let cooldownAntiRepiqueUntil = 0;
+let cooldownNormalizacaoUntil = 0;
 
 function iniciarProtocoloAlertaTravado() {
   if (!estado.chamada_celular_ativa) {
     estado.chamada_celular_ativa = true;
     estado.alerta_travado = true;
     inicioSemRespostaTimestamp = Date.now();
-    inicioRecuperacaoPosturaTimestamp = 0;
-    estado.tempo_recuperacao_ms = 0;
     estado.tempo_sem_resposta_ms = 0;
     estado.nivel_escalonamento = 1; // 1 = Alerta Físico + Celular | 2 = Alerta Crítico Central (>10s) | 3 = Possível Acidente + SOS (>20s)
     dispararChamadaCelularADB();
@@ -304,21 +290,18 @@ function encerrarProtocoloAlertaTravado() {
   estado.chamada_celular_ativa = false;
   estado.alerta_travado = false;
   inicioSemRespostaTimestamp = 0;
-  inicioRecuperacaoPosturaTimestamp = 0;
-  estado.tempo_recuperacao_ms = 0;
   estado.tempo_sem_resposta_ms = 0;
   estado.nivel_escalonamento = 0;
   estado.estado = 'NORMAL';
   estado.buzzer = 0;
   estado.rele = 0;
   estado.tempo_cabeca_baixa_ms = 0;
-  cooldownAntiRepiqueUntil = Date.now() + 3000;
+  cooldownNormalizacaoUntil = Date.now() + 2500;
   voltarParaLinklemoCelularADB();
   espelharParaNuvem({
     dispositivo: estado.dispositivo,
     sensor_ir: 1,
     tempo_cabeca_baixa_ms: 0,
-    tempo_recuperacao_ms: 0,
     buzzer: 0,
     rele: 0,
     estado: 'NORMAL',
@@ -332,46 +315,11 @@ function encerrarProtocoloAlertaTravado() {
   persistirEmDisco();
 }
 
-// Loop de alta precisão (250ms) que monitora o tempo sem resposta e a recuperação automática de 3s
+// Loop de alta precisão (250ms) que monitora o tempo sem resposta do motorista no celular
 setInterval(() => {
-  if (!estado.chamada_celular_ativa) return;
-
-  // Verificação de Recuperação Automática: Se a cabeça voltou ao normal (sensor_ir === 1) por 3 segundos
-  if (estado.sensor_ir === 1) {
-    if (!inicioRecuperacaoPosturaTimestamp) {
-      inicioRecuperacaoPosturaTimestamp = Date.now();
-    }
-    const tempoRecup = Date.now() - inicioRecuperacaoPosturaTimestamp;
-    estado.tempo_recuperacao_ms = tempoRecup;
-
-    if (tempoRecup >= 3000) {
-      // 3 segundos com cabeça erguida: Encerra o alarme automaticamente sem o motorista precisar apertar!
-      encerrarProtocoloAlertaTravado();
-      registrarEvento(
-        'NORMAL',
-        'Recuperação Automática: Condutor ergueu a cabeça por 3 segundos. Alerta cancelado automaticamente.',
-        'Postura segura restabelecida. Alarme físico e chamada virtual desligados.'
-      );
-      broadcast({
-        tipo: 'RECUPERACAO_AUTOMATICA',
-        estado
-      });
-      return;
-    }
-  } else {
-    // Se abaixou a cabeça de novo, zera a contagem de recuperação de 3s
-    inicioRecuperacaoPosturaTimestamp = 0;
-    estado.tempo_recuperacao_ms = 0;
-  }
-
-  if (!inicioSemRespostaTimestamp) return;
+  if (!estado.chamada_celular_ativa || !inicioSemRespostaTimestamp) return;
 
   const decorridoMs = Date.now() - inicioSemRespostaTimestamp;
-  if (decorridoMs < 0 || decorridoMs > 300000) {
-    inicioSemRespostaTimestamp = Date.now();
-    estado.tempo_sem_resposta_ms = 0;
-    return;
-  }
   estado.tempo_sem_resposta_ms = decorridoMs;
   estado.estado = 'ALARME_ATIVADO';
   estado.buzzer = 1;
@@ -379,27 +327,27 @@ setInterval(() => {
 
   let mudouNivel = false;
 
-  // Passou de 20 segundos sem o motorista reagir -> SUSPEITA DE ACIDENTE / LOCALIZAÇÃO SATELITAL NA CENTRAL
-  if (decorridoMs >= 20000 && decorridoMs < 35000 && estado.nivel_escalonamento < 2) {
+  // Passou de 10 segundos sem o motorista desativar o alerta no celular -> ALERTA CRÍTICO NA CENTRAL
+  if (decorridoMs >= 10000 && decorridoMs < 20000 && estado.nivel_escalonamento < 2) {
     estado.nivel_escalonamento = 2;
     mudouNivel = true;
     registrarEvento(
       'ALARME_ATIVADO',
-      'SUSPEITA DE ACIDENTE NA CENTRAL (20s SEM RESPOSTA): Motorista inativo!',
-      'Localização satelital transmitida na BR-116 KM 284. Iniciando contagem para intervenção Safe-Stop aos 35s.'
+      '🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!',
+      'Iniciando contagem crítica de +10s para protocolo de Possível Acidente.'
     );
     // Reforça despertar da tela do celular via ADB
     dispararChamadaCelularADB();
   }
 
-  // Passou de 35 segundos ininterruptos -> EMERGÊNCIA MÁXIMA / PROTOCOLO SAFE-STOP & SOS
-  if (decorridoMs >= 35000 && estado.nivel_escalonamento < 3) {
+  // Passou de +10 segundos após o Alerta Crítico (20s no total) -> POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS
+  if (decorridoMs >= 20000 && estado.nivel_escalonamento < 3) {
     estado.nivel_escalonamento = 3;
     mudouNivel = true;
     registrarEvento(
       'ALARME_ATIVADO',
-      'EMERGÊNCIA MÁXIMA SOS (35s SEM RESPOSTA)! Protocolo Safe-Stop & Resgate SOS Acionado na Central!',
-      'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e acionamento de Resgate SAMU 192 / PRF.'
+      '💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!',
+      'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192.'
     );
   }
 
@@ -413,7 +361,6 @@ setInterval(() => {
     dispositivo: estado.dispositivo,
     sensor_ir: estado.sensor_ir,
     tempo_cabeca_baixa_ms: estado.tempo_cabeca_baixa_ms,
-    tempo_recuperacao_ms: estado.tempo_recuperacao_ms || 0,
     buzzer: estado.buzzer,
     rele: estado.rele,
     estado: estado.estado,
@@ -509,43 +456,22 @@ function processarTelemetria(payload = {}) {
     estado.alerta_travado = Boolean(payload.alerta_travado);
   }
 
-  // Processamento do estado com base no sensor IR, recuperação automática de 3s e cooldown anti-repique
-  if (estado.sensor_ir === 1) {
-    if (estado.alerta_travado || estado.estado === 'ALARME_ATIVADO' || estado.estado === 'RECUPERANDO') {
-      if (!inicioRecuperacaoPosturaTimestamp) {
-        inicioRecuperacaoPosturaTimestamp = Date.now();
-      }
-      const tempoRecup = Date.now() - inicioRecuperacaoPosturaTimestamp;
-      estado.tempo_recuperacao_ms = tempoRecup;
-
-      if (tempoRecup >= 3000) {
-        // Completou 3 segundos ininterruptos de cabeça erguida: cancela alerta automaticamente!
-        encerrarProtocoloAlertaTravado();
-        registrarEvento('NORMAL', 'Recuperação Automática: Condutor ergueu a cabeça por 3 segundos. Alerta cancelado com sucesso.');
-      } else {
-        // Estado transitório de recuperação (mostra contagem 0.0s / 3.0s no painel)
-        estado.estado = 'RECUPERANDO';
-      }
-    } else {
-      inicioRecuperacaoPosturaTimestamp = 0;
-      estado.tempo_recuperacao_ms = 0;
-      estado.estado = 'NORMAL';
-      estado.tempo_cabeca_baixa_ms = 0;
-      estado.buzzer = 0;
-      estado.rele = 0;
-    }
+  // Enquanto o motorista NÃO apertar para desativar o alerta no celular, mantém o alerta travado ativo!
+  if (estado.alerta_travado && !payload._forceReset) {
+    estado.estado = 'ALARME_ATIVADO';
+    estado.buzzer = 1;
+    estado.rele = 1;
+    estado.chamada_celular_ativa = true;
+    estado.tempo_cabeca_baixa_ms = Math.max(3000, estado.tempo_cabeca_baixa_ms || 3000);
+  } else if (Date.now() < cooldownNormalizacaoUntil && payload.estado !== 'ALARME_ATIVADO') {
+    estado.estado = 'NORMAL';
+    estado.tempo_cabeca_baixa_ms = 0;
+    estado.buzzer = 0;
+    estado.rele = 0;
+  } else if (payload.estado) {
+    estado.estado = payload.estado;
   } else {
-    // sensor_ir === 0 (cabeça tombada ou queixo próximo)
-    inicioRecuperacaoPosturaTimestamp = 0;
-    estado.tempo_recuperacao_ms = 0;
-
-    // Se estiver no cooldown pós-normalização (3s), ignora aproximações rápidas para evitar alarmes em série
-    if (Date.now() < cooldownAntiRepiqueUntil) {
-      estado.tempo_cabeca_baixa_ms = 0;
-      estado.estado = 'NORMAL';
-      estado.buzzer = 0;
-      estado.rele = 0;
-    } else {
+    if (estado.sensor_ir === 0) {
       if (estado.tempo_cabeca_baixa_ms >= estado.limiar_seguranca_ms) {
         estado.estado = 'ALARME_ATIVADO';
         estado.buzzer = 1;
@@ -553,6 +479,11 @@ function processarTelemetria(payload = {}) {
       } else {
         estado.estado = 'PRE_ALERTA';
       }
+    } else {
+      estado.estado = 'NORMAL';
+      estado.tempo_cabeca_baixa_ms = 0;
+      estado.buzzer = 0;
+      estado.rele = 0;
     }
   }
 
@@ -564,7 +495,7 @@ function processarTelemetria(payload = {}) {
     } else if (estado.estado === 'ALARME_ATIVADO') {
       estado.contadores.totalAlarmesSessao++;
       iniciarProtocoloAlertaTravado();
-      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (2,5s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!`);
+      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!`);
       broadcast({
         tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
         dispararChamadaCafe: true,
@@ -627,36 +558,6 @@ app.get('/api/telemetry', (req, res) => {
   });
 });
 
-// Endpoint REST para atualizar status do motorista (App -> Backend -> Central)
-app.post('/api/driver/status', (req, res) => {
-  const { motorista = 'Matheus Garcia', status_viagem = 'EM_VIAGEM' } = req.body || {};
-  const novoStatus = (status_viagem === 'EM_VIAGEM') ? 'EM_VIAGEM' : 'INATIVO';
-
-  if (estado.motoristas && estado.motoristas.matheus_garcia) {
-    estado.motoristas.matheus_garcia.status = novoStatus;
-  }
-
-  const msgLog = (novoStatus === 'EM_VIAGEM')
-    ? 'Condutor Matheus Garcia ATIVOU o monitoramento seguro e INICIOU A VIAGEM.'
-    : 'Condutor Matheus Garcia PAUSOU o monitoramento / Viagem encerrada.';
-  registrarEvento('STATUS_MOTORISTA', msgLog, 'Sincronizado via App do Motorista (REST)');
-  persistirEmDisco();
-
-  broadcast({
-    tipo: 'STATUS_MOTORISTA',
-    motorista: 'Matheus Garcia',
-    status_viagem: novoStatus,
-    timestamp: Date.now(),
-    estado
-  });
-
-  return res.status(200).json({
-    sucesso: true,
-    motorista,
-    status_viagem: novoStatus
-  });
-});
-
 // Endpoint para a Central enviar comando remoto
 app.post('/api/command', (req, res) => {
   const { comando, origem = 'CENTRAL_WEB' } = req.body || {};
@@ -678,7 +579,7 @@ app.post('/api/command', (req, res) => {
     estado.estado = 'ALARME_ATIVADO';
     estado.buzzer = 1;
     estado.rele = 1;
-    estado.tempo_cabeca_baixa_ms = 4000;
+    estado.tempo_cabeca_baixa_ms = 2500;
     estado.contadores.totalAlarmesSessao++;
     iniciarProtocoloAlertaTravado();
     registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alerta Físico e Virtual no Celular Disparado');
@@ -704,6 +605,28 @@ app.post('/api/command', (req, res) => {
     mensagem: `Comando ${comando} registrado com sucesso.`,
     comandoItem
   });
+});
+
+// Endpoint para receber atualização de GPS real do celular do motorista
+app.post('/api/gps', (req, res) => {
+  const { lat, lon, precisao, velocidade, heading, origem } = req.body || {};
+  if (lat !== undefined && lon !== undefined) {
+    estado.gps = {
+      lat: Number(lat),
+      lon: Number(lon),
+      precisao: Number(precisao || 5),
+      velocidade: Number(velocidade || 0),
+      heading: Number(heading || 0),
+      origem: origem || 'CELULAR_MOTORISTA',
+      atualizadoEm: new Date().toISOString()
+    };
+    broadcast({
+      tipo: 'GPS_UPDATE',
+      gps: estado.gps
+    });
+    return res.json({ sucesso: true, gps: estado.gps });
+  }
+  return res.status(400).json({ erro: 'Coordenadas inválidas' });
 });
 
 // Endpoint para o ESP32 consumir e limpar comandos pendentes
@@ -770,31 +693,13 @@ wss.on('connection', (ws, req) => {
           url: '/api/telemetry',
           body: parsed.dados || parsed
         });
-      } else if (parsed.tipo === 'STATUS_MOTORISTA') {
-        // Motorista ativou ou pausou a viagem no App
-        const novoStatus = (parsed.status_viagem === 'EM_VIAGEM') ? 'EM_VIAGEM' : 'INATIVO';
-        if (estado.motoristas && estado.motoristas.matheus_garcia) {
-          estado.motoristas.matheus_garcia.status = novoStatus;
-        }
-        const msgLog = (novoStatus === 'EM_VIAGEM')
-          ? 'Condutor Matheus Garcia ATIVOU o monitoramento seguro e INICIOU A VIAGEM.'
-          : 'Condutor Matheus Garcia PAUSOU o monitoramento / Viagem encerrada.';
-        registrarEvento('STATUS_MOTORISTA', msgLog, 'Sincronizado via App do Motorista (Cabine)');
-        persistirEmDisco();
-        broadcast({
-          tipo: 'STATUS_MOTORISTA',
-          motorista: 'Matheus Garcia',
-          status_viagem: novoStatus,
-          timestamp: Date.now(),
-          estado
-        });
       } else if (parsed.tipo === 'COMANDO') {
         // Processa comando recebido via WS
         if (parsed.comando === 'DISPARAR_TESTE') {
           estado.estado = 'ALARME_ATIVADO';
           estado.buzzer = 1;
           estado.rele = 1;
-          estado.tempo_cabeca_baixa_ms = 4000;
+          estado.tempo_cabeca_baixa_ms = 2500;
           estado.contadores.totalAlarmesSessao++;
           iniciarProtocoloAlertaTravado();
           registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alerta Físico e Virtual Disparado');
@@ -811,6 +716,20 @@ wss.on('connection', (ws, req) => {
           tipo: 'COMANDO_EXECUTADO',
           comando: parsed.comando,
           estado
+        });
+      } else if (parsed.tipo === 'GPS_UPDATE' && parsed.gps) {
+        estado.gps = {
+          lat: Number(parsed.gps.lat),
+          lon: Number(parsed.gps.lon),
+          precisao: Number(parsed.gps.precisao || 5),
+          velocidade: Number(parsed.gps.velocidade || 0),
+          heading: Number(parsed.gps.heading || 0),
+          origem: 'CELULAR_MOTORISTA',
+          atualizadoEm: new Date().toISOString()
+        };
+        broadcast({
+          tipo: 'GPS_UPDATE',
+          gps: estado.gps
         });
       }
     } catch (err) {

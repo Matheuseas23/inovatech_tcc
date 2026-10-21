@@ -18,9 +18,9 @@
 // Rede própria da ESP32 (Access Point sem senha sempre ativo):
 const char* AP_SSID       = "ESP_900EC9";
 
-// Opcional: caso queira conectar a ESP32 também a um roteador externo:
-const char* WIFI_SSID     = "ESP_900EC9";
-const char* WIFI_PASSWORD = "";
+// Ponto de Acesso Móvel / Roteador Wi-Fi (Celular):
+const char* WIFI_SSID     = "REDMI Note 15 5G";
+const char* WIFI_PASSWORD = "Garcia2026";
 
 // Endereço do Servidor de Telemetria:
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
@@ -33,6 +33,7 @@ const uint8_t PINO_SENSOR_IR = 32; // GPIO 32 - Sensor IR de obstáculo (haste d
 const uint8_t PINO_BUZZER    = 25; // GPIO 25 - Buzzer sonoro ativo nos óculos
 const uint8_t PINO_RELE_1    = 18; // GPIO 18 - Relé Canal 1: Intervenção Veicular Safe-Stop (Tração)
 const uint8_t PINO_RELE_2    = 19; // GPIO 19 - Relé Canal 2: Sinalização de Emergência (Pisca-Alerta Veicular)
+const uint8_t PINO_RELE_GND  = 13; // GPIO 13 (D13) - GND Virtual (0V) exclusivo para o Módulo Relé
 
 // Níveis Lógicos
 const int NIVEL_CABECA_BAIXA     = LOW;  // Sensor IR detecta aproximação (cabeça baixa)
@@ -44,8 +45,8 @@ const int NIVEL_BUZZER_DESLIGADO = LOW;
 const int NIVEL_RELE_LIGADO      = LOW;
 const int NIVEL_RELE_DESLIGADO   = HIGH;
 
-// Filtro Temporal de Segurança: 4 segundos de tolerância
-const unsigned long LIMIAR_CABECA_BAIXA_MS = 4000;
+// Filtro Temporal de Segurança: 3 segundos de tolerância com aviso sonoro progressivo
+const unsigned long LIMIAR_CABECA_BAIXA_MS = 3000;
 const unsigned long INTERVALO_TELEMETRIA_MS = 250; // 4 pacotes por segundo
 
 // ------------------------------------------------------------------------------
@@ -89,6 +90,10 @@ void setup() {
   pinMode(PINO_RELE_1, OUTPUT);
   pinMode(PINO_RELE_2, OUTPUT);
 
+  // GND Virtual (0V) no Pino D13 para o terra do Módulo Relé
+  pinMode(PINO_RELE_GND, OUTPUT);
+  digitalWrite(PINO_RELE_GND, LOW);
+
   desativarAlarmes();
 
   Serial.println(F("\n=================================================="));
@@ -97,7 +102,9 @@ void setup() {
   Serial.println(F("=================================================="));
   Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25"));
   Serial.println(F("[HARDWARE] Relé 1 (Safe-Stop): GPIO 18 | Relé 2 (Pisca-Alerta): GPIO 19"));
-  Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 4000 ms (4.0s)"));
+  Serial.println(F("[HARDWARE] GND Virtual Relé: GPIO 13 (LOW / 0V permanente)"));
+  Serial.println(F("[SEGURANCA] Filtro temporal calibrado em 3000 ms (3.0s)"));
+  Serial.println(F("[AVISO] Contagem progressiva: 1 bip por segundo (3 bips antes do alarme)"));
 
   // Mantém a rede Wi-Fi própria da ESP32 (ESP_900EC9 sem senha) sempre ativa
   WiFi.mode(WIFI_AP_STA);
@@ -107,9 +114,9 @@ void setup() {
   Serial.print(F(" | IP da ESP32: "));
   Serial.println(WiFi.softAPIP());
 
-  // Se houver um roteador externo configurado diferente de ESP_900EC9, conecta também
+  // Se houver um roteador externo configurado, conecta também
   if (String(WIFI_SSID) != "NOME_DO_WIFI" && String(WIFI_SSID) != "ESP_900EC9") {
-    Serial.print(F("[WIFI STA] Conectando a "));
+    Serial.print(F("[WIFI STA] Conectando ao Ponto de Acesso: "));
     Serial.println(WIFI_SSID);
     if (strlen(WIFI_PASSWORD) > 0) {
       WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -145,12 +152,13 @@ void loop() {
   unsigned long tempoAtual = millis();
   unsigned long tempoDecorridoMs = 0;
   const char* estadoAtualTexto = "NORMAL";
+  bool bipPreAlertaAtivo = false;
 
   if (cabecaBaixaAgora) {
     if (!cabecaEstavaBaixa) {
       cabecaEstavaBaixa = true;
       tempoInicioCabecaBaixa = tempoAtual;
-      Serial.println(F("Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)..."));
+      Serial.println(F("Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança de 3s)..."));
     } 
 
     tempoDecorridoMs = tempoAtual - tempoInicioCabecaBaixa;
@@ -163,9 +171,20 @@ void loop() {
         Serial.println(F("PERIGO: MOTORISTA ADORMECEU! BUZZER E RELES 1 E 2 ACIONADOS!"));
       } else {
         estadoAtualTexto = "PRE_ALERTA";
+
+        // 3 BIPS PROGRESSIVOS (1 a cada segundo durante a contagem antes do alarme):
+        // 1º Bip: aos 1.0s (850 a 1050 ms) -> Pulso de 200ms
+        // 2º Bip: aos 2.0s (1850 a 2050 ms) -> Pulso de 200ms
+        // 3º Bip: aos 3.0s (2850 a 3000 ms) -> Pulso de 150ms antes do alarme contínuo
+        bipPreAlertaAtivo = (tempoDecorridoMs >= 850 && tempoDecorridoMs < 1050) ||
+                            (tempoDecorridoMs >= 1850 && tempoDecorridoMs < 2050) ||
+                            (tempoDecorridoMs >= 2850 && tempoDecorridoMs < 3000);
+
+        digitalWrite(PINO_BUZZER, bipPreAlertaAtivo ? NIVEL_BUZZER_LIGADO : NIVEL_BUZZER_DESLIGADO);
       }
     } else {
       estadoAtualTexto = "ALARME_ATIVADO";
+      digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
     }
   } 
   else {
@@ -187,7 +206,7 @@ void loop() {
   portENTER_CRITICAL(&mutexDados);
   dadosGlobais.sensorIr = estadoLeitura;
   dadosGlobais.tempoCabecaBaixaMs = tempoDecorridoMs;
-  dadosGlobais.buzzer = alarmeAtivo ? 1 : 0;
+  dadosGlobais.buzzer = (alarmeAtivo || bipPreAlertaAtivo) ? 1 : 0;
   dadosGlobais.rele1 = r1Val;
   dadosGlobais.rele2 = r2Val;
   dadosGlobais.alarmeAtivo = alarmeAtivo;
@@ -302,3 +321,6 @@ void taskTelemetria(void *pvParameters) {
     vTaskDelay(pdMS_TO_TICKS(INTERVALO_TELEMETRIA_MS));
   }
 }
+
+
+

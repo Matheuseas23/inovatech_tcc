@@ -6,7 +6,13 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>SMART DRIVER | App do Condutor</title>
 	<link rel="icon" type="image/svg+xml" href="favicon.svg">
-	<link rel="apple-touch-icon" href="favicon.svg">
+	<link rel="apple-touch-icon" href="image.png">
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#020b12">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="Smart Driver">
 	<link rel="stylesheet"
 		href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 	<link rel="stylesheet" href="style.css">
@@ -396,9 +402,15 @@
 					<span class="driver-brand-sub">CABINE VEICULAR · APP DO MOTORISTA</span>
 				</div>
 			</div>
-			<div class="painel-chip online" id="driverWsChip">
-				<span class="pulse-dot"></span>
-				<span id="driverWsLabel">CONECTADO</span>
+			<div style="display:flex;gap:6px;align-items:center">
+				<div class="painel-chip" id="driverGpsChip" style="font-size:9.5px;padding:4px 8px;border-color:rgba(8,222,235,0.4);background:rgba(8,222,235,0.1);color:var(--cyan)">
+					<span class="material-symbols-outlined g-icon" style="font-size:12px;margin-right:2px">location_searching</span>
+					<span id="driverGpsLabel">GPS...</span>
+				</div>
+				<div class="painel-chip online" id="driverWsChip">
+					<span class="pulse-dot"></span>
+					<span id="driverWsLabel">CONECTADO</span>
+				</div>
 			</div>
 		</header>
 
@@ -420,7 +432,7 @@
 			</button>
 		</section>
 
-		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 4,00s) -->
+		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 3,00s) -->
 		<section class="driver-live-card estado-normal" id="driverLiveCard">
 			<div style="display:flex;justify-content:space-between;align-items:center">
 				<span class="card-label">◉ MONITORAMENTO BIOMÉTRICO AO VIVO</span>
@@ -436,7 +448,7 @@
 
 			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
 				<span style="font-size:11px;color:var(--muted)">CRONÔMETRO DE TOLERÂNCIA:</span>
-				<div class="driver-timer-large" id="driverTimerCount">0.00s / 4.00s</div>
+				<div class="driver-timer-large" id="driverTimerCount">0.00s / 3.00s</div>
 			</div>
 
 			<div class="progresso-bar-bg" style="height:12px">
@@ -465,7 +477,7 @@
 
 	<!-- SCRIPTS EXCLUSIVOS DO APP DO MOTORISTA -->
 	<script>
-		var LIMIAR_TOLERANCIA_MS = 4000;
+		var LIMIAR_TOLERANCIA_MS = 3000;
 		var wsClient = null;
 		var audioCtx = null;
 		var callRingtoneTimer = null;
@@ -851,7 +863,7 @@
 				}
 			}
 
-			var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 4000 : tempoMs)));
+			var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 3000 : tempoMs)));
 			var seg = (msLim / 1000).toFixed(2);
 			var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
 
@@ -869,7 +881,7 @@
 				driverLiveCard.className = 'driver-live-card estado-normal';
 				driverStatusHeadline.style.color = '#08deeb';
 				driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
-				driverTimerCount.textContent = '0.00s / 4.00s';
+				driverTimerCount.textContent = '0.00s / 3.00s';
 				driverBarFill.className = 'progresso-bar-fill';
 				driverBarFill.style.width = '0%';
 				driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
@@ -877,7 +889,7 @@
 				driverLiveCard.className = 'driver-live-card estado-pre-alerta';
 				driverStatusHeadline.style.color = '#ffaa00';
 				driverStatusHeadline.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA';
-				driverTimerCount.textContent = seg + 's / 4.00s';
+				driverTimerCount.textContent = seg + 's / 3.00s';
 				driverBarFill.className = 'progresso-bar-fill warning';
 				driverBarFill.style.width = perc + '%';
 				driverFeedbackMsg.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Erga a cabeça para evitar o alarme.';
@@ -886,7 +898,7 @@
 				driverLiveCard.className = 'driver-live-card estado-alarme';
 				driverStatusHeadline.style.color = '#ff2a55';
 				driverStatusHeadline.textContent = 'PERIGO: CABEÇA BAIXA!';
-				driverTimerCount.textContent = '4.00s / 4.00s (CRÍTICO)';
+				driverTimerCount.textContent = '3.00s / 3.00s (CRÍTICO)';
 				driverBarFill.className = 'progresso-bar-fill danger';
 				driverBarFill.style.width = '100%';
 				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por 3 segundos para desligar automaticamente.';
@@ -971,21 +983,105 @@
 			}, 300);
 		}
 
-		// Desbloqueio de áudio no primeiro toque na tela
-		document.addEventListener('click', function () {
+		// ------------------------------------------------------------------------------
+		// GEOLOCALIZAÇÃO GNSS AO VIVO DO SMARTPHONE (TRANSMISSÃO PARA A CENTRAL)
+		// ------------------------------------------------------------------------------
+		var driverGpsChip = document.getElementById('driverGpsChip');
+		var driverGpsLabel = document.getElementById('driverGpsLabel');
+		var ultimoGpsEnviadoTimestamp = 0;
+
+		function enviarGpsParaCentral(gpsData) {
+			// 1. Armazena no localStorage para compartilhamento imediato se as telas estiverem no mesmo navegador
 			try {
-				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-				if (audioCtx.state === 'suspended') audioCtx.resume();
-				vozCafeAudio.volume = 0;
-				vozCafeAudio.play().then(function () {
-					vozCafeAudio.pause();
-					vozCafeAudio.currentTime = 0;
-					vozCafeAudio.volume = 1.0;
-				}).catch(function () { });
+				localStorage.setItem('inovatech_gps_real_motorista', JSON.stringify(gpsData));
 			} catch (e) { }
-		}, { once: true });
+
+			// 2. Envia via WebSocket se conectado
+			if (wsClient && wsClient.readyState === WebSocket.OPEN) {
+				try {
+					wsClient.send(JSON.stringify({
+						tipo: 'GPS_UPDATE',
+						gps: gpsData
+					}));
+				} catch (e) { }
+			}
+
+			// 3. Envia via REST para o servidor na Nuvem e Local (com controle de tráfego a cada 3s)
+			var agora = Date.now();
+			if (!ultimoGpsEnviadoTimestamp || (agora - ultimoGpsEnviadoTimestamp > 3000)) {
+				ultimoGpsEnviadoTimestamp = agora;
+				var urls = [
+					'https://inovatech-tcc.onrender.com/api/gps',
+					'http://localhost:3001/api/gps',
+					'https://inovatech-tcc.onrender.com/api/telemetry',
+					'http://localhost:3001/api/telemetry'
+				];
+				urls.forEach(function (u) {
+					fetch(u, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							dispositivo: 'CELULAR_MOTORISTA',
+							gps: gpsData
+						})
+					}).catch(function () { });
+				});
+			}
+		}
+
+		function iniciarRastreamentoGpsMotorista() {
+			if (!navigator.geolocation) {
+				if (driverGpsLabel) driverGpsLabel.textContent = 'GPS INDISPONÍVEL';
+				return;
+			}
+
+			if (driverGpsLabel) driverGpsLabel.textContent = 'SOLICITANDO GPS...';
+
+			function tratarPosicao(pos) {
+				var crd = pos.coords;
+				var gpsPayload = {
+					lat: Number(crd.latitude.toFixed(6)),
+					lon: Number(crd.longitude.toFixed(6)),
+					precisao: Math.round(crd.accuracy || 5),
+					velocidade: Math.round((crd.speed || 0) * 3.6), // km/h
+					heading: Math.round(crd.heading || 0),
+					origem: 'CELULAR_MOTORISTA',
+					timestamp: new Date().toISOString()
+				};
+
+				if (driverGpsChip && driverGpsLabel) {
+					driverGpsChip.className = 'painel-chip online';
+					driverGpsLabel.innerHTML = '<span class="material-symbols-outlined g-icon" style="font-size:12px;margin-right:2px">location_on</span> GPS (±' + gpsPayload.precisao + 'm)';
+				}
+
+				enviarGpsParaCentral(gpsPayload);
+			}
+
+			function tratarErroGps(err) {
+				console.warn('[GPS] Erro de geolocalização:', err.message);
+				if (driverGpsLabel) {
+					driverGpsLabel.textContent = 'GPS SEM PERMISSÃO';
+					if (driverGpsChip) driverGpsChip.className = 'painel-chip warning';
+				}
+			}
+
+			// Solicita imediatamente a localização de alta precisão
+			navigator.geolocation.getCurrentPosition(tratarPosicao, tratarErroGps, {
+				enableHighAccuracy: true,
+				timeout: 10000,
+				maximumAge: 0
+			});
+
+			// Mantém atualização contínua em movimento
+			navigator.geolocation.watchPosition(tratarPosicao, tratarErroGps, {
+				enableHighAccuracy: true,
+				timeout: 20000,
+				maximumAge: 3000
+			});
+		}
 
 		conectarWebSocketMotorista();
+		iniciarRastreamentoGpsMotorista();
 	</script>
 </body>
 

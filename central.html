@@ -607,14 +607,16 @@
 
 					<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:stretch"
 						class="sat-grid-responsive">
-						<!-- Mapa Tático Interativo Embed OpenStreetMap com Marcador -->
+						<!-- Mapa Tático Interativo Embed OpenStreetMap com Marcador Dinâmico -->
 						<div
 							style="position:relative;border-radius:8px;overflow:hidden;height:230px;border:1px solid rgba(8,222,235,0.3);background:#020b12;">
 							<iframe
+								id="centralMapIframe"
 								src="https://www.openstreetmap.org/export/embed.html?bbox=-46.8854%2C-23.6921%2C-46.8654%2C-23.6721&amp;layer=mapnik&amp;marker=-23.6821%2C-46.8754"
 								style="width:100%;height:100%;border:none;filter:invert(90%) hue-rotate(180deg) contrast(110%) brightness(85%);"
 								loading="lazy"></iframe>
 							<div
+								id="centralMapBadgeAlvo"
 								style="position:absolute;top:10px;left:10px;background:rgba(2,11,18,0.88);border:1px solid var(--cyan);padding:4px 8px;border-radius:4px;font-size:9.5px;font-family:'Space Mono';color:#ffffff;pointer-events:none;">
 								📍 ALVO: BR-116 KM 284 · RÉGIS BITTENCOURT
 							</div>
@@ -630,20 +632,20 @@
 							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono'">COORDENADAS
 								GEOGRÁFICAS
 							</div>
-							<div style="font-size:13px;color:#ffffff;font-family:'Space Mono';font-weight:700">LAT:
+							<div style="font-size:13px;color:#ffffff;font-family:'Space Mono';font-weight:700" id="centralGpsCoordsDisplay">LAT:
 								-23.682138°<br>LON: -46.875412°</div>
 
 							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono';margin-top:4px">
 								RODOVIA
 								/ TRECHO</div>
-							<div style="font-size:12px;color:var(--cyan);font-family:'Space Mono';font-weight:700">
+							<div style="font-size:12px;color:var(--cyan);font-family:'Space Mono';font-weight:700" id="centralGpsTrechoDisplay">
 								BR-116 KM 284 (Sentido Sul)</div>
-							<div style="font-size:10px;color:#8ca4ad">Régis Bittencourt · Graal Buenos Aires</div>
+							<div style="font-size:10px;color:#8ca4ad" id="centralGpsSubTrechoDisplay">Régis Bittencourt · Graal Buenos Aires</div>
 
 							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono';margin-top:4px">
 								STATUS
 								DO SINAL</div>
-							<div style="font-size:11px;color:#ffdd66;font-family:'Space Mono';font-weight:700">
+							<div style="font-size:11px;color:#ffdd66;font-family:'Space Mono';font-weight:700" id="centralGpsPrecisaoDisplay">
 								PRECISÃO: ±1,8 METROS</div>
 						</div>
 					</div>
@@ -849,11 +851,11 @@
 							<div class="axis-item">
 								<div class="axis-label">TEMPO DE REFLEXÃO</div>
 								<div class="axis-val" id="irTempoMs">0 ms</div>
-								<span style="font-size:10px;color:var(--muted)">Limite: 4000 ms</span>
+								<span style="font-size:10px;color:var(--muted)">Limite: 3000 ms</span>
 							</div>
 						</div>
 						<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
-							Feixe infravermelho calibrado com margem de segurança de 4 segundos e recuperação automática
+							Feixe infravermelho calibrado com margem de segurança de 3 segundos (3 bips de aviso) e recuperação automática
 							de 3 segundos com cabeça erguida.
 						</div>
 					</article>
@@ -985,7 +987,7 @@
 		var wsLocalBridgeClient = null;
 		var pollingTimer = null;
 		var audioCtx = null;
-		var LIMIAR_TOLERANCIA_MS = 4000; // Tolerância oficial de 4 segundos
+		var LIMIAR_TOLERANCIA_MS = 3000; // Tolerância oficial de 3 segundos (3 bips de aviso)
 
 		// Alternância entre Seleção de Frota e Cockpit da Cabine
 		var fleetView = document.getElementById('fleetSelectionView');
@@ -1068,6 +1070,11 @@
 			if (e.key === 'inovatech_turno_matheus_garcia') {
 				var novoStatus = (e.newValue === 'ATIVO');
 				atualizarEstadoGarciaUI(novoStatus, novoStatus);
+			} else if (e.key === 'inovatech_gps_real_motorista' && e.newValue) {
+				try {
+					var gpsEv = JSON.parse(e.newValue);
+					if (gpsEv && gpsEv.lat) atualizarLocalizacaoGpsUI(gpsEv);
+				} catch (err) { }
 			} else if (e.key && e.key.indexOf('inovatech_evento_viagem_') === 0 && e.newValue) {
 				try {
 					var ev = JSON.parse(e.newValue);
@@ -1133,6 +1140,57 @@
 		var contadorTotalAlarmes = document.getElementById('contadorTotalAlarmes');
 		var terminalLogBox = document.getElementById('terminalLogBox');
 		var inputBackendUrl = document.getElementById('inputBackendUrl');
+
+		// Elementos do Mapa Satelital e GPS em Tempo Real
+		var centralMapIframe = document.getElementById('centralMapIframe');
+		var centralMapBadgeAlvo = document.getElementById('centralMapBadgeAlvo');
+		var centralGpsCoordsDisplay = document.getElementById('centralGpsCoordsDisplay');
+		var centralGpsTrechoDisplay = document.getElementById('centralGpsTrechoDisplay');
+		var centralGpsSubTrechoDisplay = document.getElementById('centralGpsSubTrechoDisplay');
+		var centralGpsPrecisaoDisplay = document.getElementById('centralGpsPrecisaoDisplay');
+
+		function atualizarLocalizacaoGpsUI(gps) {
+			if (!gps || gps.lat === undefined || gps.lon === undefined) return;
+			var lat = Number(gps.lat);
+			var lon = Number(gps.lon);
+			var prec = gps.precisao || 5;
+
+			if (centralGpsCoordsDisplay) {
+				centralGpsCoordsDisplay.innerHTML = 'LAT: ' + lat.toFixed(6) + '°<br>LON: ' + lon.toFixed(6) + '°';
+			}
+			if (centralGpsPrecisaoDisplay) {
+				centralGpsPrecisaoDisplay.textContent = 'PRECISÃO: ±' + prec + ' METROS (GPS REAL DO CELULAR)';
+				centralGpsPrecisaoDisplay.style.color = '#55ee77';
+			}
+			if (centralGpsTrechoDisplay) {
+				centralGpsTrechoDisplay.textContent = 'POSIÇÃO AO VIVO DO MOTORISTA (TRANSMISSÃO REAL)';
+			}
+			if (centralGpsSubTrechoDisplay) {
+				var velTxt = (gps.velocidade !== undefined && gps.velocidade > 0) ? (' · Vel: ' + gps.velocidade + ' km/h') : ' · Em Pouso / Estacionado';
+				centralGpsSubTrechoDisplay.textContent = 'Sinal capturado do Smartphone ' + velTxt;
+			}
+			if (centralMapBadgeAlvo) {
+				centralMapBadgeAlvo.innerHTML = '<span class="material-symbols-outlined g-icon" style="font-size:12px;margin-right:3px">my_location</span> CONDUTOR AO VIVO (GPS REAL)';
+				centralMapBadgeAlvo.style.borderColor = '#55ee77';
+				centralMapBadgeAlvo.style.color = '#55ee77';
+			}
+			if (centralMapIframe) {
+				var bbox = (lon - 0.005) + '%2C' + (lat - 0.0035) + '%2C' + (lon + 0.005) + '%2C' + (lat + 0.0035);
+				var novoSrc = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + '%2C' + lon;
+				if (centralMapIframe.src.indexOf(lat.toFixed(4)) === -1) {
+					centralMapIframe.src = novoSrc;
+				}
+			}
+		}
+
+		// Checa se já havia GPS salvo no navegador
+		var gpsSalvo = localStorage.getItem('inovatech_gps_real_motorista');
+		if (gpsSalvo) {
+			try {
+				var gObj = JSON.parse(gpsSalvo);
+				if (gObj && gObj.lat) atualizarLocalizacaoGpsUI(gObj);
+			} catch (e) { }
+		}
 
 		// Escalonamento da Central
 		var centralEscalationPanel = document.getElementById('centralEscalationPanel');
@@ -1322,7 +1380,7 @@
 			var segCent = (msLimitado / 1000).toFixed(2);
 			var percExato = Math.min(100, (msLimitado / LIMIAR_TOLERANCIA_MS) * 100);
 
-			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 4.00s';
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 3.00s';
 			if (barraProgressoTempo) barraProgressoTempo.style.width = percExato.toFixed(1) + '%';
 			if (irTempoMs) irTempoMs.textContent = msLimitado + ' ms';
 			if (precisaoTempoMsBadge) precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + msLimitado + ' ms (' + percExato.toFixed(1) + '%)';
@@ -1381,7 +1439,7 @@
 				}
 			}
 
-			renderizarCronometroAltaPrecisao(status === 'ALARME_ATIVADO' ? 4000 : tempoMs, status);
+			renderizarCronometroAltaPrecisao(status === 'ALARME_ATIVADO' ? 3000 : tempoMs, status);
 
 			if (status === 'RECUPERANDO') {
 				var segR = (decorridoRecupMs / 1000).toFixed(1);
@@ -1482,7 +1540,13 @@
 				wsClient.onmessage = function (ev) {
 					try {
 						var msg = JSON.parse(ev.data);
-						if (msg.estado) atualizarPainelComEstado(msg.estado);
+						if (msg.estado) {
+							atualizarPainelComEstado(msg.estado);
+							if (msg.estado.gps) atualizarLocalizacaoGpsUI(msg.estado.gps);
+						}
+						if (msg.tipo === 'GPS_UPDATE' && msg.gps) {
+							atualizarLocalizacaoGpsUI(msg.gps);
+						}
 						if (msg.tipo === 'NOVO_EVENTO' && msg.evento) {
 							adicionarLogLocal(msg.evento.tipo, msg.evento.mensagem, msg.evento.horaFormatada);
 						}
@@ -1504,7 +1568,13 @@
 					wsLocalBridgeClient.onmessage = function (ev) {
 						try {
 							var m = JSON.parse(ev.data);
-							if (m.estado) atualizarPainelComEstado(m.estado);
+							if (m.estado) {
+								atualizarPainelComEstado(m.estado);
+								if (m.estado.gps) atualizarLocalizacaoGpsUI(m.estado.gps);
+							}
+							if (m.tipo === 'GPS_UPDATE' && m.gps) {
+								atualizarLocalizacaoGpsUI(m.gps);
+							}
 							if (m.tipo === 'NOVO_EVENTO' && m.evento) {
 								adicionarLogLocal(m.evento.tipo, m.evento.mensagem, m.evento.horaFormatada);
 							}
@@ -1527,6 +1597,7 @@
 					.then(function (d) {
 						if (d && d.estado) {
 							atualizarPainelComEstado(d.estado);
+							if (d.estado.gps) atualizarLocalizacaoGpsUI(d.estado.gps);
 							if (d.estado.motoristas && d.estado.motoristas.matheus_garcia) {
 								var statusDrv = d.estado.motoristas.matheus_garcia.status;
 								var ativo = (statusDrv === 'EM_VIAGEM');
@@ -1573,7 +1644,7 @@
 			});
 		}
 
-		// Simulação Local com 4,00s
+		// Simulação Local com 3,00s
 		var simTimer = null;
 		var btnSimularCabecaBaixa = document.getElementById('btnSimularCabecaBaixa');
 		if (btnSimularCabecaBaixa) {
@@ -1584,21 +1655,21 @@
 				var ms = 0;
 				simTimer = setInterval(function () {
 					ms += 250;
-					var est = (ms >= 4000) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
+					var est = (ms >= 3000) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
 					var pac = {
 						online: true,
 						estado: est,
 						sensor_ir: 0,
 						tempo_cabeca_baixa_ms: ms,
-						buzzer: ms >= 4000 ? 1 : 0,
-						rele: ms >= 4000 ? 1 : 0,
-						chamada_celular_ativa: ms >= 4000,
-						alerta_travado: ms >= 4000,
-						acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 4000 },
-						contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent) || 0) + (ms === 4000 ? 1 : 0) }
+						buzzer: ms >= 3000 ? 1 : ((ms >= 850 && ms < 1050) || (ms >= 1850 && ms < 2050) || (ms >= 2850) ? 1 : 0),
+						rele: ms >= 3000 ? 1 : 0,
+						chamada_celular_ativa: ms >= 3000,
+						alerta_travado: ms >= 3000,
+						acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 3000 },
+						contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent) || 0) + (ms === 3000 ? 1 : 0) }
 					};
 					atualizarPainelComEstado(pac);
-					if (ms >= 4500) clearInterval(simTimer);
+					if (ms >= 3500) clearInterval(simTimer);
 				}, 250);
 			});
 		}
