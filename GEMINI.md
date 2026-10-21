@@ -85,14 +85,12 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
      3. **Telemetria do Sensor Infravermelho (GPIO 32 / D32)**:
         - Leitura lógica (HIGH = Erguida / LOW = Cabeça Baixa).
         - Cronômetro em milissegundos comparado ao limite do filtro de segurança de 2500ms.
-     4. **Módulo de Atuação Veicular Dual (Módulo Relé HL-52S 2 Canais · GPIO 18 & 19)**:
-        - Substituto oficial do acelerômetro para intervenção física veicular direta.
-        - **Canal 1 (GPIO 18 / IN1)**: Intervenção de Tração / Safe-Stop (corte assistido da linha do acelerador do Scania R-450).
-        - **Canal 2 (GPIO 19 / IN2)**: Sinalização de Emergência (Pisca-Alerta Veicular & Buzina Externa na rodovia).
-        - Comutação eletromecânica optoisolada com feedback sonoro e visual em tempo real.
-     5. **Atuadores de Segurança & Comandos da Central (GPIO 25 / Buzzer & Controles)**:
+     4. **Telemetria do Acelerômetro (I2C GPIO 21/22)**:
+        - Eixos Pitch, Roll e detecção de movimentos bruscos ("pescadas" de sono).
+        - Exibe estado "Aguardando módulo físico / Simulação ativa" quando não plugado.
+     5. **Atuadores de Segurança & Comandos da Central (GPIO 25 e GPIO 18)**:
         - Status do Buzzer Ativo nos óculos (GPIO 25): LIGADO / DESLIGADO.
-        - Status Geral do Sistema Veicular: EM ESPERA / ACIONADO.
+        - Status do Módulo Relé Veicular (GPIO 18): ACIONADO / EM ESPERA.
         - Botões interativos da Central: "Disparar Alerta Remoto / Teste" e "Resetar / Silenciar Alarme".
      6. **Conectividade, Contadores & Log de Eventos**:
         - Status da conexão do ESP32 (Online / Offline, timestamp do último pacote).

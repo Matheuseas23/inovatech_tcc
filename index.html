@@ -9,6 +9,7 @@
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
+		html, body { background-color: #020b12 !important; }
 		:root {
 			--bg: #031522;
 			--page: #020b12;
@@ -99,13 +100,25 @@
 			color: var(--text);
 			font: 700 20px 'Barlow Condensed', sans-serif;
 			letter-spacing: 1.5px;
+			transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s ease;
 		}
 
 		.brand img {
-			width: 42px;
-			height: 42px;
+			height: 38px;
+			width: auto;
+			max-width: 220px;
 			object-fit: contain;
-			filter: brightness(.85) contrast(1.25);
+			display: block;
+			filter: drop-shadow(0 0 12px rgba(8, 222, 235, 0.50));
+		}
+
+		/* REGRA CRÍTICA: NA HOME, A LOGO NO MARGIN-TOP (HEADER) FICA OCULTA (APARECE APENAS NO CENTRO DO HERO) */
+		body[data-active-view="home"] header .brand,
+		.shell:has(#home.active) header .brand {
+			opacity: 0 !important;
+			pointer-events: none !important;
+			visibility: hidden !important;
+			transform: scale(0.92);
 		}
 
 		.brand small {
@@ -419,21 +432,46 @@
 		}
 
 		.hero-content:before {
-			content: '';
+			content: none !important;
+			display: none !important;
+		}
+
+		.hero-logo-box {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			margin: 0 auto 24px;
+			width: 100%;
+		}
+
+		.hero-brand-logo {
+			width: min(540px, 88vw);
+			height: auto;
+			max-height: 140px;
+			object-fit: contain;
 			display: block;
-			width: min(420px, 80vw);
-			height: 88px;
-			margin: 0 auto 18px;
-			background: url('image.png') center/contain no-repeat;
-			transition: background-image 0.25s ease;
+			margin: 0 auto;
+			filter: drop-shadow(0 0 35px rgba(8, 222, 235, 0.70)) drop-shadow(0 0 10px rgba(255, 255, 255, 0.40));
+			animation: heroLogoGlow 3.5s ease-in-out infinite alternate;
+		}
+
+		@keyframes heroLogoGlow {
+			0% {
+				filter: drop-shadow(0 0 25px rgba(8, 222, 235, 0.50)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+				transform: scale(1);
+			}
+			100% {
+				filter: drop-shadow(0 0 50px rgba(8, 222, 235, 0.90)) drop-shadow(0 0 20px rgba(255, 255, 255, 0.65));
+				transform: scale(1.02);
+			}
 		}
 
 		body.light-mode .hero-content:before {
-			background-image: url('image.png');
+			display: none !important;
 		}
 
 		body.light-mode .brand img {
-			content: url('image.png');
+			content: url('logo_inovatech.png');
 		}
 
 		body.light-mode .brand {
@@ -3314,9 +3352,19 @@
 			</div>
 		</div>
 	</div>
-	<div class="shell"><header><div class="brand"><img id="brandLogo" src="image.png" alt="INOVA TECH"><span class="brand-title">INOVATECH</span></div><nav aria-label="Navegação principal"><button class="active" data-view="home">HOME</button><button data-view="manual">MANUAL DE OPERAÇÕES</button><button data-view="ecosystem">ECOSSISTEMA DE SEGURANÇA</button><button data-view="about">QUEM SOMOS</button><button data-view="references">REFERÊNCIAS</button><button data-view="game">O JOGO</button></nav><div class="tools"><button class="theme-toggle" id="themeToggle" aria-label="Alternar tema"><img id="themeIcon" src="moon.svg" alt="Modo escuro"></button></div></header>
+	
+	<!-- VÍDEO E IMAGEM DE FUNDO GLOBAL DO SITE INSTITUCIONAL -->
+	<div class="site-bg-video-wrapper">
+		<div class="site-bg-image" id="siteBgImage" style="background-image: url('oculospc.jpg');"></div>
+		<video class="site-bg-video" id="siteVideoBg" autoplay muted playsinline poster="oculospc.jpg">
+			<source src="oculos.mp4" type="video/mp4">
+			<source src="oculos2.mp4" type="video/mp4">
+		</video>
+		<div class="site-bg-video-overlay"></div>
+	</div>
+	<div class="shell"><header><div class="brand"><img id="brandLogo" src="logo_inovatech.png" alt="INOVA TECH"></div><nav aria-label="Navegação principal"><button class="active" data-view="home">HOME</button><button data-view="manual">MANUAL DE OPERAÇÕES</button><button data-view="ecosystem">ECOSSISTEMA DE SEGURANÇA</button><button data-view="about">QUEM SOMOS</button><button data-view="references">REFERÊNCIAS</button><button data-view="game">O JOGO</button></nav><div class="tools"><button class="theme-toggle" id="themeToggle" aria-label="Alternar tema"><img id="themeIcon" src="moon.svg" alt="Modo escuro"></button></div></header>
 		<main>
-			<section id="home" class="view active"><div class="home-content-wrapper"><div class="hero"><div class="hero-content"><div class="eyebrow">Monitoramento inteligente em movimento</div><h1>Monitoramento biométrico de<br><span style="color:var(--cyan)">alta performance</span></h1><p>Segurança em tempo real para operações industriais. Antecipe riscos, otimize eficiência e garanta um ambiente operacional protegido através de telemetria avançada e resposta imediata.</p><div class="actions"><button class="btn" data-view="manual">Ver manual completo</button><button class="btn outline" data-view="ecosystem">Conheça o ecossistema</button><button class="btn outline" data-view="about">Quem somos</button></div></div></div><div class="grid" style="margin-top:34px"><article class="card"><div class="card-label">◉ PÚBLICO-ALVO</div><h3>Para quem dirige e opera</h3><p>Motoristas profissionais, operadores industriais e empresas de transporte que precisam reduzir riscos durante a operação.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">ϟ DIFERENCIAL</div><h3>Biometria em tempo real</h3><p>O Smart Driver integra wearable, sensores e veículo para transformar sinais do condutor em alertas imediatos.</p></article><article class="card"><div class="card-label">⌁ OBJETIVO</div><h3>Prevenir antes do risco</h3><p>Identificar fadiga, perda de atenção e alterações físicas para apoiar decisões rápidas e tornar a operação mais segura.</p></article></div></div></section>
+			<section id="home" class="view active"><div class="home-content-wrapper"><div class="hero"><div class="hero-content"><div class="hero-logo-box"><img class="hero-brand-logo" src="logo_inovatech.png" alt="INOVA TECH - Smart Driver"></div><div class="eyebrow">Monitoramento inteligente em movimento</div><h1>Monitoramento biométrico de<br><span style="color:var(--cyan)">alta performance</span></h1><p>Segurança em tempo real para operações industriais. Antecipe riscos, otimize eficiência e garanta um ambiente operacional protegido através de telemetria avançada e resposta imediata.</p><div class="actions"><button class="btn" data-view="manual">Ver manual completo</button><button class="btn outline" data-view="ecosystem">Conheça o ecossistema</button><button class="btn outline" data-view="about">Quem somos</button></div></div></div><div class="grid" style="margin-top:34px"><article class="card"><div class="card-label">◉ PÚBLICO-ALVO</div><h3>Para quem dirige e opera</h3><p>Motoristas profissionais, operadores industriais e empresas de transporte que precisam reduzir riscos durante a operação.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">ϟ DIFERENCIAL</div><h3>Biometria em tempo real</h3><p>O Smart Driver integra wearable, sensores e veículo para transformar sinais do condutor em alertas imediatos.</p></article><article class="card"><div class="card-label">⌁ OBJETIVO</div><h3>Prevenir antes do risco</h3><p>Identificar fadiga, perda de atenção e alterações físicas para apoiar decisões rápidas e tornar a operação mais segura.</p></article></div></div></section>
 			<section id="manual" class="view"><div class="eyebrow">INOVA TECH SMART DRIVER / DOCUMENTAÇÃO</div><h2>Manual de operações</h2><p style="color:var(--muted);font-size:11px;max-width:570px;line-height:1.8">Guia técnico passo a passo para instalação e operação do sistema InovaTech Smart Driver.</p><div class="manual-top"><div class="manual-video"><div style="position:absolute;bottom:16px;left:18px;color:var(--cyan);font-size:10px">▶ EXPLICAÇÃO VISUAL · 04:28</div></div><article class="card spec"><strong>◫ INOVA TECH-500</strong><h3>Unidade central</h3><p>Processamento biométrico de alta precisão, conectado ao wearable e aos sensores do veículo.</p><p><span style="color:var(--muted)">STATUS DO SISTEMA</span><br><span style="color:var(--cyan)">● OPERACIONAL</span></p></article></div><div class="steps"><article class="card step"><b class="step-number">01</b><div><h3>Conexão do wearable</h3><p>Insira o dispositivo, verifique o LED de conexão e aguarde a sincronização.</p></div></article><article class="card step"><b class="step-number">02</b><div><h3>Configuração da unidade central</h3><p>Conecte a unidade à rede e confirme o pareamento com os sensores.</p></div></article><article class="card step"><b class="step-number">03</b><div><h3>Calibração</h3><p>Execute o teste de calibração para iniciar o monitoramento preciso.</p></div></article><article class="card step"><b class="step-number">04</b><div><h3>Monitoramento HUD</h3><p>Confira os indicadores vitais e o mapa de risco no painel do veículo.</p></div></article></div></section>
 						<section id="ecosystem" class="view">
 				<div class="eyebrow">INOVA TECH / COMPONENTES DO PROJETO</div>
@@ -3755,7 +3803,7 @@ themeToggle.addEventListener('click', function() {
 	document.body.classList.toggle('light-mode');
 	themeIcon.src = isDarkMode ? 'moon.svg' : 'sol.svg';
 	if (brandLogo) {
-		brandLogo.src = 'image.png';
+		brandLogo.src = 'logo_inovatech.png';
 	}
 	themeToggle.title = isDarkMode ? 'Modo escuro' : 'Modo claro';
 	localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
@@ -3766,7 +3814,7 @@ if (localStorage.getItem('theme') === 'light') {
 	document.body.classList.add('light-mode');
 	themeIcon.src = 'sol.svg';
 	if (brandLogo) {
-		brandLogo.src = 'image.png';
+		brandLogo.src = 'logo_inovatech.png';
 	}
 	themeToggle.title = 'Modo claro';
 }

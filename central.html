@@ -858,27 +858,34 @@
 						</div>
 					</article>
 
-					<!-- Card 4: Sistema de Atuação Veicular Dual (Módulo Relé HL-52S 2 Canais) -->
+					<!-- Card 4: Acelerômetro I2C (GPIO 21 SDA / GPIO 22 SCL) -->
 					<article class="card">
-						<div class="card-label">⚡ ATUAÇÃO VEICULAR DUAL · MÓDULO RELÉ (HL-52S)</div>
+						<div class="card-label">ϟ ACELERÔMETRO I2C · GPIO 21 / 22</div>
 						<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
-							<h3>Intervenção Eletromecânica no Veículo</h3>
-							<span class="painel-chip online" style="font-size:9px;padding:3px 8px">FÍSICO (GPIO 18 / 19)</span>
+							<h3>Inércia & Inclinação da Cabeça</h3>
+							<span class="painel-chip" style="font-size:9px;padding:3px 8px">Simulação / Em
+								trânsito</span>
 						</div>
-						<div class="axes-grid" style="grid-template-columns:1fr 1fr">
+						<div class="axes-grid">
 							<div class="axis-item">
-								<div class="axis-label">CANAL 1 (GPIO 18 / IN1)</div>
-								<div class="axis-val" id="rele1StatusBadge" style="color:#55ee77">EM ESPERA</div>
-								<span style="font-size:9px;color:var(--muted)">Safe-Stop / Corte de Tração</span>
+								<div class="axis-label">EIXO X (PITCH)</div>
+								<div class="axis-val" id="accPitchVal">0.0°</div>
+								<span style="font-size:9px;color:var(--muted)">Inclinação Frontal</span>
 							</div>
 							<div class="axis-item">
-								<div class="axis-label">CANAL 2 (GPIO 19 / IN2)</div>
-								<div class="axis-val" id="rele2StatusBadge" style="color:#55ee77">DESLIGADO</div>
-								<span style="font-size:9px;color:var(--muted)">Pisca-Alerta & Alerta Externo</span>
+								<div class="axis-label">EIXO Y (ROLL)</div>
+								<div class="axis-val" id="accRollVal">0.0°</div>
+								<span style="font-size:9px;color:var(--muted)">Inclinação Lateral</span>
+							</div>
+							<div class="axis-item">
+								<div class="axis-label">PESCADA DE SONO</div>
+								<div class="axis-val" id="accPescadaVal" style="color:#55ee77">NÃO</div>
+								<span style="font-size:9px;color:var(--muted)">Solavanco G</span>
 							</div>
 						</div>
 						<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
-							Módulo relé optoisolado duplo comandando desaceleração assistida da tração e sinalização luminosa de emergência na rodovia.
+							Fusão sensorial com acelerômetro angular para detectar movimentos rápidos de sonolência e
+							fadiga muscular.
 						</div>
 					</article>
 
@@ -1116,8 +1123,6 @@
 		var accPitchVal = document.getElementById('accPitchVal');
 		var accRollVal = document.getElementById('accRollVal');
 		var accPescadaVal = document.getElementById('accPescadaVal');
-		var rele1StatusBadge = document.getElementById('rele1StatusBadge');
-		var rele2StatusBadge = document.getElementById('rele2StatusBadge');
 		var buzzerStatusBadge = document.getElementById('buzzerStatusBadge');
 		var releStatusBadge = document.getElementById('releStatusBadge');
 		var esp32StatusLabel = document.getElementById('esp32StatusLabel');
@@ -1442,27 +1447,14 @@
 				}
 			}
 
-			// Atuadores Duplos (Módulo Relé HL-52S 2 Canais)
-			var r1 = (estado.rele_1 !== undefined) ? Number(estado.rele_1) : (Number(estado.rele) || 0);
-			var r2 = (estado.rele_2 !== undefined) ? Number(estado.rele_2) : (Number(estado.rele) || 0);
-
-			if (rele1StatusBadge) {
-				rele1StatusBadge.textContent = (r1 === 1) ? 'ACIONADO (CORTE)' : 'EM ESPERA';
-				rele1StatusBadge.style.color = (r1 === 1) ? '#ff2a55' : '#55ee77';
-			}
-			if (rele2StatusBadge) {
-				rele2StatusBadge.textContent = (r2 === 1) ? 'PISCANDO / ATIVO' : 'DESLIGADO';
-				rele2StatusBadge.style.color = (r2 === 1) ? '#ff2a55' : '#55ee77';
-			}
-
 			// Atuadores
 			if (buzzerStatusBadge) {
 				buzzerStatusBadge.textContent = (estado.buzzer === 1) ? 'LIGADO (3.3V)' : 'DESLIGADO';
 				buzzerStatusBadge.style.color = (estado.buzzer === 1) ? '#ff2a55' : '#55ee77';
 			}
 			if (releStatusBadge) {
-				releStatusBadge.textContent = (r1 === 1 || r2 === 1 || estado.rele === 1) ? 'ACIONADO' : 'EM ESPERA';
-				releStatusBadge.style.color = (r1 === 1 || r2 === 1 || estado.rele === 1) ? '#ff2a55' : '#55ee77';
+				releStatusBadge.textContent = (estado.rele === 1) ? 'ACIONADO' : 'EM ESPERA';
+				releStatusBadge.style.color = (estado.rele === 1) ? '#ff2a55' : '#55ee77';
 			}
 
 			if (contadorTotalAlarmes && estado.contadores) {
@@ -1600,8 +1592,6 @@
 						tempo_cabeca_baixa_ms: ms,
 						buzzer: ms >= 4000 ? 1 : 0,
 						rele: ms >= 4000 ? 1 : 0,
-						rele_1: ms >= 4000 ? 1 : 0,
-						rele_2: ms >= 4000 ? 1 : 0,
 						chamada_celular_ativa: ms >= 4000,
 						alerta_travado: ms >= 4000,
 						acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 4000 },
@@ -1628,8 +1618,6 @@
 					tempo_cabeca_baixa_ms: 0,
 					buzzer: 0,
 					rele: 0,
-					rele_1: 0,
-					rele_2: 0,
 					chamada_celular_ativa: false,
 					alerta_travado: false,
 					_forceReset: true,
