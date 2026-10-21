@@ -938,6 +938,36 @@ function iniciarPonteSerialUSB() {
 }
 
 // Inicia escuta na porta e host configurados (0.0.0.0 é obrigatório para Render e Docker)
+
+// ------------------------------------------------------------------------------
+// RECEPTOR UDP BROADCAST LOCAL (ZERO CONFIGURAÇÃO DE IP / LATÊNCIA < 1MS)
+// ------------------------------------------------------------------------------
+const dgram = require('dgram');
+const udpServer = dgram.createSocket('udp4');
+const UDP_PORT = 3002;
+
+udpServer.on('message', (msg, rinfo) => {
+  try {
+    const raw = msg.toString('utf8').trim();
+    if (raw.startsWith('{')) {
+      const dados = JSON.parse(raw);
+      processarTelemetria(dados);
+    }
+  } catch (e) {}
+});
+
+udpServer.on('error', (err) => {
+  console.log('[UDP ERROR]:', err.message);
+});
+
+try {
+  udpServer.bind(UDP_PORT, '0.0.0.0', () => {
+    console.log(`  ✔ Receptor UDP Broadcast ativo na porta: ${UDP_PORT} (Zero Latência)`);
+  });
+} catch (e) {
+  console.log('[UDP BIND ERROR]:', e.message);
+}
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`
   ===================================================================

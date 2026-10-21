@@ -2,9 +2,12 @@
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <WiFiClientSecure.h>
+#include <WiFiUdp.h>
 #include <HTTPClient.h>
 
 WiFiMulti wifiMulti;
+WiFiUDP udpClient;
+const uint16_t UDP_PORT_DESTINO = 3002;
 
 // ==============================================================================
 // INOVA TECH — SMART DRIVER (FIRMWARE ESP32 DUAL-CORE DE ALTA PRECISÃO)
@@ -21,9 +24,13 @@ WiFiMulti wifiMulti;
 // Rede própria da ESP32 (Access Point sem senha sempre ativo):
 const char* AP_SSID = "ESP_900EC9";
 
-// Rede Wi-Fi Cadastrada (Roteador iPhone):
-const char* WIFI_1_SSID = "iPhone de Matheus";
-const char* WIFI_1_PASS = "12345678910";
+// 1. Rede Wi-Fi Principal (Roteador Redmi Note 15):
+const char* WIFI_1_SSID = "REDMI Note 15 5G";
+const char* WIFI_1_PASS = "Garcia2026";
+
+// 2. Rede Wi-Fi Secundária (iPhone de contingência):
+const char* WIFI_2_SSID = "iPhone de Matheus";
+const char* WIFI_2_PASS = "12345678910";
 
 // Endereço do Servidor de Telemetria:
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
@@ -312,6 +319,14 @@ void taskTelemetria(void *pvParameters) {
     payload += "}";
 
     // 1. Emite telemetria via Serial USB (COM5) para ponte direta com o PC
+    
+    // 0. Transmissão UDP Broadcast Local Instantânea (Não precisa saber IP, chega no notebook na hora!)
+    if (WiFi.status() == WL_CONNECTED) {
+      udpClient.beginPacket("255.255.255.255", UDP_PORT_DESTINO);
+      udpClient.print(payload);
+      udpClient.endPacket();
+    }
+
     Serial.println("TELEMETRY:" + payload);
 
     // 2. Se o PC estiver conectado na rede Wi-Fi ESP_900EC9, envia via HTTP para 192.168.4.2:3001
