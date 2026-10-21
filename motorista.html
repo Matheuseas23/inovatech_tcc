@@ -458,19 +458,19 @@
 			<p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0" id="driverFeedbackMsg">
 				Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.
 			</p>
-		</section>
 
-		<!-- PAINEL DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA DO MOTORISTA -->
-		<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:12px">
-			<button class="btn" id="btnSimularAlertaMotorista" type="button" style="padding:13px;background:linear-gradient(90deg, #ff2a55 0%, #b30026 100%);color:#fff;border:none;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 0 16px rgba(255,42,85,0.4)">
-				<span class="material-symbols-outlined g-icon">warning</span>
-				<span>SIMULAR ALERTA (1.5s)</span>
-			</button>
-			<button class="btn outline" id="btnNormalizarMotorista" type="button" style="padding:13px;display:flex;align-items:center;justify-content:center;gap:6px">
-				<span class="material-symbols-outlined g-icon">check_circle</span>
-				<span>NORMALIZAR</span>
-			</button>
-		</div>
+			<!-- BOTÕES DE CONTINGÊNCIA / SIMULAÇÃO DE ALERTA DO MOTORISTA (EMBAIXO DA SITUAÇÃO ATUAL) -->
+			<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(8,222,235,0.25)">
+				<button class="btn" id="btnSimularAlertaMotorista" type="button" style="padding:13px 14px;background:linear-gradient(90deg, #ff2a55 0%, #b30026 100%);color:#fff;border:none;border-radius:6px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 0 16px rgba(255,42,85,0.4);font-family:'Space Mono',monospace;font-size:11px;cursor:pointer">
+					<span class="material-symbols-outlined g-icon">warning</span>
+					<span>SIMULAR ALERTA (1.5s)</span>
+				</button>
+				<button class="btn outline" id="btnNormalizarMotorista" type="button" style="padding:13px 14px;border:1px solid #55ee77;color:#55ee77;background:rgba(85,238,119,0.08);border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer">
+					<span class="material-symbols-outlined g-icon">check_circle</span>
+					<span>NORMALIZAR</span>
+				</button>
+			</div>
+		</section>
 
 
 		<!-- MODO VIAGEM NOTURNA / TELA APAGADA (APENAS ÍCONE DE CELULAR) -->
@@ -960,6 +960,110 @@ function atualizarEstadoNoApp(estado) {
 				abrirChamadaTelaCheia();
 			}
 		}
+
+		// ------------------------------------------------------------------------------
+		// SIMULAÇÃO LOCAL DE ALTA PRECISÃO (1.50s DE FADIGA) NO APP DO MOTORISTA
+		// ------------------------------------------------------------------------------
+		var simMotoristaTimer = null;
+
+		function iniciarSimulacaoMotorista() {
+			if (!turnoAtivo) sincronizarEstadoTurnoUI(true, true);
+			if (simMotoristaTimer) clearInterval(simMotoristaTimer);
+			var ms = 0;
+			var inicioSim = performance.now();
+			simMotoristaTimer = setInterval(function () {
+				ms = Math.min(1500, Math.round(performance.now() - inicioSim));
+				var est = (ms >= 1500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
+				var pac = {
+					online: true,
+					estado: est,
+					sensor_ir: 0,
+					tempo_cabeca_baixa_ms: ms,
+					buzzer: ms >= 1500 ? 1 : ((ms >= 600 && ms < 950) ? 1 : 0),
+					rele: ms >= 1500 ? 1 : 0,
+					chamada_celular_ativa: ms >= 1500,
+					alerta_travado: ms >= 1500,
+					origem: 'SIMULACAO_MOTORISTA'
+				};
+				atualizarEstadoNoApp(pac);
+
+				// Sincroniza via BroadcastChannel e localStorage para a Central Tech
+				try {
+					if (liveBroadcastMotorista) {
+						liveBroadcastMotorista.postMessage({ tipo: 'TELEMETRIA', estado: pac });
+					}
+					localStorage.setItem('inovatech_telemetry_bridge', JSON.stringify(pac));
+				} catch (e) { }
+
+				if (ms === 1500 || ms === 600) {
+					fetch('http://localhost:3001/api/telemetry', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(pac)
+					}).catch(function () { });
+				}
+
+				if (ms >= 1500) {
+					clearInterval(simMotoristaTimer);
+					simMotoristaTimer = null;
+				}
+			}, 50);
+		}
+
+		function pararSimulacaoMotorista() {
+			if (simMotoristaTimer) {
+				clearInterval(simMotoristaTimer);
+				simMotoristaTimer = null;
+			}
+			fecharChamadaTelaCheia();
+			var pacNorm = {
+				online: true,
+				estado: 'NORMAL',
+				sensor_ir: 1,
+				tempo_cabeca_baixa_ms: 0,
+				buzzer: 0,
+				rele: 0,
+				chamada_celular_ativa: false,
+				alerta_travado: false,
+				_forceReset: true,
+				origem: 'SIMULACAO_MOTORISTA'
+			};
+			atualizarEstadoNoApp(pacNorm);
+
+			try {
+				if (liveBroadcastMotorista) {
+					liveBroadcastMotorista.postMessage({ tipo: 'TELEMETRIA', estado: pacNorm });
+				}
+				localStorage.setItem('inovatech_telemetry_bridge', JSON.stringify(pacNorm));
+			} catch (e) { }
+
+			fetch('http://localhost:3001/api/telemetry', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(pacNorm)
+			}).catch(function () { });
+			enviarSilenciarAoBackend();
+		}
+
+		var btnSimularAlertaMotorista = document.getElementById('btnSimularAlertaMotorista');
+		if (btnSimularAlertaMotorista) {
+			btnSimularAlertaMotorista.addEventListener('click', iniciarSimulacaoMotorista);
+		}
+
+		var btnNormalizarMotorista = document.getElementById('btnNormalizarMotorista');
+		if (btnNormalizarMotorista) {
+			btnNormalizarMotorista.addEventListener('click', pararSimulacaoMotorista);
+		}
+
+		// Sincronização entre abas/janelas via localStorage
+		window.addEventListener('storage', function (e) {
+			if (e.key === 'inovatech_telemetry_bridge' && e.newValue) {
+				try {
+					var p = JSON.parse(e.newValue);
+					if (p) atualizarEstadoNoApp(p);
+				} catch (err) { }
+			}
+		});
 
 		// Conexão WebSocket com fallback para Polling REST
 		var pollingFallbackTimer = null;

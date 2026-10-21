@@ -737,7 +737,7 @@
 							<div style="text-align:right">
 								<span
 									style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CRONÔMETRO
-									DE TOLERÂNCIA (4,00s)</span>
+									DE TOLERÂNCIA (1.50s)</span>
 								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 1.50s</div>
 							</div>
 						</div>
@@ -747,7 +747,7 @@
 							<div
 								style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap;gap:4px">
 								<span>ESTÁVEL (0.00s)</span>
-								<span>CONTAGEM ATIVA (0.01s - 3.99s)</span>
+								<span>CONTAGEM ATIVA (0.01s - 1.49s)</span>
 								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (1.50s)</span>
 							</div>
 							<div class="progresso-bar-bg">
@@ -774,22 +774,22 @@
 						</div>
 
 						<p id="descricaoEstadoCondutor" style="margin-top:12px;font-size:11px;line-height:1.6">
-							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de 4,00s para
+							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de 1.50s para
 							evitar alarmes falsos ao checar painel e espelhos.
 						</p>
-					</article>
 
-					<!-- PAINEL DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA DA CENTRAL -->
-					<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:10px;margin-top:-6px;margin-bottom:6px">
-						<button class="btn" id="btnSimularAlertaCentral" type="button" style="padding:14px;background:linear-gradient(90deg, #ff2a55 0%, #b30026 100%);color:#fff;border:none;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 16px rgba(255,42,85,0.4)">
-							<span class="material-symbols-outlined g-icon">warning</span>
-							<span>SIMULAR ALERTA DE FADIGA (1.5s)</span>
-						</button>
-						<button class="btn outline" id="btnNormalizarCentral" type="button" style="padding:14px;display:flex;align-items:center;justify-content:center;gap:8px">
-							<span class="material-symbols-outlined g-icon">check_circle</span>
-							<span>NORMALIZAR POSTURA</span>
-						</button>
-					</div>
+						<!-- BOTÕES DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA (EMBAIXO DA SITUAÇÃO ATUAL) -->
+						<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(8,222,235,0.25)">
+							<button class="btn" id="btnSimularAlertaCentral" type="button" style="padding:14px 16px;background:linear-gradient(90deg, #ff2a55 0%, #b30026 100%);color:#fff;border:none;border-radius:6px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 18px rgba(255,42,85,0.5);font-size:12px;cursor:pointer;font-family:'Space Mono',monospace">
+								<span class="material-symbols-outlined g-icon">warning</span>
+								<span>SIMULAR ALERTA DE FADIGA (1.5s)</span>
+							</button>
+							<button class="btn outline" id="btnNormalizarCentral" type="button" style="padding:14px 16px;border:1px solid #55ee77;color:#55ee77;background:rgba(85,238,119,0.08);border-radius:6px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;cursor:pointer;font-family:'Space Mono',monospace">
+								<span class="material-symbols-outlined g-icon">check_circle</span>
+								<span>NORMALIZAR POSTURA</span>
+							</button>
+						</div>
+					</article>
 
 
 					<!-- Card 2: Rastreamento Satelital e Localização GPS em Tempo Real -->
@@ -1058,11 +1058,11 @@
 					garciaTelemetriaStatus.textContent = 'EM ESPERA (CABINE INATIVA)';
 				}
 				if (btnAcessarCabineGarcia) {
-					btnAcessarCabineGarcia.className = 'btn-access-disabled';
-					btnAcessarCabineGarcia.setAttribute('disabled', 'true');
+					btnAcessarCabineGarcia.className = 'btn-access-cabine';
+					btnAcessarCabineGarcia.removeAttribute('disabled');
 				}
-				if (garciaBtnIcon) garciaBtnIcon.textContent = 'lock';
-				if (garciaBtnText) garciaBtnText.textContent = 'Aguardando Iniciar Viagem no App';
+				if (garciaBtnIcon) garciaBtnIcon.textContent = 'visibility';
+				if (garciaBtnText) garciaBtnText.textContent = 'Acessar Cockpit de Telemetria';
 			}
 		}
 
@@ -1718,60 +1718,117 @@ function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
 			});
 		}
 
-		// Simulação Local com 1.50s
+		// Simulação Local de Alta Precisão (1.50s de Fadiga) com Sincronização Total
 		var simTimer = null;
+
+		function iniciarSimulacaoAlertaCentral() {
+			if (simTimer) clearInterval(simTimer);
+			cooldownAntiRepiqueLocalUntil = 0;
+			inicioRecuperacaoLocalMs = 0;
+			var ms = 0;
+			var inicioSim = performance.now();
+			simTimer = setInterval(function () {
+				ms = Math.min(1500, Math.round(performance.now() - inicioSim));
+				var est = (ms >= 1500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
+				var pac = {
+					online: true,
+					estado: est,
+					sensor_ir: 0,
+					tempo_cabeca_baixa_ms: ms,
+					buzzer: ms >= 1500 ? 1 : ((ms >= 600 && ms < 950) ? 1 : 0),
+					rele: ms >= 1500 ? 1 : 0,
+					chamada_celular_ativa: ms >= 1500,
+					alerta_travado: ms >= 1500,
+					acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 1500 },
+					contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes ? contadorTotalAlarmes.textContent : '0') || 0) + (ms === 1500 ? 1 : 0) }
+				};
+				atualizarPainelComEstado(pac);
+
+				// Transmite via REST se atingiu o limiar
+				if (ms === 1500 || ms === 600) {
+					fetch('http://localhost:3001/api/telemetry', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(pac)
+					}).catch(function () { });
+				}
+
+				// Sincroniza via BroadcastChannel e localStorage para o App do Motorista
+				try {
+					if (window.BroadcastChannel) {
+						var bc = new BroadcastChannel('inovatech_telemetry_live');
+						bc.postMessage({ tipo: 'TELEMETRIA', estado: pac });
+					}
+					localStorage.setItem('inovatech_telemetry_bridge', JSON.stringify(pac));
+				} catch (e) { }
+
+				if (ms >= 1500) {
+					clearInterval(simTimer);
+					simTimer = null;
+				}
+			}, 50);
+		}
+
+		function pararSimulacaoNormalizarCentral() {
+			if (simTimer) {
+				clearInterval(simTimer);
+				simTimer = null;
+			}
+			alertaTravadoLocal = false;
+			inicioRecuperacaoLocalMs = 0;
+			cooldownAntiRepiqueLocalUntil = Date.now() + 3500;
+			encerrarMonitorEscalonamento();
+			var pacNorm = {
+				online: true,
+				estado: 'NORMAL',
+				sensor_ir: 1,
+				tempo_cabeca_baixa_ms: 0,
+				buzzer: 0,
+				rele: 0,
+				chamada_celular_ativa: false,
+				alerta_travado: false,
+				_forceReset: true,
+				acelerometro: { pitch: 2, roll: 0, pescada_detectada: false },
+				contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes ? contadorTotalAlarmes.textContent : '0') || 0 }
+			};
+			atualizarPainelComEstado(pacNorm);
+			
+			// Notifica backend e comandos
+			fetch('http://localhost:3001/api/telemetry', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(pacNorm)
+			}).catch(function () { });
+			enviarComandoParaBackend('SILENCIAR_ALARME');
+
+			// Sincroniza via BroadcastChannel e localStorage
+			try {
+				if (window.BroadcastChannel) {
+					var bc = new BroadcastChannel('inovatech_telemetry_live');
+					bc.postMessage({ tipo: 'TELEMETRIA', estado: pacNorm });
+				}
+				localStorage.setItem('inovatech_telemetry_bridge', JSON.stringify(pacNorm));
+			} catch (e) { }
+		}
+
+		var btnSimularAlertaCentral = document.getElementById('btnSimularAlertaCentral');
+		if (btnSimularAlertaCentral) {
+			btnSimularAlertaCentral.addEventListener('click', iniciarSimulacaoAlertaCentral);
+		}
+
+		var btnNormalizarCentral = document.getElementById('btnNormalizarCentral');
+		if (btnNormalizarCentral) {
+			btnNormalizarCentral.addEventListener('click', pararSimulacaoNormalizarCentral);
+		}
+
 		var btnSimularCabecaBaixa = document.getElementById('btnSimularCabecaBaixa');
 		if (btnSimularCabecaBaixa) {
-			btnSimularCabecaBaixa.addEventListener('click', function () {
-				if (simTimer) clearInterval(simTimer);
-				cooldownAntiRepiqueLocalUntil = 0;
-				inicioRecuperacaoLocalMs = 0;
-				var ms = 0;
-				simTimer = setInterval(function () {
-					ms += 250;
-					var est = (ms >= 3500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
-					var pac = {
-						online: true,
-						estado: est,
-						sensor_ir: 0,
-						tempo_cabeca_baixa_ms: ms,
-						buzzer: ms >= 3500 ? 1 : ((ms >= 850 && ms < 1050) || (ms >= 1850 && ms < 2050) || (ms >= 2850) ? 1 : 0),
-						rele: ms >= 3500 ? 1 : 0,
-						chamada_celular_ativa: ms >= 3500,
-						alerta_travado: ms >= 3500,
-						acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 3500 },
-						contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent) || 0) + (ms === 3500 ? 1 : 0) }
-					};
-					atualizarPainelComEstado(pac);
-					if (ms >= 3500) clearInterval(simTimer);
-				}, 250);
-			});
+			btnSimularCabecaBaixa.addEventListener('click', iniciarSimulacaoAlertaCentral);
 		}
 
 		var btnSimularCabecaErguida = document.getElementById('btnSimularCabecaErguida');
 		if (btnSimularCabecaErguida) {
-			btnSimularCabecaErguida.addEventListener('click', function () {
-				if (simTimer) clearInterval(simTimer);
-				alertaTravadoLocal = false;
-				inicioRecuperacaoLocalMs = 0;
-				cooldownAntiRepiqueLocalUntil = Date.now() + 3500;
-				encerrarMonitorEscalonamento();
-				var pacNorm = {
-					online: true,
-					estado: 'NORMAL',
-					sensor_ir: 1,
-					tempo_cabeca_baixa_ms: 0,
-					buzzer: 0,
-					rele: 0,
-					chamada_celular_ativa: false,
-					alerta_travado: false,
-					_forceReset: true,
-					acelerometro: { pitch: 2, roll: 0, pescada_detectada: false },
-					contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent) || 0 }
-				};
-				atualizarPainelComEstado(pacNorm);
-				enviarComandoParaBackend('SILENCIAR_ALARME');
-			});
+			btnSimularCabecaErguida.addEventListener('click', pararSimulacaoNormalizarCentral);
 		}
 
 		// Câmera e Canvas de Simulação
