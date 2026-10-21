@@ -227,4 +227,30 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
   - **Recuperação Automática de Postura**: Se o motorista mantiver a cabeça erguida por **3,00 segundos contínuos**, todos os alarmes (sonoros, visuais, Coffee Call e vibração) cessam instantaneamente de forma automática, dispensando a necessidade de apertar a tela durante a condução.
 - **Diretriz de Design Rigorosa (Ícones vs Emojis)**: Proibido o uso de emojis gráficos Unicode na interface. Todos os símbolos operacionais utilizam **Google Fonts Material Symbols** (`lock`, `visibility`, `dashboard`, `smartphone`, `local_cafe`, `power_settings_new`, `pan_tool`, `location_on`, `medical_services`, `support_agent`).
 
+---
+
+## 10. Conectividade Multi-Wi-Fi, Sincronização Celular/PC e Calibração Final (Homologação Pré-Banca)
+- **Data e Horário**: Quarta-feira, 21 de Outubro de 2026.
+- **Firmware Multi-Wi-Fi Inteligente (`WiFiMulti`)**:
+  - `Smart Driver/src/main.cpp` (espelhado em `I:\INOVATECH TCC\Smart Driver\src\main.cpp`):
+    - **Rede 1 (Celular):** `REDMI Note 15 5G` (Senha: `Garcia2026`)
+    - **Rede 2 (Residencial):** `GARCIA 7G` (Senha: `MMarcos12@`)
+    - Alternância automática e reconexão silenciosa a cada 3s no Core 0 sem travar a leitura do sensor no Core 1.
+- **Sincronização Celular ➔ PC (Torre Central Tech)**:
+  - Backend com endpoint REST `/api/driver/shift` e canal WebSocket `STATUS_MOTORISTA`.
+  - Ao alternar o turno no smartphone (`motorista.html`), a Central Tech no PC (`central.html`) desbloqueia imediatamente o card e exibe notificação em tempo real.
+  - O card do Matheus Garcia na Central Tech possui clique direto liberado para o cockpit, e se a ESP32 já estiver conectada, ativa o status "EM OPERAÇÃO" automaticamente.
+- **Mapeamento do Módulo Relé Duplo HL-52S**:
+  - `VCC` ➔ **VIN** da ESP32 (5V para força eletromecânica).
+  - `GND` ➔ **GPIO 13 (D13)** da ESP32 (GND Virtual configurado como `OUTPUT` + `LOW`).
+  - `IN1` ➔ **GPIO 18 (D18)** da ESP32 (Safe-Stop / Corte de Tração).
+  - Jumper amarelo `JD-VCC / VCC` **permanece encaixado** (nenhum fio é conectado nele).
+- **Calibração Ergonômica do Sensor Infravermelho**:
+  - Posicionamento na haste: 2 a 3 cm mais para a frente da haste (perto da têmpora/armação frontal), com os LEDs apontando a 45° para frente e para baixo em direção à clavícula/peito.
+  - Longitude/alcance do feixe: regulada no trimpot azul com parafuso de fenda (sentido horário aumenta alcance; anti-horário diminui).
+  - Validação visual: o LED `OUT` da plaquinha apaga com cabeça erguida e acende ao descer o queixo.
+- **Energia Portátil**:
+  - Bateria 9V Elgin Recarregável (250 mAh): Positivo no pino VIN e Negativo no GND (duração estimada de 30–45 min com Wi-Fi). Conectar apenas durante a apresentação perante a banca. Power Bank USB mantido de prontidão como plano de contingência.
+
+
 

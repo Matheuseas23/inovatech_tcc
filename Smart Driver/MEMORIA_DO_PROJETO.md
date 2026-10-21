@@ -145,17 +145,16 @@ void desativarAlarmes() {
 
 ---
 
-## 6. Registro de Sessão e Ponto de Parada (Check-in)
-* **Data e Hora:** 15 de Outubro de 2026, 11:50 (Horário Local)
-* **Status do Código:** 100% implementado e compilado com sucesso (`[SUCCESS]` no PlatformIO, flash em 20.6%, RAM em 6.6%).
-* **Cenário de Teste:** Teste de bancada (componentes na protoboard/mesa, ainda não montados na armação física dos óculos).
-* **Diagnóstico de Hardware/Comunicação:**
-  - A placa ESP32 utiliza chip conversor USB-Serial **CP2102** (`VID: 10C4, PID: EA60`).
-  - No computador anterior, a placa caía na porta `COM1` por ausência do driver CP2102 do Windows.
-  - O driver oficial foi baixado e guardado na pasta: `INOVATECH\drivers\CP210x_Drivers.zip` *(fora da pasta do site do TCC)*.
-* **Instruções Imediatas para Retomada no Próximo Dispositivo:**
-  1. Conectar a ESP32 na porta USB do novo computador.
-  2. Verificar no Gerenciador de Dispositivos / PlatformIO se a porta serial da ESP32 é reconhecida (ex: `COM3`, `COM4` etc.). Se necessário, instalar o driver da pasta `INOVATECH\drivers\`.
-  3. No PlatformIO, clicar na seta de **Upload** ($\rightarrow$). Se travar em `Connecting......`, pressionar o botão **BOOT** na placa por 2 segundos.
-  4. Abrir o **Monitor Serial** (ícone da tomada a 115200 baud).
-  5. Testar colocando a mão na frente do sensor IR por 2,5 segundos para verificar o disparo do buzzer e o corte imediato ao retirar a mão.
+## 6. Registro de Sessão e Ponto de Parada (Check-in Pré-Apresentação)
+* **Data e Hora:** Quarta-feira, 21 de Outubro de 2026, 03:20 (Horário Local)
+* **Status do Código & Sistema:** 100% implementado, homologado e sincronizado na nuvem (GitHub, Vercel e Render).
+* **Multi-Wi-Fi Ativo:** `REDMI Note 15 5G` (ponto móvel) e `GARCIA 7G` (residencial).
+* **Calibração de Tolerância:** 3,00s (3000 ms) de tolerância com aviso progressivo de 3 bips (1 a cada segundo) e recuperação de 3,00s de cabeça erguida.
+* **Pinagem Final do Módulo Relé Duplo HL-52S:**
+  - `VCC` -> pino `VIN` da ESP32 (5V).
+  - `GND` -> pino `GPIO 13` (D13 - GND Virtual 0V).
+  - `IN1` -> pino `GPIO 18` (D18 - Safe Stop).
+  - Jumper amarelo `JD-VCC/VCC` mantido no lugar sem fios.
+* **Calibração do Sensor IR:** Posicionado mais à frente na haste dos óculos com ângulo de 45° mirando a clavícula/peito, alcance ajustado no trimpot azul.
+* **Sincronização em Tempo Real:** App do Motorista (`motorista.html`) sincroniza turno e GPS ao vivo com a Central Tech (`central.html`) via REST e WebSocket na nuvem.
+
