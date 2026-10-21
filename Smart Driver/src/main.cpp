@@ -1,7 +1,10 @@
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiMulti.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+
+WiFiMulti wifiMulti;
 
 // ==============================================================================
 // INOVA TECH — SMART DRIVER (FIRMWARE ESP32 DUAL-CORE DE ALTA PRECISÃO)
@@ -13,14 +16,19 @@
 // ==============================================================================
 
 // ------------------------------------------------------------------------------
-// 1. CONFIGURAÇÃO DE REDE WI-FI & SERVIDOR
+// 1. CONFIGURAÇÃO DE REDES WI-FI (MULTI-WIFI AUTOMÁTICO) & SERVIDOR
 // ------------------------------------------------------------------------------
 // Rede própria da ESP32 (Access Point sem senha sempre ativo):
-const char* AP_SSID       = "ESP_900EC9";
+const char* AP_SSID = "ESP_900EC9";
 
-// Ponto de Acesso Móvel / Roteador Wi-Fi (Celular):
-const char* WIFI_SSID     = "REDMI Note 15 5G";
-const char* WIFI_PASSWORD = "Garcia2026";
+// Lista de Redes Wi-Fi Cadastradas (comuta automaticamente para a rede disponível):
+// Rede 1 (Celular Redmi):
+const char* WIFI_1_SSID = "REDMI Note 15 5G";
+const char* WIFI_1_PASS = "Garcia2026";
+
+// Rede 2 (Wi-Fi Residencial):
+const char* WIFI_2_SSID = "GARCIA 7G";
+const char* WIFI_2_PASS = "MMarcos12@";
 
 // Endereço do Servidor de Telemetria:
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
@@ -114,15 +122,23 @@ void setup() {
   Serial.print(F(" | IP da ESP32: "));
   Serial.println(WiFi.softAPIP());
 
-  // Se houver um roteador externo configurado, conecta também
-  if (String(WIFI_SSID) != "NOME_DO_WIFI" && String(WIFI_SSID) != "ESP_900EC9") {
-    Serial.print(F("[WIFI STA] Conectando ao Ponto de Acesso: "));
-    Serial.println(WIFI_SSID);
-    if (strlen(WIFI_PASSWORD) > 0) {
-      WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    } else {
-      WiFi.begin(WIFI_SSID);
-    }
+  // Registra as redes no gerenciador inteligente WiFiMulti
+  wifiMulti.addAP(WIFI_1_SSID, WIFI_1_PASS);
+  wifiMulti.addAP(WIFI_2_SSID, WIFI_2_PASS);
+
+  Serial.println(F("[WIFI MULTI] Redes registradas no sistema:"));
+  Serial.print(F("  1. ")); Serial.println(WIFI_1_SSID);
+  Serial.print(F("  2. ")); Serial.println(WIFI_2_SSID);
+  Serial.println(F("[WIFI MULTI] Conectando à melhor rede disponível..."));
+
+  // Tentativa inicial rápida de conexão
+  if (wifiMulti.run() == WL_CONNECTED) {
+    Serial.print(F("[WIFI STA] Conectado com sucesso à rede: "));
+    Serial.println(WiFi.SSID());
+    Serial.print(F("[WIFI STA] IP da ESP32: "));
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println(F("[WIFI STA] Buscando redes ativas em segundo plano no Core 0..."));
   }
 
   // Cria tarefa de Telemetria no Core 0 (Background IoT)
@@ -273,8 +289,16 @@ void taskTelemetria(void *pvParameters) {
   secureClient.setInsecure(); // Pula validação CA para conectar à nuvem Render
 
   HTTPClient http;
+  unsigned long ultimoCheckMultiWifi = 0;
 
   for (;;) {
+    // Se a conexão cair, o WiFiMulti busca e reconecta automaticamente à melhor rede disponível
+    if (WiFi.status() != WL_CONNECTED) {
+      if (millis() - ultimoCheckMultiWifi >= 3000) {
+        ultimoCheckMultiWifi = millis();
+        wifiMulti.run();
+      }
+    }
     // Obtém snapshot instantâneo dos dados protegidos por mutex
     DadosTelemetria snap;
     portENTER_CRITICAL(&mutexDados);
