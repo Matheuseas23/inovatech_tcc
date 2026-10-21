@@ -21,14 +21,9 @@ WiFiMulti wifiMulti;
 // Rede própria da ESP32 (Access Point sem senha sempre ativo):
 const char* AP_SSID = "ESP_900EC9";
 
-// Lista de Redes Wi-Fi Cadastradas (comuta automaticamente para a rede disponível):
-// Rede 1 (Celular Redmi):
-const char* WIFI_1_SSID = "REDMI Note 15 5G";
-const char* WIFI_1_PASS = "Garcia2026";
-
-// Rede 2 (Wi-Fi Residencial):
-const char* WIFI_2_SSID = "GARCIA 7G";
-const char* WIFI_2_PASS = "MMarcos12@";
+// Rede Wi-Fi Cadastrada (Roteador iPhone):
+const char* WIFI_1_SSID = "iPhone de Matheus";
+const char* WIFI_1_PASS = "12345678910";
 
 // Endereço do Servidor de Telemetria:
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
@@ -122,14 +117,12 @@ void setup() {
   Serial.print(F(" | IP da ESP32: "));
   Serial.println(WiFi.softAPIP());
 
-  // Registra as redes no gerenciador inteligente WiFiMulti
+  // Registra a rede no gerenciador inteligente WiFiMulti
   wifiMulti.addAP(WIFI_1_SSID, WIFI_1_PASS);
-  wifiMulti.addAP(WIFI_2_SSID, WIFI_2_PASS);
 
-  Serial.println(F("[WIFI MULTI] Redes registradas no sistema:"));
+  Serial.println(F("[WIFI MULTI] Rede registrada no sistema:"));
   Serial.print(F("  1. ")); Serial.println(WIFI_1_SSID);
-  Serial.print(F("  2. ")); Serial.println(WIFI_2_SSID);
-  Serial.println(F("[WIFI MULTI] Conectando à melhor rede disponível..."));
+  Serial.println(F("[WIFI MULTI] Conectando à rede Wi-Fi..."));
 
   // Tentativa inicial rápida de conexão
   if (wifiMulti.run() == WL_CONNECTED) {
