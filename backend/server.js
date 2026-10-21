@@ -338,25 +338,25 @@ setInterval(() => {
   let mudouNivel = false;
 
   // Passou de 10 segundos sem o motorista desativar o alerta no celular -> ALERTA CRÍTICO NA CENTRAL
-  if (decorridoMs >= 10000 && decorridoMs < 20000 && estado.nivel_escalonamento < 2) {
+  if (decorridoMs >= 9000 && decorridoMs < 15000 && estado.nivel_escalonamento < 2) {
     estado.nivel_escalonamento = 2;
     mudouNivel = true;
     registrarEvento(
       'ALARME_ATIVADO',
-      '🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!',
-      'Iniciando contagem crítica de +10s para protocolo de Possível Acidente.'
+      '🚨 ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!',
+      'Iniciando contagem de emergência de 6s restantes para protocolo de Possível Acidente (15s).'
     );
     // Reforça despertar da tela do celular via ADB
     dispararChamadaCelularADB();
   }
 
   // Passou de +10 segundos após o Alerta Crítico (20s no total) -> POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS
-  if (decorridoMs >= 20000 && estado.nivel_escalonamento < 3) {
+  if (decorridoMs >= 15000 && estado.nivel_escalonamento < 3) {
     estado.nivel_escalonamento = 3;
     mudouNivel = true;
     registrarEvento(
       'ALARME_ATIVADO',
-      '💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!',
+      '💥 POSSÍVEL ACIDENTE CONFIRMADO (15s SEM RESPOSTA)! Localização GPS enviada para Resgate SAMU 192 e Safe-Stop Acionado!',
       'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192.'
     );
   }

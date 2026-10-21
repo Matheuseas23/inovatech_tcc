@@ -779,59 +779,47 @@
 						</p>
 					</article>
 
-					<!-- Card 2: Monitoramento Ao Vivo da Cabine (Câmera Wi-Fi Linklemo) -->
-					<article class="card camera-card" id="cardCameraLinklemo">
-						<div class="camera-alerta-banner" id="bannerAlertaCamera">
-							<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span>
-							ATENÇÃO CENTRAL: MOTORISTA ADORMECEU! VERIFIQUE A CABINE IMEDIATAMENTE!
+					<!-- Card 2: Rastreamento Satelital e Localização GPS em Tempo Real -->
+					<article class="card gps-tracker-card" id="cardLocalizacaoVeicular">
+						<div class="camera-alerta-banner" id="bannerAlertaAcidente" style="display:none;background:linear-gradient(90deg, #ff1a4b 0%, #b30026 100%);color:#fff;padding:10px 14px;border-radius:8px;font-family:'Space Mono';font-size:11px;font-weight:700;margin-bottom:12px;box-shadow:0 0 20px rgba(255,26,75,0.6)">
+							<span class="material-symbols-outlined g-icon" style="margin-right:6px">emergency</span>
+							POSSÍVEL ACIDENTE (15s SEM RESPOSTA): COORDENADAS GPS ENVIADAS PARA SAMU 192 E PRF!
 						</div>
-						<div class="card-label">ϟ CÂMERA WI-FI LINKLEMO · CABINE #01 24/7</div>
+						<div class="card-label">◉ RASTREAMENTO SATELITAL & TELEMETRIA GPS · SCANIA R-450</div>
 						<h3 style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">
-							<span>Feed de Vídeo da Cabine</span>
-							<span class="camera-live-badge"><span class="pulse-dot danger"></span> AO VIVO 24/7</span>
+							<span>Localização do Veículo ao Vivo</span>
+							<span class="camera-live-badge" style="border-color:#55ee77;color:#55ee77"><span class="pulse-dot"></span> GPS ATIVO · 1.8m PRECISÃO</span>
 						</h3>
 						<p style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:12px">
-							Transmissão contínua da cabine e face do condutor. Em caso de 4,0s de cabeça baixa, esta
-							tela recebe foco imediato com alerta visual vermelho neon.
+							Monitoramento geográfico contínuo. Em caso de ausência de resposta do motorista aos 15 segundos, a localização é destacada para resgate imediato.
 						</p>
 
-						<!-- Visualizador da Câmera com HUD Tático -->
-						<div class="camera-viewport" id="cameraViewport">
-							<video id="liveCabineVideo" autoplay playsinline muted></video>
-							<canvas id="cameraSimCanvas"
-								style="position:absolute;inset:0;width:100%;height:100%;display:none;object-fit:cover;"></canvas>
-							<div class="camera-overlay-hud">
-								<div class="camera-hud-top">
-									<span
-										style="color:var(--cyan);font-size:10px;letter-spacing:1px;font-family:'Space Mono'">LINKLEMO
-										STREAM · SCANIA R-450 #01</span>
-									<span style="color:var(--muted);font-size:10px;font-family:'Space Mono'">30 FPS ·
-										1080p HD</span>
-								</div>
-								<div class="camera-reticle"></div>
-								<div
-									style="display:flex;justify-content:space-between;align-items:center;font-size:10px;color:var(--cyan);font-family:'Space Mono'">
-									<span id="hudTimestampCam">00:00:00</span>
-									<span>RECONHECIMENTO POSTURAL ATIVO</span>
-								</div>
+						<!-- Visualizador de Mapa Satelital Integrado com HUD de Coordenadas -->
+						<div style="position:relative;width:100%;height:220px;border-radius:10px;overflow:hidden;border:1px solid #16495b;background:#031522">
+							<iframe id="centralGpsLiveMap" src="https://www.openstreetmap.org/export/embed.html?bbox=-46.885412%2C-23.689138%2C-46.865412%2C-23.675138&layer=mapnik&marker=-23.682138%2C-46.875412" style="width:100%;height:100%;border:none;filter:invert(90%) hue-rotate(180deg) contrast(120%)"></iframe>
+							<div style="position:absolute;top:8px;left:8px;background:rgba(2,11,18,0.85);padding:6px 10px;border-radius:6px;border:1px solid rgba(8,222,235,0.3);font-family:'Space Mono';font-size:10px;color:var(--cyan)">
+								RODOVIA BR-116 · KM 284 (SENTIDO SUL)
+							</div>
+							<div style="position:absolute;bottom:8px;left:8px;right:8px;display:flex;justify-content:space-between;background:rgba(2,11,18,0.85);padding:6px 10px;border-radius:6px;border:1px solid rgba(8,222,235,0.3);font-family:'Space Mono';font-size:10px">
+								<span id="gpsLiveCoordsLabel" style="color:#ffffff">LAT: -23.682138° | LON: -46.875412°</span>
+								<span id="gpsLiveSpeedLabel" style="color:var(--cyan)">VELOCIDADE: 64 km/h</span>
 							</div>
 						</div>
 
-						<!-- Controles da Câmera -->
-						<div class="camera-controls-bar">
-							<button class="btn-tactical" id="btnCapturarLinklemo">
-								<span><span class="material-symbols-outlined g-icon"
-										style="margin-right:4px">screen_share</span> Capturar Tela do Celular /
-									Linklemo</span>
-							</button>
-							<button class="btn-tactical" id="btnAlternarCameraSim">
-								<span><span class="material-symbols-outlined g-icon"
-										style="margin-right:4px">play_arrow</span> Modo Simulação Cabine</span>
-							</button>
-							<button class="btn-tactical" id="btnTelaCheiaCam">
-								<span><span class="material-symbols-outlined g-icon"
-										style="margin-right:4px">fullscreen</span> Tela Cheia</span>
-							</button>
+						<!-- Barra de Status Rápido do Condutor -->
+						<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:12px">
+							<div style="background:rgba(2,11,18,0.6);padding:8px 10px;border-radius:6px;border:1px solid #16495b">
+								<span style="font-size:9.5px;color:var(--muted);display:block;font-family:'Space Mono'">ROTA ATUAL</span>
+								<strong style="font-size:11px;color:#fff;font-family:'Space Mono'">SP ➔ Curitiba</strong>
+							</div>
+							<div style="background:rgba(2,11,18,0.6);padding:8px 10px;border-radius:6px;border:1px solid #16495b">
+								<span style="font-size:9.5px;color:var(--muted);display:block;font-family:'Space Mono'">FROTA / CABINE</span>
+								<strong style="font-size:11px;color:#fff;font-family:'Space Mono'">INO-2026 (#01)</strong>
+							</div>
+							<div style="background:rgba(2,11,18,0.6);padding:8px 10px;border-radius:6px;border:1px solid #16495b">
+								<span style="font-size:9.5px;color:var(--muted);display:block;font-family:'Space Mono'">SINAL TELEMETRIA</span>
+								<strong style="font-size:11px;color:#55ee77;font-family:'Space Mono'">100% ONLINE</strong>
+							</div>
 						</div>
 					</article>
 				</div>
@@ -1273,26 +1261,26 @@
 			}
 			var segTotal = (decorridoMs / 1000).toFixed(1);
 			var nivel = 1;
-			if (decorridoMs >= 35000) nivel = 3;
-			else if (decorridoMs >= 20000) nivel = 2;
+			if (decorridoMs >= 15000) nivel = 3;
+			else if (decorridoMs >= 9000) nivel = 2;
 
 			if (centralEscalationPanel) {
 				centralEscalationPanel.classList.add('visible');
 				if (nivel === 1) {
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
 					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO CELULAR';
-					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + segTotal + 's / 20.0s';
+					if (centralEscTimer) centralEscTimer.textContent = 'RESPOSTA MOTORISTA: ' + segTotal + 's / 9.0s (AGUARDANDO DESATIVAR)';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
 					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico e a chamada no celular foram disparados (tolerância de 4,00s). Se o condutor não reagir ou não mantiver a cabeça erguida por 3s, a Central entrará em Suspeita de Acidente aos 20 segundos!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 20000) * 100).toFixed(1) + '%';
+					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 9000) * 100).toFixed(1) + '%';
 					if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
 					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
 				} else if (nivel === 2) {
-					var segFase2 = ((decorridoMs - 20000) / 1000).toFixed(1);
+					var segFase2 = ((decorridoMs - 9000) / 1000).toFixed(1);
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · SUSPEITA DE ACIDENTE (20s SEM RESPOSTA)';
-					if (centralEscTimer) centralEscTimer.textContent = 'CONTAGEM SOS: ' + segFase2 + 's / 15.0s (Total: ' + segTotal + 's / 35.0s)';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA)';
+					if (centralEscTimer) centralEscTimer.textContent = 'ALERTA CRÍTICO: ' + segTotal + 's / 15.0s (POSSÍVEL ACIDENTE EM ' + (15 - Number(segTotal)).toFixed(1) + 's)';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> SUSPEITA DE ACIDENTE: LOCALIZAÇÃO SATELITAL TRANSMITIDA!';
 					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: O motorista não respondeu após 20 segundos! Localização satelital da Scania R-450 na BR-116 KM 284 confirmada. Se persistir até 35s, o protocolo Safe-Stop será executado!';
 					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 20000) / 15000) * 100).toFixed(1) + '%';
@@ -1301,10 +1289,10 @@
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
 				} else if (nivel === 3) {
 					centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE CONFIRMADO (35s)';
-					if (centralEscTimer) centralEscTimer.textContent = 'INATIVO HÁ: ' + segTotal + 's / 35.0s · PROTOCOLO SOS ATIVO';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE CONFIRMADO (15s)';
+					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA HÁ: ' + segTotal + 's / 15.0s · POSSÍVEL ACIDENTE CONFIRMADO';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
-					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Condutor inativo por mais de 35 segundos! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e envio das coordenadas ao Resgate SAMU 192 / PRF!';
+					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Condutor sem resposta por 15 segundos ininterruptos! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e envio das coordenadas ao Resgate SAMU 192 / PRF!';
 					if (centralEscBarFill) centralEscBarFill.style.width = '100%';
 					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
 					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';

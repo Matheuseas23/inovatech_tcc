@@ -749,16 +749,22 @@
 					}, 2400);
 				}
 
-				// Cronômetro dinâmico de confirmação de 17.0s
+				// Cronômetro dinâmico de confirmação: 9.0s (Crítico) e 15.0s (Possível Acidente)
 				var timerEl = document.getElementById('driverCallEscalationTimer');
 				if (driverEscalationInterval) clearInterval(driverEscalationInterval);
 				driverEscalationInterval = setInterval(function () {
 					var decorrido = ((Date.now() - callStartTimeMs) / 1000).toFixed(1);
+					var numDecorrido = Number(decorrido);
 					if (timerEl) {
-						timerEl.textContent = decorrido + 's / 17.0s';
-						if (Number(decorrido) >= 17.0) {
+						if (numDecorrido >= 15.0) {
 							timerEl.style.color = '#ff2a55';
-							timerEl.textContent = '17.0s / 17.0s (CRÍTICO NA CENTRAL)';
+							timerEl.textContent = decorrido + 's / 15.0s (POSSÍVEL ACIDENTE NA CENTRAL)';
+						} else if (numDecorrido >= 9.0) {
+							timerEl.style.color = '#ffaa00';
+							timerEl.textContent = decorrido + 's / 15.0s (ALERTA CRÍTICO NA CENTRAL)';
+						} else {
+							timerEl.style.color = '#ffdd66';
+							timerEl.textContent = decorrido + 's / 9.0s (DESATIVE O ALERTA)';
 						}
 					}
 				}, 100);
