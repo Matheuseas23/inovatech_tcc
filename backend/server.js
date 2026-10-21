@@ -54,8 +54,8 @@ const estado = {
   ultimoVisto: null,
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
   tempo_cabeca_baixa_ms: 0,
-  limiar_seguranca_ms: 4000,
-  limiar_seguranca_ms: 4000,
+  limiar_seguranca_ms: 1500,
+  limiar_seguranca_ms: 1500,
   estado: 'NORMAL', // 'NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'
   buzzer: 0, // 0 = Desligado, 1 = Ligado
   rele: 0, // 0 = Desligado, 1 = Acionado
@@ -529,7 +529,7 @@ function processarTelemetria(payload = {}) {
     } else if (estado.estado === 'ALARME_ATIVADO') {
       estado.contadores.totalAlarmesSessao++;
       iniciarProtocoloAlertaTravado();
-      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!`);
+      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (1,5s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!`);
       broadcast({
         tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
         dispararChamadaCafe: true,
@@ -588,13 +588,13 @@ setInterval(() => {
     const decorrido = Date.now() - inicioCabecaBaixaServerMs;
     estado.tempo_cabeca_baixa_ms = decorrido;
 
-    if (decorrido >= estado.limiar_seguranca_ms) {
+    if (decorrido >= 1500) {
       estado.estado = 'ALARME_ATIVADO';
       estado.buzzer = 1;
       estado.rele = 1;
       estado.contadores.totalAlarmesSessao++;
       iniciarProtocoloAlertaTravado();
-      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (4,0s)!', 'Alerta Físico e Virtual acionados.');
+      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (1,5s)!', 'Alerta Físico e Virtual acionados.');
       broadcast({
         tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
         dispararChamadaCafe: true,

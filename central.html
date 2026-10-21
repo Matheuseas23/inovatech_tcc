@@ -738,7 +738,7 @@
 								<span
 									style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CRONÔMETRO
 									DE TOLERÂNCIA (4,00s)</span>
-								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 4.00s</div>
+								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 1.50s</div>
 							</div>
 						</div>
 
@@ -748,7 +748,7 @@
 								style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap;gap:4px">
 								<span>ESTÁVEL (0.00s)</span>
 								<span>CONTAGEM ATIVA (0.01s - 3.99s)</span>
-								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (4.00s)</span>
+								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (1.50s)</span>
 							</div>
 							<div class="progresso-bar-bg">
 								<div class="progresso-bar-fill" id="barraProgressoTempo"></div>
@@ -987,7 +987,7 @@
 		var wsLocalBridgeClient = null;
 		var pollingTimer = null;
 		var audioCtx = null;
-		var LIMIAR_TOLERANCIA_MS = 4000; // Tolerância oficial de 3 segundos (3 bips de aviso)
+		var LIMIAR_TOLERANCIA_MS = 1500; // Tolerância oficial de 3 segundos (3 bips de aviso)
 
 		// Alternância entre Seleção de Frota e Cockpit da Cabine
 		var fleetView = document.getElementById('fleetSelectionView');
@@ -1408,7 +1408,7 @@ function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
 			var segCent = (msLimitado / 1000).toFixed(2);
 			var percExato = Math.min(100, (msLimitado / LIMIAR_TOLERANCIA_MS) * 100);
 
-			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 4.00s';
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 1.50s';
 			if (barraProgressoTempo) barraProgressoTempo.style.width = percExato.toFixed(1) + '%';
 			if (irTempoMs) irTempoMs.textContent = msLimitado + ' ms';
 			if (precisaoTempoMsBadge) precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + msLimitado + ' ms (' + percExato.toFixed(1) + '%)';
@@ -1477,9 +1477,9 @@ function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
 				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-recuperando';
 				if (statusMotoristaTexto) {
 					statusMotoristaTexto.style.color = '#55ee77';
-					statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + segR + 's / 4.0s';
+					statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + segR + 's / 1.5s';
 				}
-				if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segR + 's / 4.0s (NORMALIZANDO)';
+				if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segR + 's / 1.5s (NORMALIZANDO)';
 				if (barraProgressoTempo) {
 					barraProgressoTempo.className = 'progresso-bar-fill';
 					barraProgressoTempo.style.width = Math.min(100, (decorridoRecupMs / 3500) * 100) + '%';
@@ -1717,7 +1717,7 @@ function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
 			});
 		}
 
-		// Simulação Local com 4.00s
+		// Simulação Local com 1.50s
 		var simTimer = null;
 		var btnSimularCabecaBaixa = document.getElementById('btnSimularCabecaBaixa');
 		if (btnSimularCabecaBaixa) {

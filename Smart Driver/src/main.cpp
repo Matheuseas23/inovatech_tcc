@@ -50,7 +50,7 @@ const int NIVEL_RELE_LIGADO      = LOW;
 const int NIVEL_RELE_DESLIGADO   = HIGH;
 
 // Filtro Temporal de Segurança: 3.5 segundos de tolerância com aviso sonoro progressivo
-const unsigned long LIMIAR_CABECA_BAIXA_MS = 3500;
+const unsigned long LIMIAR_CABECA_BAIXA_MS = 1500;
 const unsigned long INTERVALO_TELEMETRIA_MS = 250; // 4 pacotes por segundo
 
 // ------------------------------------------------------------------------------
@@ -187,9 +187,7 @@ void loop() {
         // 2º Bip: aos 2.0s (1700 a 2050 ms) -> Pulso de 350ms (bem audível)
         // 3º Bip: aos 3.0s (2700 a 3050 ms) -> Pulso de 350ms (terceiro bip)
         // Aos 3.5s (3500ms): Alarme contínuo ininterrupto + acionamento dos relés!
-        bipPreAlertaAtivo = (tempoDecorridoMs >= 700 && tempoDecorridoMs < 1050) ||
-                            (tempoDecorridoMs >= 1700 && tempoDecorridoMs < 2050) ||
-                            (tempoDecorridoMs >= 2700 && tempoDecorridoMs < 3050);
+        bipPreAlertaAtivo = (tempoDecorridoMs >= 600 && tempoDecorridoMs < 950);
 
         digitalWrite(PINO_BUZZER, bipPreAlertaAtivo ? NIVEL_BUZZER_LIGADO : NIVEL_BUZZER_DESLIGADO);
       }

@@ -432,7 +432,7 @@
 			</button>
 		</section>
 
-		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 4.00s) -->
+		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 1.50s) -->
 		<section class="driver-live-card estado-normal" id="driverLiveCard">
 			<div style="display:flex;justify-content:space-between;align-items:center">
 				<span class="card-label">◉ MONITORAMENTO BIOMÉTRICO AO VIVO</span>
@@ -448,7 +448,7 @@
 
 			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
 				<span style="font-size:11px;color:var(--muted)">CRONÔMETRO DE TOLERÂNCIA:</span>
-				<div class="driver-timer-large" id="driverTimerCount">0.00s / 4.00s</div>
+				<div class="driver-timer-large" id="driverTimerCount">0.00s / 1.50s</div>
 			</div>
 
 			<div class="progresso-bar-bg" style="height:12px">
@@ -477,7 +477,7 @@
 
 	<!-- SCRIPTS EXCLUSIVOS DO APP DO MOTORISTA -->
 	<script>
-		var LIMIAR_TOLERANCIA_MS = 4000;
+		var LIMIAR_TOLERANCIA_MS = 1500;
 		var wsClient = null;
 		var audioCtx = null;
 		var callRingtoneTimer = null;
@@ -548,7 +548,7 @@
 				driverLiveCard.className = 'driver-live-card estado-normal';
 				driverStatusHeadline.style.color = '#8ca4ad';
 				driverStatusHeadline.textContent = 'STANDBY: MONITORAMENTO PAUSADO';
-				driverTimerCount.textContent = '0.00s / 4.00s';
+				driverTimerCount.textContent = '0.00s / 1.50s';
 				driverBarFill.style.width = '0%';
 				driverFeedbackMsg.textContent = 'Toque no botão acima para ativar o monitoramento da cabine e iniciar a viagem.';
 			}
@@ -825,7 +825,7 @@
 			});
 		}
 
-		// Atualização do Estado Postural com 4,00s e Recuperação de 4.0s
+		// Atualização do Estado Postural com 4,00s e Recuperação de 1.5s
 		
 		// Motor de Interpolação a 60 FPS no Smartphone (Garante fluidez visual absoluta no cronômetro)
 		var inicioAnimacaoMotorista = 0;
@@ -842,7 +842,7 @@
 				var seg = (msLim / 1000).toFixed(2);
 				var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
 
-				if (driverTimerCount) driverTimerCount.textContent = seg + 's / 4.00s';
+				if (driverTimerCount) driverTimerCount.textContent = seg + 's / 1.50s';
 				if (driverBarFill) {
 					driverBarFill.className = 'progresso-bar-fill warning';
 					driverBarFill.style.width = perc + '%';
@@ -903,8 +903,8 @@ function atualizarEstadoNoApp(estado) {
 				var segR = (decorridoRecupMs / 1000).toFixed(1);
 				driverLiveCard.className = 'driver-live-card estado-recuperando';
 				driverStatusHeadline.style.color = '#55ee77';
-				driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + segR + 's / 4.0s)';
-				driverTimerCount.textContent = segR + 's / 4.0s';
+				driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + segR + 's / 1.5s)';
+				driverTimerCount.textContent = segR + 's / 1.5s';
 				driverBarFill.className = 'progresso-bar-fill';
 				driverBarFill.style.width = Math.min(100, (decorridoRecupMs / 3500) * 100) + '%';
 				driverFeedbackMsg.textContent = 'Cabeça erguida detectada! Mantenha a postura por 3 segundos para normalizar automaticamente.';
@@ -913,7 +913,7 @@ function atualizarEstadoNoApp(estado) {
 				driverLiveCard.className = 'driver-live-card estado-normal';
 				driverStatusHeadline.style.color = '#08deeb';
 				driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
-				driverTimerCount.textContent = '0.00s / 4.00s';
+				driverTimerCount.textContent = '0.00s / 1.50s';
 				driverBarFill.className = 'progresso-bar-fill';
 				driverBarFill.style.width = '0%';
 				driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
@@ -921,7 +921,7 @@ function atualizarEstadoNoApp(estado) {
 				driverLiveCard.className = 'driver-live-card estado-pre-alerta';
 				driverStatusHeadline.style.color = '#ffaa00';
 				driverStatusHeadline.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA';
-				driverTimerCount.textContent = seg + 's / 4.00s';
+				driverTimerCount.textContent = seg + 's / 1.50s';
 				driverBarFill.className = 'progresso-bar-fill warning';
 				driverBarFill.style.width = perc + '%';
 				driverFeedbackMsg.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Erga a cabeça para evitar o alarme.';
@@ -930,7 +930,7 @@ function atualizarEstadoNoApp(estado) {
 				driverLiveCard.className = 'driver-live-card estado-alarme';
 				driverStatusHeadline.style.color = '#ff2a55';
 				driverStatusHeadline.textContent = 'PERIGO: CABEÇA BAIXA!';
-				driverTimerCount.textContent = '4.00s / 4.00s (CRÍTICO)';
+				driverTimerCount.textContent = '1.50s / 1.50s (CRÍTICO)';
 				driverBarFill.className = 'progresso-bar-fill danger';
 				driverBarFill.style.width = '100%';
 				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por 3 segundos para desligar automaticamente.';
