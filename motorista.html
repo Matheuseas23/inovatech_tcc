@@ -432,7 +432,7 @@
 			</button>
 		</section>
 
-		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 3,00s) -->
+		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 3.50s) -->
 		<section class="driver-live-card estado-normal" id="driverLiveCard">
 			<div style="display:flex;justify-content:space-between;align-items:center">
 				<span class="card-label">◉ MONITORAMENTO BIOMÉTRICO AO VIVO</span>
@@ -448,7 +448,7 @@
 
 			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
 				<span style="font-size:11px;color:var(--muted)">CRONÔMETRO DE TOLERÂNCIA:</span>
-				<div class="driver-timer-large" id="driverTimerCount">0.00s / 3.00s</div>
+				<div class="driver-timer-large" id="driverTimerCount">0.00s / 3.50s</div>
 			</div>
 
 			<div class="progresso-bar-bg" style="height:12px">
@@ -477,7 +477,7 @@
 
 	<!-- SCRIPTS EXCLUSIVOS DO APP DO MOTORISTA -->
 	<script>
-		var LIMIAR_TOLERANCIA_MS = 3000;
+		var LIMIAR_TOLERANCIA_MS = 3500;
 		var wsClient = null;
 		var audioCtx = null;
 		var callRingtoneTimer = null;
@@ -825,7 +825,7 @@
 			});
 		}
 
-		// Atualização do Estado Postural com 4,00s e Recuperação de 3,0s
+		// Atualização do Estado Postural com 4,00s e Recuperação de 3.5s
 		function atualizarEstadoNoApp(estado) {
 			if (!estado || !turnoAtivo) return;
 
@@ -840,10 +840,10 @@
 					decorridoRecupMs = (estado.tempo_recuperacao_ms !== undefined && estado.tempo_recuperacao_ms > 0)
 						? estado.tempo_recuperacao_ms : (Date.now() - inicioRecuperacaoLocalMs);
 
-					if (decorridoRecupMs >= 3000) {
+					if (decorridoRecupMs >= 3500) {
 						alertaAtivoMotorista = false;
 						inicioRecuperacaoLocalMs = 0;
-						cooldownAntiRepiqueUntil = Date.now() + 3000;
+						cooldownAntiRepiqueUntil = Date.now() + 3500;
 						status = 'NORMAL';
 						fecharChamadaTelaCheia();
 						enviarSilenciarAoBackend();
@@ -864,7 +864,7 @@
 				}
 			}
 
-			var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 3000 : tempoMs)));
+			var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 3500 : tempoMs)));
 			var seg = (msLim / 1000).toFixed(2);
 			var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
 
@@ -872,17 +872,17 @@
 				var segR = (decorridoRecupMs / 1000).toFixed(1);
 				driverLiveCard.className = 'driver-live-card estado-recuperando';
 				driverStatusHeadline.style.color = '#55ee77';
-				driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + segR + 's / 3.0s)';
-				driverTimerCount.textContent = segR + 's / 3.0s';
+				driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + segR + 's / 3.5s)';
+				driverTimerCount.textContent = segR + 's / 3.5s';
 				driverBarFill.className = 'progresso-bar-fill';
-				driverBarFill.style.width = Math.min(100, (decorridoRecupMs / 3000) * 100) + '%';
+				driverBarFill.style.width = Math.min(100, (decorridoRecupMs / 3500) * 100) + '%';
 				driverFeedbackMsg.textContent = 'Cabeça erguida detectada! Mantenha a postura por 3 segundos para normalizar automaticamente.';
 			} else if (status === 'NORMAL') {
 				fecharChamadaTelaCheia();
 				driverLiveCard.className = 'driver-live-card estado-normal';
 				driverStatusHeadline.style.color = '#08deeb';
 				driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
-				driverTimerCount.textContent = '0.00s / 3.00s';
+				driverTimerCount.textContent = '0.00s / 3.50s';
 				driverBarFill.className = 'progresso-bar-fill';
 				driverBarFill.style.width = '0%';
 				driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
@@ -890,7 +890,7 @@
 				driverLiveCard.className = 'driver-live-card estado-pre-alerta';
 				driverStatusHeadline.style.color = '#ffaa00';
 				driverStatusHeadline.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA';
-				driverTimerCount.textContent = seg + 's / 3.00s';
+				driverTimerCount.textContent = seg + 's / 3.50s';
 				driverBarFill.className = 'progresso-bar-fill warning';
 				driverBarFill.style.width = perc + '%';
 				driverFeedbackMsg.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Erga a cabeça para evitar o alarme.';
@@ -899,7 +899,7 @@
 				driverLiveCard.className = 'driver-live-card estado-alarme';
 				driverStatusHeadline.style.color = '#ff2a55';
 				driverStatusHeadline.textContent = 'PERIGO: CABEÇA BAIXA!';
-				driverTimerCount.textContent = '3.00s / 3.00s (CRÍTICO)';
+				driverTimerCount.textContent = '3.50s / 3.50s (CRÍTICO)';
 				driverBarFill.className = 'progresso-bar-fill danger';
 				driverBarFill.style.width = '100%';
 				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por 3 segundos para desligar automaticamente.';
@@ -1009,7 +1009,7 @@
 
 			// 3. Envia via REST para o servidor na Nuvem e Local (com controle de tráfego a cada 3s)
 			var agora = Date.now();
-			if (!ultimoGpsEnviadoTimestamp || (agora - ultimoGpsEnviadoTimestamp > 3000)) {
+			if (!ultimoGpsEnviadoTimestamp || (agora - ultimoGpsEnviadoTimestamp > 3500)) {
 				ultimoGpsEnviadoTimestamp = agora;
 				var urls = [
 					'https://inovatech-tcc.onrender.com/api/gps',
@@ -1077,7 +1077,7 @@
 			navigator.geolocation.watchPosition(tratarPosicao, tratarErroGps, {
 				enableHighAccuracy: true,
 				timeout: 20000,
-				maximumAge: 3000
+				maximumAge: 3500
 			});
 		}
 

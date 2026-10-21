@@ -851,7 +851,7 @@
 							<div class="axis-item">
 								<div class="axis-label">TEMPO DE REFLEXÃO</div>
 								<div class="axis-val" id="irTempoMs">0 ms</div>
-								<span style="font-size:10px;color:var(--muted)">Limite: 3000 ms</span>
+								<span style="font-size:10px;color:var(--muted)">Limite: 3500ms</span>
 							</div>
 						</div>
 						<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
@@ -987,7 +987,7 @@
 		var wsLocalBridgeClient = null;
 		var pollingTimer = null;
 		var audioCtx = null;
-		var LIMIAR_TOLERANCIA_MS = 3000; // Tolerância oficial de 3 segundos (3 bips de aviso)
+		var LIMIAR_TOLERANCIA_MS = 3500; // Tolerância oficial de 3 segundos (3 bips de aviso)
 
 		// Alternância entre Seleção de Frota e Cockpit da Cabine
 		var fleetView = document.getElementById('fleetSelectionView');
@@ -1268,7 +1268,7 @@
 
 		function atualizarPainelEscalonamentoUI(decorridoMs) {
 			// Sanitização: Impede timestamp epoch, valores negativos ou clock jump
-			if (isNaN(decorridoMs) || decorridoMs < 0 || decorridoMs > 300000) {
+			if (isNaN(decorridoMs) || decorridoMs < 0 || decorridoMs > 350000) {
 				decorridoMs = 0;
 			}
 			var segTotal = (decorridoMs / 1000).toFixed(1);
@@ -1332,8 +1332,8 @@
 
 		function iniciarMonitorEscalonamento(tempoMs) {
 			var agora = Date.now();
-			var offset = (typeof tempoMs === 'number' && tempoMs > 0 && tempoMs < 300000) ? tempoMs : 0;
-			if (!alertaTravadoLocal || !inicioSemRespostaLocalMs || (agora - inicioSemRespostaLocalMs > 300000)) {
+			var offset = (typeof tempoMs === 'number' && tempoMs > 0 && tempoMs < 350000) ? tempoMs : 0;
+			if (!alertaTravadoLocal || !inicioSemRespostaLocalMs || (agora - inicioSemRespostaLocalMs > 350000)) {
 				alertaTravadoLocal = true;
 				inicioSemRespostaLocalMs = agora - offset;
 				ultimoNivelEscalonamento = 1;
@@ -1346,7 +1346,7 @@
 						return;
 					}
 					var decorrido = Date.now() - inicioSemRespostaLocalMs;
-					if (isNaN(decorrido) || decorrido < 0 || decorrido > 300000) {
+					if (isNaN(decorrido) || decorrido < 0 || decorrido > 350000) {
 						inicioSemRespostaLocalMs = Date.now();
 						decorrido = 0;
 					}
@@ -1388,7 +1388,7 @@
 			var segCent = (msLimitado / 1000).toFixed(2);
 			var percExato = Math.min(100, (msLimitado / LIMIAR_TOLERANCIA_MS) * 100);
 
-			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 3.00s';
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 3.50s';
 			if (barraProgressoTempo) barraProgressoTempo.style.width = percExato.toFixed(1) + '%';
 			if (irTempoMs) irTempoMs.textContent = msLimitado + ' ms';
 			if (precisaoTempoMsBadge) precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + msLimitado + ' ms (' + percExato.toFixed(1) + '%)';
@@ -1422,10 +1422,10 @@
 					decorridoRecupMs = (estado.tempo_recuperacao_ms !== undefined && estado.tempo_recuperacao_ms > 0)
 						? estado.tempo_recuperacao_ms : (Date.now() - inicioRecuperacaoLocalMs);
 
-					if (decorridoRecupMs >= 3000) {
+					if (decorridoRecupMs >= 3500) {
 						alertaTravadoLocal = false;
 						inicioRecuperacaoLocalMs = 0;
-						cooldownAntiRepiqueLocalUntil = Date.now() + 3000;
+						cooldownAntiRepiqueLocalUntil = Date.now() + 3500;
 						status = 'NORMAL';
 						encerrarMonitorEscalonamento();
 						enviarComandoParaBackend('SILENCIAR_ALARME');
@@ -1447,19 +1447,19 @@
 				}
 			}
 
-			renderizarCronometroAltaPrecisao(status === 'ALARME_ATIVADO' ? 3000 : tempoMs, status);
+			renderizarCronometroAltaPrecisao(status === 'ALARME_ATIVADO' ? 3500 : tempoMs, status);
 
 			if (status === 'RECUPERANDO') {
 				var segR = (decorridoRecupMs / 1000).toFixed(1);
 				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-recuperando';
 				if (statusMotoristaTexto) {
 					statusMotoristaTexto.style.color = '#55ee77';
-					statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + segR + 's / 3.0s';
+					statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + segR + 's / 3.5s';
 				}
-				if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segR + 's / 3.0s (NORMALIZANDO)';
+				if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segR + 's / 3.5s (NORMALIZANDO)';
 				if (barraProgressoTempo) {
 					barraProgressoTempo.className = 'progresso-bar-fill';
-					barraProgressoTempo.style.width = Math.min(100, (decorridoRecupMs / 3000) * 100) + '%';
+					barraProgressoTempo.style.width = Math.min(100, (decorridoRecupMs / 3500) * 100) + '%';
 				}
 				if (cardCameraLinklemo) cardCameraLinklemo.classList.remove('camera-alerta-critico');
 			} else if (status === 'NORMAL') {
@@ -1676,7 +1676,7 @@
 			});
 		}
 
-		// Simulação Local com 3,00s
+		// Simulação Local com 3.50s
 		var simTimer = null;
 		var btnSimularCabecaBaixa = document.getElementById('btnSimularCabecaBaixa');
 		if (btnSimularCabecaBaixa) {
@@ -1687,18 +1687,18 @@
 				var ms = 0;
 				simTimer = setInterval(function () {
 					ms += 250;
-					var est = (ms >= 3000) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
+					var est = (ms >= 3500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
 					var pac = {
 						online: true,
 						estado: est,
 						sensor_ir: 0,
 						tempo_cabeca_baixa_ms: ms,
-						buzzer: ms >= 3000 ? 1 : ((ms >= 850 && ms < 1050) || (ms >= 1850 && ms < 2050) || (ms >= 2850) ? 1 : 0),
-						rele: ms >= 3000 ? 1 : 0,
-						chamada_celular_ativa: ms >= 3000,
-						alerta_travado: ms >= 3000,
-						acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 3000 },
-						contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent) || 0) + (ms === 3000 ? 1 : 0) }
+						buzzer: ms >= 3500 ? 1 : ((ms >= 850 && ms < 1050) || (ms >= 1850 && ms < 2050) || (ms >= 2850) ? 1 : 0),
+						rele: ms >= 3500 ? 1 : 0,
+						chamada_celular_ativa: ms >= 3500,
+						alerta_travado: ms >= 3500,
+						acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 3500 },
+						contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent) || 0) + (ms === 3500 ? 1 : 0) }
 					};
 					atualizarPainelComEstado(pac);
 					if (ms >= 3500) clearInterval(simTimer);
@@ -1712,7 +1712,7 @@
 				if (simTimer) clearInterval(simTimer);
 				alertaTravadoLocal = false;
 				inicioRecuperacaoLocalMs = 0;
-				cooldownAntiRepiqueLocalUntil = Date.now() + 3000;
+				cooldownAntiRepiqueLocalUntil = Date.now() + 3500;
 				encerrarMonitorEscalonamento();
 				var pacNorm = {
 					online: true,

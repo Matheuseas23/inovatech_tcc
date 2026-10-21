@@ -32,7 +32,6 @@ const char* WIFI_2_PASS = "MMarcos12@";
 
 // Endereço do Servidor de Telemetria:
 const char* BACKEND_URL_AP    = "http://192.168.4.2:3001/api/telemetry";
-const char* BACKEND_URL_LOCAL = "http://192.168.33.216:3001/api/telemetry";
 const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
 
 // ------------------------------------------------------------------------------
@@ -54,8 +53,8 @@ const int NIVEL_BUZZER_DESLIGADO = LOW;
 const int NIVEL_RELE_LIGADO      = LOW;
 const int NIVEL_RELE_DESLIGADO   = HIGH;
 
-// Filtro Temporal de Segurança: 3 segundos de tolerância com aviso sonoro progressivo
-const unsigned long LIMIAR_CABECA_BAIXA_MS = 3000;
+// Filtro Temporal de Segurança: 3.5 segundos de tolerância com aviso sonoro progressivo
+const unsigned long LIMIAR_CABECA_BAIXA_MS = 3500;
 const unsigned long INTERVALO_TELEMETRIA_MS = 250; // 4 pacotes por segundo
 
 // ------------------------------------------------------------------------------
@@ -189,13 +188,14 @@ void loop() {
       } else {
         estadoAtualTexto = "PRE_ALERTA";
 
-        // 3 BIPS PROGRESSIVOS (1 a cada segundo durante a contagem antes do alarme):
-        // 1º Bip: aos 1.0s (850 a 1050 ms) -> Pulso de 200ms
-        // 2º Bip: aos 2.0s (1850 a 2050 ms) -> Pulso de 200ms
-        // 3º Bip: aos 3.0s (2850 a 3000 ms) -> Pulso de 150ms antes do alarme contínuo
-        bipPreAlertaAtivo = (tempoDecorridoMs >= 850 && tempoDecorridoMs < 1050) ||
-                            (tempoDecorridoMs >= 1850 && tempoDecorridoMs < 2050) ||
-                            (tempoDecorridoMs >= 2850 && tempoDecorridoMs < 3000);
+        // 3 BIPS PROGRESSIVOS ALONGADOS (completando 3 avisos antes do alarme contínuo):
+        // 1º Bip: aos 1.0s (700 a 1050 ms) -> Pulso de 350ms (bem audível)
+        // 2º Bip: aos 2.0s (1700 a 2050 ms) -> Pulso de 350ms (bem audível)
+        // 3º Bip: aos 3.0s (2700 a 3050 ms) -> Pulso de 350ms (terceiro bip)
+        // Aos 3.5s (3500ms): Alarme contínuo ininterrupto + acionamento dos relés!
+        bipPreAlertaAtivo = (tempoDecorridoMs >= 700 && tempoDecorridoMs < 1050) ||
+                            (tempoDecorridoMs >= 1700 && tempoDecorridoMs < 2050) ||
+                            (tempoDecorridoMs >= 2700 && tempoDecorridoMs < 3050);
 
         digitalWrite(PINO_BUZZER, bipPreAlertaAtivo ? NIVEL_BUZZER_LIGADO : NIVEL_BUZZER_DESLIGADO);
       }
@@ -332,17 +332,8 @@ void taskTelemetria(void *pvParameters) {
       }
     }
 
-    // 3. Se estiver conectado ao ponto de acesso do celular (Wi-Fi), envia direto para o IP do notebook local e para a nuvem
+    // 3. Se estiver conectado a um Wi-Fi com internet, envia para a nuvem Render
     if (WiFi.status() == WL_CONNECTED) {
-      // Envio local ultra-rápido para o notebook na mesma rede do celular
-      http.setTimeout(400);
-      if (http.begin(plainClient, BACKEND_URL_LOCAL)) {
-        http.addHeader("Content-Type", "application/json");
-        http.POST(payload);
-        http.end();
-      }
-
-      // Envio para a nuvem Render
       http.setTimeout(2500);
       if (http.begin(secureClient, BACKEND_URL_CLOUD)) {
         http.addHeader("Content-Type", "application/json");
