@@ -83,10 +83,18 @@ const unsigned long LIMIAR_CABECA_BAIXA_MS = 3500;
 // Acelerômetro: ângulo medido em relação à postura calibrada (cabeça erguida).
 // Funciona em qualquer orientação de montagem do GY-521 na haste dos óculos.
 const float LIMIAR_INCLINACAO_GRAUS = 32.0;  // Cabeça caída além disso = cabeça baixa
+const float LIMIAR_RETORNO_GRAUS    = 25.0;  // Depois de baixa, só volta a "erguida" abaixo disso (sem liga-desliga)
 const float PESCADA_VARIACAO_GRAUS  = 15.0;  // Queda em 100 ms (~150°/s) = pescada brusca
 const float PESCADA_INCLINACAO_MIN  = 25.0;  // ...desde que termine a pelo menos 25°
 const bool  PESCADA_DISPARA_ALARME  = true;  // Pescada dispara o alarme na hora
 const unsigned long ALARME_MINIMO_PESCADA_MS = 2000; // Alarme de pescada dura no mínimo 2s
+
+// Calibração guiada por bipes (sem PC por perto, ex.: power bank nas costas):
+// ao ligar, 1 bip -> 4 s para pôr os óculos e olhar para frente -> 2 bips = calibrado.
+// Cabeça mexendo durante a medição = 1 bip longo e nova tentativa em 2 s.
+const unsigned long ESPERA_CALIBRACAO_MS     = 4000;
+const unsigned long NOVA_TENTATIVA_CALIB_MS  = 2000;
+const float AGITACAO_MAX_CALIBRACAO_G        = 0.08; // Cabeça parada fica bem abaixo disso
 
 // Sensor IR = reserva do acelerômetro. Só é confiável se leu "cabeça erguida" no último
 // minuto: sem alimentação ele lê LOW direto e seguraria o alarme ligado para sempre.
@@ -161,6 +169,7 @@ struct LeituraMPU {
 bool mpuDetectado             = false;
 bool mpuCalibrado             = false;
 unsigned long ultimaTentativaMpu = 0;
+unsigned long calibracaoAgendadaMs = 0;    // 0 = nenhuma calibração guiada pendente
 float gFiltX = 0, gFiltY = 0, gFiltZ = 1;  // Vetor gravidade filtrado (em g)
 float gRefX = 0, gRefY = 0, gRefZ = 1;     // Vetor de referência (cabeça erguida)
 float pitchRef = 0, rollRef = 0;
@@ -177,7 +186,9 @@ void interpretarComandosTexto(const char* texto);
 void taskTelemetria(void *pvParameters);
 bool inicializarMPU6050();
 bool lerAcelerometroBruto(float &ax, float &ay, float &az);
-void calibrarMPU6050();
+bool calibrarMPU6050();
+void calibrarComAviso();
+void bipAviso(uint8_t vezes, unsigned int duracaoMs);
 LeituraMPU lerMPU6050(unsigned long agora);
 
 // ------------------------------------------------------------------------------
@@ -214,9 +225,11 @@ void setup() {
   // Inicializa I2C nos pinos dedicados D21 (SDA) e D22 (SCL)
   Wire.begin(PINO_MPU_SDA, PINO_MPU_SCL, 400000);
   Wire.setTimeOut(20); // Nunca deixa um fio solto travar o Core 1
-  if (inicializarMPU6050()) {
-    calibrarMPU6050();
-  }
+  inicializarMPU6050();
+
+  // Calibração guiada: 1 bip agora; a medição acontece no loop() depois da espera
+  calibracaoAgendadaMs = millis() + ESPERA_CALIBRACAO_MS;
+  bipAviso(1, 120);
 
   Serial.println(F("\n=================================================="));
   Serial.println(F("     INOVA TECH - SMART DRIVER (SISTEMA ATIVO)    "));
@@ -226,10 +239,10 @@ void setup() {
   Serial.println(F("[HARDWARE] Rele 1: GPIO 18 | Rele 2: GPIO 19 | GND Rele: GPIO 13"));
   Serial.printf("[HARDWARE] Acelerometro GY-521: SDA=%d, SCL=%d, VCC=%d, GND=%d (RX2)\n",
                 PINO_MPU_SDA, PINO_MPU_SCL, PINO_MPU_VCC, PINO_MPU_GND);
-  Serial.printf("[HARDWARE] Status MPU-6050: %s\n", mpuDetectado ? "CONECTADO E CALIBRADO" : "AGUARDANDO CONEXAO");
+  Serial.printf("[HARDWARE] Status MPU-6050: %s\n", mpuDetectado ? "CONECTADO (calibracao guiada em 4 s)" : "AGUARDANDO CONEXAO");
   Serial.printf("[SEGURANCA] Tolerancia: %lu ms | Inclinacao maxima: %.0f graus\n",
                 LIMIAR_CABECA_BAIXA_MS, LIMIAR_INCLINACAO_GRAUS);
-  Serial.println(F("[DICA] Ligue (ou envie CMD:CALIBRAR) com a cabeca erguida para calibrar o acelerometro."));
+  Serial.println(F("[DICA] Ao ligar: 1 bip -> olhe para frente parado -> 2 bips = acelerometro calibrado."));
 
   // Modo Station puro com reconexão resiliente
   WiFi.mode(WIFI_STA);
@@ -304,27 +317,35 @@ bool lerAcelerometroBruto(float &ax, float &ay, float &az) {
 }
 
 // Grava a postura atual (cabeça erguida) como referência zero. Bloqueia ~0,5s.
-void calibrarMPU6050() {
-  float somaX = 0, somaY = 0, somaZ = 0;
+// Retorna false se a leitura falhar ou a cabeça estiver mexendo (mantém a referência anterior).
+bool calibrarMPU6050() {
+  float somaX = 0, somaY = 0, somaZ = 0, somaQuadrados = 0;
   int amostras = 0;
   for (int i = 0; i < 50; i++) {
     float ax, ay, az;
     if (lerAcelerometroBruto(ax, ay, az)) {
       somaX += ax; somaY += ay; somaZ += az;
+      somaQuadrados += ax * ax + ay * ay + az * az;
       amostras++;
     }
     delay(10);
   }
-  float mx = somaX / max(amostras, 1);
-  float my = somaY / max(amostras, 1);
-  float mz = somaZ / max(amostras, 1);
+  float n = max(amostras, 1);
+  float mx = somaX / n;
+  float my = somaY / n;
+  float mz = somaZ / n;
   float modulo = sqrt(mx * mx + my * my + mz * mz);
+  // Quanto as leituras variaram em torno da média (em g): mede se a cabeça ficou parada
+  float agitacao = sqrt(max(somaQuadrados / n - modulo * modulo, 0.0f));
 
   // Gravidade medida tem que dar ~1g; fora disso o módulo está com defeito/solto
   if (amostras < 40 || modulo < 0.6 || modulo > 1.4) {
-    mpuCalibrado = false;
     Serial.println(F("[MPU-6050] Falha na calibracao (leitura instavel). Verifique os fios."));
-    return;
+    return false;
+  }
+  if (agitacao > AGITACAO_MAX_CALIBRACAO_G) {
+    Serial.printf("[MPU-6050] Falha na calibracao: cabeca mexendo (%.2f g). Fique parado.\n", agitacao);
+    return false;
   }
 
   gRefX = mx / modulo; gRefY = my / modulo; gRefZ = mz / modulo;
@@ -334,6 +355,29 @@ void calibrarMPU6050() {
   for (uint8_t i = 0; i < 10; i++) historicoInclinacao[i] = 0;
   mpuCalibrado = true;
   Serial.println(F("[MPU-6050] Calibrado: postura atual registrada como cabeca erguida."));
+  return true;
+}
+
+// Bipes curtos de aviso. Bloqueiam o Core 1 por menos de 1 s (só durante a calibração).
+void bipAviso(uint8_t vezes, unsigned int duracaoMs) {
+  for (uint8_t i = 0; i < vezes; i++) {
+    if (i) delay(150);
+    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
+    delay(duracaoMs);
+    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO);
+  }
+}
+
+// Calibra e avisa pelo buzzer: 2 bips curtos = ok; 1 bip longo = falhou (tenta de novo sozinho)
+void calibrarComAviso() {
+  calibracaoAgendadaMs = 0;
+  if (!mpuDetectado) return; // lerMPU6050() agenda a calibração quando o módulo aparecer
+  if (calibrarMPU6050()) {
+    bipAviso(2, 100);
+  } else {
+    bipAviso(1, 700);
+    calibracaoAgendadaMs = millis() + NOVA_TENTATIVA_CALIB_MS;
+  }
 }
 
 LeituraMPU lerMPU6050(unsigned long agora) {
@@ -344,8 +388,9 @@ LeituraMPU lerMPU6050(unsigned long agora) {
     if (agora - ultimaTentativaMpu < 1000) return r;
     ultimaTentativaMpu = agora;
     if (!inicializarMPU6050()) return r;
-    Serial.println(F("[MPU-6050] Modulo detectado. Calibrando..."));
-    calibrarMPU6050();
+    Serial.println(F("[MPU-6050] Modulo detectado."));
+    // Sem referência ainda: calibra com aviso. Se já tinha, mantém (o sensor segue preso no óculos)
+    if (!mpuCalibrado && !calibracaoAgendadaMs) calibracaoAgendadaMs = agora + 1000;
   }
 
   float ax, ay, az;
@@ -393,6 +438,9 @@ void loop() {
   processarComandosSerial();
   aplicarComandosRemotos();
 
+  // Calibração guiada pendente (do boot, de nova tentativa ou de módulo reconectado)
+  if (calibracaoAgendadaMs && millis() >= calibracaoAgendadaMs) calibrarComAviso();
+
   // Leitura digital do Sensor Infravermelho
   int estadoLeitura = digitalRead(PINO_SENSOR_IR);
   unsigned long agora = millis();
@@ -402,13 +450,15 @@ void loop() {
 
   // Leitura do Acelerômetro GY-521
   LeituraMPU mpu = lerMPU6050(agora);
-  bool inclinadoDemais = mpu.valida && (mpu.inclinacao > LIMIAR_INCLINACAO_GRAUS);
+  // Histerese: dispara acima de 32°, mas só volta a "erguida" abaixo de 25° (sem liga-desliga)
+  float limiarAtual = cabecaEstavaBaixa ? LIMIAR_RETORNO_GRAUS : LIMIAR_INCLINACAO_GRAUS;
+  bool inclinadoDemais = mpu.valida && (mpu.inclinacao > limiarAtual);
   bool pescadaSono = mpu.valida && mpu.pescada;
 
   // Sensor IR só conta na falta do acelerômetro, e se estiver vivo
   if (estadoLeitura != NIVEL_CABECA_BAIXA) ultimoIrLivreMs = agora;
   bool irConfiavel = ultimoIrLivreMs != 0 && agora - ultimoIrLivreMs < IR_SINAL_VALIDO_MS;
-  bool irCabecaBaixa = !mpu.valida && irConfiavel && estadoLeitura == NIVEL_CABECA_BAIXA;
+  bool irCabecaBaixa = !mpuDetectado && irConfiavel && estadoLeitura == NIVEL_CABECA_BAIXA;
 
   // Condição de Cabeça Baixa: acelerômetro passa do ângulo OU pescada (OU IR, como reserva)
   bool condicaoCabecaBaixa = inclinadoDemais || pescadaSono || irCabecaBaixa;
@@ -555,7 +605,7 @@ void aplicarComandosRemotos() {
   if (cmds & CMD_CALIBRAR) {
     if (mpuDetectado) {
       Serial.println(F("[COMANDO] Recalibrando acelerometro (mantenha a cabeca erguida)..."));
-      calibrarMPU6050();
+      calibrarComAviso();
     } else {
       Serial.println(F("[COMANDO] Calibracao ignorada: MPU-6050 nao conectado."));
     }
