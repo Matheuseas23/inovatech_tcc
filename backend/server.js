@@ -81,7 +81,7 @@ const estado = {
   dispositivo: 'ESP32_SMART_DRIVER_01',
   online: false,
   ultimoVisto: null,
-  fonte_conexao: null, // 'UDP' | 'HTTP' | 'SERIAL' | 'WS'
+  fonte_conexao: null, // 'UDP' | 'HTTP' | 'SERIAL' | 'WS' | 'NUVEM' (repassada pelo Render ao PC)
   servidor: IS_RENDER_CLOUD ? 'NUVEM' : 'LOCAL',
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
   tempo_cabeca_baixa_ms: 0,
@@ -645,6 +645,8 @@ function aplicarEspelho(p) {
     estado[campo] = snap[campo];
   });
   estado.modo_espelho = true;
+  // Comandos da Central do PC para a ESP32 que só alcança a nuvem
+  if (Array.isArray(p.cmds_esp32)) p.cmds_esp32.forEach(enfileirarComandoESP32);
   if (Array.isArray(p.eventos)) {
     p.eventos.slice().reverse().forEach((ev) => {
       if (ev && ev.id && !historicoEventos.some((h) => h.id === ev.id)) inserirEvento(ev);
@@ -673,6 +675,12 @@ function processarPacote(payload, fonte) {
   if (p.gps && !ehPacoteESP32(p)) {
     atualizarGps(p.gps, p.dispositivo || 'CELULAR_MOTORISTA');
     return {};
+  }
+  if (ehPacoteESP32(p) && modoEspelhoAtivo()) {
+    // ESP32 sem acesso ao PC (outra rede ou firewall): a nuvem repassa a telemetria ao servidor local
+    comandosParaLocal = comandosParaLocal.filter((c) => c.tipo !== 'TELEMETRIA_ESP32');
+    comandosParaLocal.push({ tipo: 'TELEMETRIA_ESP32', pacote: p });
+    return { cmds: retirarComandosESP32() };
   }
   if (ehPacoteESP32(p)) {
     processarTelemetriaESP32(p, fonte);
@@ -720,11 +728,14 @@ function espelharParaNuvem(forcarImediato = false) {
   const eventosEnviados = eventosParaNuvem.slice();
   const snapshot = {};
   CAMPOS_ESPELHO.forEach((campo) => { snapshot[campo] = estado[campo]; });
-  const bodyStr = JSON.stringify({ _fromLocalMirror: true, estado_completo: snapshot, eventos: eventosEnviados });
+  // ESP32 falando só com a nuvem: os comandos para a placa sobem junto com o espelho
+  const cmdsEsp32 = estado.online && estado.fonte_conexao === 'NUVEM' ? retirarComandosESP32() : [];
+  const bodyStr = JSON.stringify({ _fromLocalMirror: true, estado_completo: snapshot, eventos: eventosEnviados, cmds_esp32: cmdsEsp32 });
 
   const finalizar = (sucesso) => {
     espelhoEmVoo = false;
     if (sucesso) eventosParaNuvem = eventosParaNuvem.filter((ev) => !eventosEnviados.includes(ev));
+    else cmdsEsp32.forEach(enfileirarComandoESP32);
     if (nuvemDisponivel !== sucesso) {
       nuvemDisponivel = sucesso;
       console.log(sucesso ? '[NUVEM] Espelhamento ativo com o Render.' : '[NUVEM] Render indisponível (seguindo 100% local).');
@@ -771,6 +782,7 @@ function executarMensagemDaNuvem(msg) {
   if (msg.tipo === 'COMANDO') executarComando(msg.comando, `${msg.origem || 'INTERNET'} via nuvem`, msg.extras || {});
   else if (msg.tipo === 'STATUS_MOTORISTA') atualizarTurno(msg.status_viagem, `${msg.origem || 'App do Motorista'} via nuvem`);
   else if (msg.tipo === 'GPS_UPDATE') atualizarGps(msg.gps, 'CELULAR_MOTORISTA (via nuvem)');
+  else if (msg.tipo === 'TELEMETRIA_ESP32' && msg.pacote && ehPacoteESP32(msg.pacote)) processarTelemetriaESP32(msg.pacote, 'NUVEM');
 }
 
 // Batimento: mantém a nuvem atualizada (e busca comandos) mesmo sem a ESP32
