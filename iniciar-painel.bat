@@ -1,6 +1,15 @@
 @echo off
 chcp 65001 > nul
 title INOVATECH SMART DRIVER - CENTRAL DE OPERAÇÕES
+
+rem Reabre como administrador (necessário para liberar o firewall). Se recusar, segue sem.
+net session > nul 2>&1
+if errorlevel 1 if not "%~1"=="--sem-admin" (
+    powershell -NoProfile -Command "try { Start-Process -FilePath '%~f0' -Verb RunAs -ErrorAction Stop; exit 0 } catch { exit 1 }"
+    if not errorlevel 1 exit /b
+    call "%~f0" --sem-admin
+    exit /b
+)
 cls
 
 echo =====================================================================
@@ -21,26 +30,25 @@ echo       (abra o endereço acima no celular, conectado na MESMA rede Wi-Fi)
 echo.
 
 echo [2/4] Liberando o firewall do Windows (portas 3001 TCP e 3002 UDP)...
-netsh advfirewall firewall show rule name="InovaTech Smart Driver UDP" > nul 2>&1
+net session > nul 2>&1
 if errorlevel 1 (
-    netsh advfirewall firewall add rule name="InovaTech Smart Driver UDP" dir=in action=allow protocol=UDP localport=3002 > nul 2>&1
-    netsh advfirewall firewall add rule name="InovaTech Smart Driver TCP" dir=in action=allow protocol=TCP localport=3001 > nul 2>&1
-    if errorlevel 1 (
-        echo       AVISO: sem permissão de administrador. Se a ESP32 não aparecer online,
-        echo       clique com o botão direito neste arquivo e "Executar como administrador",
-        echo       ou clique em "Permitir acesso" quando o Windows perguntar sobre o Node.js.
-    ) else (
-        echo       Regras de firewall criadas.
-    )
+    echo       AVISO: sem permissão de administrador. A ESP32 só chega pela nuvem (mais lento^).
+    echo       Feche e abra este arquivo de novo, clicando em "Sim" no aviso do Windows.
 ) else (
-    echo       Regras de firewall já existem.
+    rem Regras "Bloquear" do Node.js (de quando clicaram em Cancelar no aviso do Windows) vencem qualquer liberação
+    netsh advfirewall firewall set rule name="Node.js JavaScript Runtime" dir=in new action=allow > nul 2>&1
+    netsh advfirewall firewall delete rule name="InovaTech Smart Driver UDP" > nul 2>&1
+    netsh advfirewall firewall delete rule name="InovaTech Smart Driver TCP" > nul 2>&1
+    netsh advfirewall firewall add rule name="InovaTech Smart Driver UDP" dir=in action=allow protocol=UDP localport=3002 profile=any > nul 2>&1
+    netsh advfirewall firewall add rule name="InovaTech Smart Driver TCP" dir=in action=allow protocol=TCP localport=3001 profile=any > nul 2>&1
+    echo       Firewall liberado (inclusive em rede pública, como o hotspot do celular^).
 )
 echo.
 
 echo [3/4] Verificando dependências do servidor...
 cd /d "%~dp0backend"
 if not exist node_modules (
-    echo       Instalando dependências dentro da pasta backend (só na primeira vez)...
+    echo       Instalando dependências dentro da pasta backend (só na primeira vez^)...
     call npm install --no-audit --no-fund
 )
 echo.
