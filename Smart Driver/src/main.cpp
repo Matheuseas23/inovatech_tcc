@@ -147,9 +147,11 @@ struct DadosTelemetria {
   bool alarmeAtivo;
   bool irConfiavel;
   bool monitorando;
+  float giro;
+  bool diagnostico;
 };
 
-DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, false, "NORMAL", false, false, false};
+DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, false, "NORMAL", false, false, false, 0.0, false};
 portMUX_TYPE mutexDados = portMUX_INITIALIZER_UNLOCKED;
 
 // Comandos recebidos pela rede (Core 0) e executados no Core 1
@@ -171,6 +173,13 @@ volatile uint8_t statusRede = REDE_SEM_COMUNICACAO;
 // Monitoramento ligado no app: chega como "mon":1 / "mon":0 nas respostas do servidor (-1 = sem resposta ainda)
 volatile int8_t monitoramentoServidor = -1;
 volatile bool semContatoServidor = false; // Escrito pelo Core 0 (à prova de falha)
+
+// Modo checagem (comando serial DIAG:1 / DIAG:0): bip de monitor cardíaco a cada 1 s e sensores
+// suspensos (nada de alarme). Desliga sozinho em 15 min por segurança.
+const unsigned long DURACAO_MAX_DIAGNOSTICO_MS = 15UL * 60UL * 1000UL;
+volatile bool modoDiagnostico = false;
+volatile unsigned long inicioDiagnosticoMs = 0;
+volatile bool pedidoScanWifi = false; // Comando serial SCAN: lista as redes que a ESP32 enxerga
 
 // Variáveis de Estado no Core 1
 unsigned long tempoInicioCabecaBaixa = 0;
@@ -209,7 +218,6 @@ float giroFiltrado = 0;                    // °/s
 bool cabecaInclinada               = false; // Ângulo além do limite (com histerese)
 unsigned long ultimoMovimentoMs    = 0;     // Última vez que a cabeça se mexeu de propósito
 unsigned long pescadaCandidataMs   = 0;     // Queda brusca aguardando a cabeça assentar
-unsigned long inicioBaixaParadaMs  = 0;     // Diagnóstico: cabeça baixa e parada desde...
 
 // Protótipos de Funções
 void aplicarAtuadores(bool buzzer, bool rele1, bool rele2);
@@ -288,6 +296,18 @@ void setup() {
   // Sem economia de energia no rádio: comandos chegam sem atraso e o consumo constante
   // impede que o power bank se desligue sozinho por "carga baixa"
   WiFi.setSleep(false);
+
+  // Registra o motivo de cada queda do Wi-Fi (diagnóstico do ponto de acesso do celular)
+  WiFi.onEvent([](WiFiEvent_t, WiFiEventInfo_t info) {
+    uint8_t m = info.wifi_sta_disconnected.reason;
+    const char* txt = m == 201 ? "rede nao encontrada (ponto de acesso desligado ou em 5 GHz?)"
+                    : m == 200 ? "sinal perdido (o ponto de acesso sumiu ou trocou de canal)"
+                    : (m == 210 || m == 211) ? "seguranca incompativel (use WPA2 no ponto de acesso)"
+                    : (m == 2 || m == 15 || m == 202 || m == 204) ? "falha de senha/autenticacao"
+                    : m == 8 ? "desconectado pela propria ESP32"
+                    : "outro motivo";
+    Serial.printf("[WIFI] Caiu: motivo %u - %s\n", m, txt);
+  }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
   // Registra as redes conhecidas (o WiFiMulti escolhe a de melhor sinal).
   // SOMENTE_WIFI_REDMI = true: conecta só no ponto de acesso do Redmi (apresentação).
@@ -588,7 +608,10 @@ void loop() {
     melodiaPendente = false;
     tocarMelodiaPronto();
   }
-  bool sensoresAtivos = !SENSORES_SO_COM_MONITORAMENTO || (monitoramentoAtivo && !melodiaPendente);
+  // Modo checagem: sensores suspensos (sem alarme); desliga sozinho depois de 15 min
+  if (modoDiagnostico && millis() - inicioDiagnosticoMs > DURACAO_MAX_DIAGNOSTICO_MS) modoDiagnostico = false;
+  bool sensoresAtivos = !modoDiagnostico &&
+                        (!SENSORES_SO_COM_MONITORAMENTO || (monitoramentoAtivo && !melodiaPendente));
 
   // Leitura digital do Sensor Infravermelho
   int estadoLeitura = digitalRead(PINO_SENSOR_IR);
@@ -675,7 +698,8 @@ void loop() {
   // Relé 2 (pisca-alerta) arma já no bip de aviso; o Relé 1 (safe-stop) só no alarme contínuo.
   // Cada mudança de estado de um relé é um "tec" audível no módulo.
   bool avisoPiscaAlerta = cabecaEstavaBaixa && tempoDecorridoMs >= BIP_AVISO_INICIO_MS;
-  bool buzzerLigado = alarmeGeral || bipPreAlertaAtivo;
+  bool bipBatimento = modoDiagnostico && (agora % 1000 < 70); // "Monitor cardíaco" do modo checagem
+  bool buzzerLigado = alarmeGeral || bipPreAlertaAtivo || bipBatimento;
   bool rele1Ligado  = alarmeGeral || testeManualRele1;
   bool rele2Ligado  = alarmeGeral || avisoPiscaAlerta || testeManualRele2;
   if (alarmeGeral) estadoAtualTexto = "ALARME_ATIVADO";
@@ -701,6 +725,8 @@ void loop() {
   dadosGlobais.alarmeAtivo = alarmeGeral;
   dadosGlobais.irConfiavel = irConfiavel;
   dadosGlobais.monitorando = sensoresAtivos;
+  dadosGlobais.giro = mpu.giro;
+  dadosGlobais.diagnostico = modoDiagnostico;
   strncpy(dadosGlobais.estado, estadoAtualTexto, sizeof(dadosGlobais.estado) - 1);
   portEXIT_CRITICAL(&mutexDados);
 
@@ -731,6 +757,17 @@ void interpretarComandosTexto(const char* texto) {
   if (strstr(texto, "CALIBRAR"))     agendarComando(CMD_CALIBRAR);
   const char* mon = strstr(texto, "\"mon\":");
   if (mon) monitoramentoServidor = (mon[6] == '1') ? 1 : 0;
+  // Comandos de diagnóstico (só pela serial USB)
+  if (strstr(texto, "DIAG:1")) {
+    modoDiagnostico = true;
+    inicioDiagnosticoMs = millis();
+    Serial.println(F("[DIAGNOSTICO] Checagem ligada: bip a cada batimento, sensores suspensos."));
+  }
+  if (strstr(texto, "DIAG:0")) {
+    modoDiagnostico = false;
+    Serial.println(F("[DIAGNOSTICO] Checagem encerrada: sensores de volta ao normal."));
+  }
+  if (strstr(texto, "SCAN")) pedidoScanWifi = true;
 }
 
 void processarComandosSerial() {
@@ -801,18 +838,18 @@ int montarPayload(const DadosTelemetria &d, uint32_t seq, char *buf, size_t cap)
 
   return snprintf(buf, cap,
     "{\"dispositivo\":\"ESP32_SMART_DRIVER_01\",\"seq\":%lu,\"uptime_ms\":%lu,"
-    "\"sensor_ir\":%d,\"ir_confiavel\":%s,\"monitorando\":%s,\"tempo_cabeca_baixa_ms\":%lu,\"limiar_ms\":%lu,"
+    "\"sensor_ir\":%d,\"ir_confiavel\":%s,\"monitorando\":%s,\"diagnostico\":%s,\"tempo_cabeca_baixa_ms\":%lu,\"limiar_ms\":%lu,"
     "\"buzzer\":%d,\"rele\":%d,\"rele_1\":%d,\"rele_2\":%d,\"alarme_teste\":%d,"
     "\"estado\":\"%s\","
-    "\"acelerometro\":{\"pitch\":%.1f,\"roll\":%.1f,\"inclinacao\":%.1f,"
+    "\"acelerometro\":{\"pitch\":%.1f,\"roll\":%.1f,\"inclinacao\":%.1f,\"giro\":%.0f,"
     "\"pescada_detectada\":%s,\"online\":%s,\"calibrado\":%s,\"status\":\"%s\"},"
     "\"wifi\":{\"ssid\":\"%s\",\"rssi\":%d,\"ip\":\"%s\"}}",
     (unsigned long)seq, millis(),
-    d.sensorIr, d.irConfiavel ? "true" : "false", d.monitorando ? "true" : "false",
+    d.sensorIr, d.irConfiavel ? "true" : "false", d.monitorando ? "true" : "false", d.diagnostico ? "true" : "false",
     d.tempoCabecaBaixaMs, LIMIAR_CABECA_BAIXA_MS,
     d.buzzer, d.rele1, d.rele1, d.rele2, d.testeAtivo ? 1 : 0,
     d.estado,
-    d.pitch, d.roll, d.inclinacao,
+    d.pitch, d.roll, d.inclinacao, d.giro,
     d.pescadaDetectada ? "true" : "false", d.mpuOnline ? "true" : "false",
     d.mpuCalibrado ? "true" : "false", statusMpu,
     ssid.c_str(), conectado ? WiFi.RSSI() : 0, ip.c_str());
@@ -829,6 +866,7 @@ void taskTelemetria(void *pvParameters) {
   IPAddress ipServidor;
   unsigned long ultimoContatoServidor = 0;
   unsigned long ultimoCheckWifi = 0;
+  unsigned long desconectadoDesdeMs = 0;
   unsigned long ultimoEnvioNuvem = 0;
   unsigned long ultimoSucessoNuvem = 0;
   uint32_t seq = 0;
@@ -836,6 +874,18 @@ void taskTelemetria(void *pvParameters) {
   char resposta[256];
 
   for (;;) {
+    // Comando serial SCAN: mostra as redes 2,4 GHz que a ESP32 enxerga (diagnóstico)
+    if (pedidoScanWifi) {
+      pedidoScanWifi = false;
+      int n = WiFi.scanNetworks();
+      Serial.printf("[SCAN] %d redes visiveis (seguranca: 3=WPA2 6=WPA3 7=WPA2/WPA3)\n", n);
+      for (int i = 0; i < n && i < 15; i++) {
+        Serial.printf("[SCAN] %-26s canal %2d  %4d dBm  seguranca %d\n",
+                      WiFi.SSID(i).c_str(), WiFi.channel(i), WiFi.RSSI(i), (int)WiFi.encryptionType(i));
+      }
+      WiFi.scanDelete();
+    }
+
     bool conectado = (WiFi.status() == WL_CONNECTED);
 
     if (!conectado) {
@@ -843,11 +893,18 @@ void taskTelemetria(void *pvParameters) {
         udp.stop();
         udpAtivo = false;
         servidorConhecido = false;
+        desconectadoDesdeMs = millis();
         Serial.println(F("[WIFI] Conexao perdida. Procurando redes conhecidas..."));
       }
-      if (ultimoCheckWifi == 0 || millis() - ultimoCheckWifi >= 2500) {
+      // Na primeira vez procura já. Depois de uma queda, dá 8 s para a reconexão automática antes
+      // de procurar de novo (uma busca no meio derruba a tentativa em andamento). Tempo limite
+      // longo: ponto de acesso de celular demora mais que um roteador para entregar o IP.
+      bool podeProcurar = ultimoCheckWifi == 0 ||
+                          (millis() - ultimoCheckWifi >= 3000 && millis() - desconectadoDesdeMs >= 8000);
+      if (podeProcurar) {
         ultimoCheckWifi = millis();
-        wifiMulti.run(3000); // Bloqueia só o Core 0; o Core 1 segue protegendo o motorista
+        // Bloqueia só o Core 0; o Core 1 segue protegendo o motorista
+        if (wifiMulti.run(15000) != WL_CONNECTED) Serial.println(F("[WIFI] Nao conectou. Tentando de novo..."));
       }
     } else if (!udpAtivo) {
       udpAtivo = udp.begin(UDP_PORTA_LOCAL);
