@@ -205,6 +205,8 @@ bool calibrarMPU6050();
 void calibrarComAviso();
 void bipAviso(uint8_t vezes, unsigned int duracaoMs);
 void tocarMelodiaPronto();
+void tocarDespertador();
+void tecAspas();
 LeituraMPU lerMPU6050(unsigned long agora);
 
 // ------------------------------------------------------------------------------
@@ -400,6 +402,7 @@ void bipAviso(uint8_t vezes, unsigned int duracaoMs) {
 // "Pan, pan-ran-ran-pan... pan, pan" (ritmo "Shave and a Haircut"). O buzzer é ativo (uma nota só),
 // então a música é o ritmo. Toca ao ativar o monitoramento no app: sensores prontos. Dura ~2 s.
 void tocarMelodiaPronto() {
+  tecAspas();
   const uint16_t notas[][2] = {  // {buzzer ligado, silêncio depois} em ms
     {200, 100},  // pan
     {100, 50},   // pan
@@ -415,6 +418,28 @@ void tocarMelodiaPronto() {
     digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO);
     delay(nota[1]);
   }
+}
+
+// Despertador digital clássico ("pi-pi-pi-pi"): toca ao desativar o monitoramento no app
+void tocarDespertador() {
+  tecAspas();
+  for (uint8_t i = 0; i < 4; i++) {
+    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
+    delay(80);
+    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO);
+    delay(70);
+  }
+}
+
+// "Tec" de aspas: pulso curto nos dois relés juntos, abrindo os sons de ativar/desativar
+// o monitoramento. O loop() restaura logo depois o estado certo dos relés.
+void tecAspas() {
+  digitalWrite(PINO_RELE_1, NIVEL_RELE_LIGADO);
+  digitalWrite(PINO_RELE_2, NIVEL_RELE_LIGADO);
+  delay(60);
+  digitalWrite(PINO_RELE_1, NIVEL_RELE_DESLIGADO);
+  digitalWrite(PINO_RELE_2, NIVEL_RELE_DESLIGADO);
+  delay(60);
 }
 
 // Calibra e avisa pelo buzzer: 2 bips curtos = ok; 1 bip longo = falhou (tenta de novo sozinho)
@@ -504,6 +529,11 @@ void loop() {
     tempoInicioCabecaBaixa = 0;
     Serial.println(monitoramentoAtivo ? F("[MONITORAMENTO] Ativado no app: sensores em acao.")
                                       : F("[MONITORAMENTO] Desativado no app: sensores pausados."));
+    if (!monitoramentoAtivo) {
+      aplicarAtuadores(false, false, false); // Encerra qualquer alarme antes do aviso sonoro
+      delay(150);
+      tocarDespertador();
+    }
   }
   // O ritmo espera a calibração guiada terminar (não se mistura com os bips dela)
   if (melodiaPendente && !calibracaoAgendadaMs) {
