@@ -101,6 +101,11 @@ const unsigned long ESPERA_CALIBRACAO_MS     = 4000;
 const unsigned long NOVA_TENTATIVA_CALIB_MS  = 2000;
 const float AGITACAO_MAX_CALIBRACAO_G        = 0.08; // Cabeça parada fica bem abaixo disso
 
+// TESTE (23/10/2026): os sensores só valem com o monitoramento ativado no app do motorista.
+// Ao ativar, o buzzer toca "pan, pan-ran-ran-pan... pan, pan" e os sensores entram em ação.
+// Para tirar a função (sensores sempre ligados), troque para false.
+const bool SENSORES_SO_COM_MONITORAMENTO = true;
+
 // Sensor IR = reserva do acelerômetro. Só é confiável se leu "cabeça erguida" no último
 // minuto: sem alimentação ele lê LOW direto e seguraria o alarme ligado para sempre.
 const unsigned long IR_SINAL_VALIDO_MS = 60000;
@@ -130,9 +135,10 @@ struct DadosTelemetria {
   char estado[24];
   bool alarmeAtivo;
   bool irConfiavel;
+  bool monitorando;
 };
 
-DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, false, "NORMAL", false, false};
+DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, false, "NORMAL", false, false, false};
 portMUX_TYPE mutexDados = portMUX_INITIALIZER_UNLOCKED;
 
 // Comandos recebidos pela rede (Core 0) e executados no Core 1
@@ -151,6 +157,9 @@ const uint8_t REDE_NUVEM           = 1;
 const uint8_t REDE_SERVIDOR_LOCAL  = 2;
 volatile uint8_t statusRede = REDE_SEM_COMUNICACAO;
 
+// Monitoramento ligado no app: chega como "mon":1 / "mon":0 nas respostas do servidor (-1 = sem resposta ainda)
+volatile int8_t monitoramentoServidor = -1;
+
 // Variáveis de Estado no Core 1
 unsigned long tempoInicioCabecaBaixa = 0;
 bool cabecaEstavaBaixa               = false;
@@ -161,6 +170,8 @@ unsigned long inicioTesteAlarme      = 0;
 bool testeManualRele1                = false;
 bool testeManualRele2                = false;
 unsigned long ultimoIrLivreMs        = 0; // Última vez que o IR leu "cabeça erguida"
+bool monitoramentoAtivo              = false; // Estado do monitoramento já aplicado no Core 1
+bool melodiaPendente                 = false; // Toca o ritmo antes de liberar os sensores
 
 // Acelerômetro
 struct LeituraMPU {
@@ -193,6 +204,7 @@ bool lerAcelerometroBruto(float &ax, float &ay, float &az);
 bool calibrarMPU6050();
 void calibrarComAviso();
 void bipAviso(uint8_t vezes, unsigned int duracaoMs);
+void tocarMelodiaPronto();
 LeituraMPU lerMPU6050(unsigned long agora);
 
 // ------------------------------------------------------------------------------
@@ -372,6 +384,26 @@ void bipAviso(uint8_t vezes, unsigned int duracaoMs) {
   }
 }
 
+// "Pan, pan-ran-ran-pan... pan, pan" (ritmo "Shave and a Haircut"). O buzzer é ativo (uma nota só),
+// então a música é o ritmo. Toca ao ativar o monitoramento no app: sensores prontos. Dura ~2 s.
+void tocarMelodiaPronto() {
+  const uint16_t notas[][2] = {  // {buzzer ligado, silêncio depois} em ms
+    {200, 100},  // pan
+    {100, 50},   // pan
+    {100, 50},   // ran
+    {200, 100},  // ran
+    {200, 400},  // pan  (+ pausa)
+    {200, 100},  // pan
+    {250, 0}     // pan
+  };
+  for (const auto &nota : notas) {
+    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
+    delay(nota[0]);
+    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO);
+    delay(nota[1]);
+  }
+}
+
 // Calibra e avisa pelo buzzer: 2 bips curtos = ok; 1 bip longo = falhou (tenta de novo sozinho)
 void calibrarComAviso() {
   calibracaoAgendadaMs = 0;
@@ -445,6 +477,25 @@ void loop() {
   // Calibração guiada pendente (do boot, de nova tentativa ou de módulo reconectado)
   if (calibracaoAgendadaMs && millis() >= calibracaoAgendadaMs) calibrarComAviso();
 
+  // Monitoramento ativado/desativado no app do motorista (via servidor)
+  bool deveMonitorar = monitoramentoServidor == 1;
+  if (deveMonitorar != monitoramentoAtivo) {
+    monitoramentoAtivo = deveMonitorar;
+    melodiaPendente = monitoramentoAtivo;
+    cabecaEstavaBaixa = false;
+    alarmeAtivo = false;
+    alarmeMinimoAte = 0;
+    tempoInicioCabecaBaixa = 0;
+    Serial.println(monitoramentoAtivo ? F("[MONITORAMENTO] Ativado no app: sensores em acao.")
+                                      : F("[MONITORAMENTO] Desativado no app: sensores pausados."));
+  }
+  // O ritmo espera a calibração guiada terminar (não se mistura com os bips dela)
+  if (melodiaPendente && !calibracaoAgendadaMs) {
+    melodiaPendente = false;
+    tocarMelodiaPronto();
+  }
+  bool sensoresAtivos = !SENSORES_SO_COM_MONITORAMENTO || (monitoramentoAtivo && !melodiaPendente);
+
   // Leitura digital do Sensor Infravermelho
   int estadoLeitura = digitalRead(PINO_SENSOR_IR);
   unsigned long agora = millis();
@@ -464,8 +515,9 @@ void loop() {
   bool irConfiavel = ultimoIrLivreMs != 0 && agora - ultimoIrLivreMs < IR_SINAL_VALIDO_MS;
   bool irCabecaBaixa = !mpuDetectado && irConfiavel && estadoLeitura == NIVEL_CABECA_BAIXA;
 
-  // Condição de Cabeça Baixa: acelerômetro passa do ângulo OU pescada (OU IR, como reserva)
-  bool condicaoCabecaBaixa = inclinadoDemais || pescadaSono || irCabecaBaixa;
+  // Condição de Cabeça Baixa: acelerômetro passa do ângulo OU pescada (OU IR, como reserva).
+  // Com o monitoramento desligado no app, os sensores não detectam nada.
+  bool condicaoCabecaBaixa = sensoresAtivos && (inclinadoDemais || pescadaSono || irCabecaBaixa);
 
   // Teste remoto da Central expira sozinho por segurança
   if (testeAlarmeAtivo && (agora - inicioTesteAlarme >= DURACAO_MAX_TESTE_MS)) {
@@ -530,13 +582,14 @@ void loop() {
   dadosGlobais.roll = mpu.roll;
   dadosGlobais.inclinacao = mpu.inclinacao;
   // Mantém a pescada visível por um pacote inteiro de telemetria
-  if (pescadaSono) dadosGlobais.pescadaDetectada = true;
+  if (pescadaSono && sensoresAtivos) dadosGlobais.pescadaDetectada = true;
   else if (!alarmeAtivo) dadosGlobais.pescadaDetectada = false;
   dadosGlobais.mpuOnline = mpuDetectado;
   dadosGlobais.mpuCalibrado = mpuCalibrado;
   dadosGlobais.testeAtivo = testeAlarmeAtivo;
   dadosGlobais.alarmeAtivo = alarmeGeral;
   dadosGlobais.irConfiavel = irConfiavel;
+  dadosGlobais.monitorando = sensoresAtivos;
   strncpy(dadosGlobais.estado, estadoAtualTexto, sizeof(dadosGlobais.estado) - 1);
   portEXIT_CRITICAL(&mutexDados);
 
@@ -565,6 +618,8 @@ void interpretarComandosTexto(const char* texto) {
   if (strstr(texto, "TOGGLE_RELE1")) agendarComando(CMD_TOGGLE_RELE1);
   if (strstr(texto, "TOGGLE_RELE2")) agendarComando(CMD_TOGGLE_RELE2);
   if (strstr(texto, "CALIBRAR"))     agendarComando(CMD_CALIBRAR);
+  const char* mon = strstr(texto, "\"mon\":");
+  if (mon) monitoramentoServidor = (mon[6] == '1') ? 1 : 0;
 }
 
 void processarComandosSerial() {
@@ -635,14 +690,15 @@ int montarPayload(const DadosTelemetria &d, uint32_t seq, char *buf, size_t cap)
 
   return snprintf(buf, cap,
     "{\"dispositivo\":\"ESP32_SMART_DRIVER_01\",\"seq\":%lu,\"uptime_ms\":%lu,"
-    "\"sensor_ir\":%d,\"ir_confiavel\":%s,\"tempo_cabeca_baixa_ms\":%lu,\"limiar_ms\":%lu,"
+    "\"sensor_ir\":%d,\"ir_confiavel\":%s,\"monitorando\":%s,\"tempo_cabeca_baixa_ms\":%lu,\"limiar_ms\":%lu,"
     "\"buzzer\":%d,\"rele\":%d,\"rele_1\":%d,\"rele_2\":%d,\"alarme_teste\":%d,"
     "\"estado\":\"%s\","
     "\"acelerometro\":{\"pitch\":%.1f,\"roll\":%.1f,\"inclinacao\":%.1f,"
     "\"pescada_detectada\":%s,\"online\":%s,\"calibrado\":%s,\"status\":\"%s\"},"
     "\"wifi\":{\"ssid\":\"%s\",\"rssi\":%d,\"ip\":\"%s\"}}",
     (unsigned long)seq, millis(),
-    d.sensorIr, d.irConfiavel ? "true" : "false", d.tempoCabecaBaixaMs, LIMIAR_CABECA_BAIXA_MS,
+    d.sensorIr, d.irConfiavel ? "true" : "false", d.monitorando ? "true" : "false",
+    d.tempoCabecaBaixaMs, LIMIAR_CABECA_BAIXA_MS,
     d.buzzer, d.rele1, d.rele1, d.rele2, d.testeAtivo ? 1 : 0,
     d.estado,
     d.pitch, d.roll, d.inclinacao,

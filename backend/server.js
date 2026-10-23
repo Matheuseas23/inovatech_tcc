@@ -119,7 +119,7 @@ const estado = {
   motoristas: {
     matheus_garcia: {
       nome: 'Matheus Garcia',
-      status: 'EM_VIAGEM',
+      status: 'INATIVO', // Os sensores da ESP32 só valem depois que o app ativar o monitoramento
       veiculo: 'Scania R-450 (Placa INO-2026)',
       rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt',
       atualizadoEm: new Date().toISOString()
@@ -279,6 +279,11 @@ function retirarComandosESP32() {
   const cmds = comandosESP32;
   comandosESP32 = [];
   return cmds;
+}
+
+// Resposta para a ESP32: comandos pendentes + "mon" (1 = monitoramento ativado no app, liga os sensores)
+function respostaESP32() {
+  return { cmds: retirarComandosESP32(), mon: estado.motoristas.matheus_garcia.status === 'EM_VIAGEM' ? 1 : 0 };
 }
 
 // ------------------------------------------------------------------------------
@@ -682,11 +687,11 @@ function processarPacote(payload, fonte) {
     // ESP32 sem acesso ao PC (outra rede ou firewall): a nuvem repassa a telemetria ao servidor local
     comandosParaLocal = comandosParaLocal.filter((c) => c.tipo !== 'TELEMETRIA_ESP32');
     comandosParaLocal.push({ tipo: 'TELEMETRIA_ESP32', pacote: p });
-    return { cmds: retirarComandosESP32() };
+    return respostaESP32();
   }
   if (ehPacoteESP32(p)) {
     processarTelemetriaESP32(p, fonte);
-    return { cmds: retirarComandosESP32() };
+    return respostaESP32();
   }
   return {};
 }
@@ -823,7 +828,7 @@ app.post('/api/telemetry', (req, res) => {
   const resultado = processarPacote(req.body, 'HTTP');
   if (resultado.cmds) {
     // Resposta enxuta para a ESP32 (o firmware procura os nomes dos comandos no texto)
-    return res.status(200).json({ sucesso: true, srv: 'INOVATECH', cmds: resultado.cmds });
+    return res.status(200).json({ sucesso: true, srv: 'INOVATECH', cmds: resultado.cmds, mon: resultado.mon });
   }
   return res.status(200).json({ sucesso: true, estado_processado: estado.estado, ...resultado });
 });
@@ -941,7 +946,7 @@ udpServer.on('message', (msg, rinfo) => {
 
   const resultado = processarPacote(dados, 'UDP');
   // A resposta ensina o IP do servidor para a ESP32 e entrega os comandos da Central
-  const resposta = Buffer.from(JSON.stringify({ srv: 'INOVATECH', cmds: resultado.cmds || [] }));
+  const resposta = Buffer.from(JSON.stringify({ srv: 'INOVATECH', cmds: resultado.cmds || [], mon: resultado.mon }));
   udpServer.send(resposta, rinfo.port, rinfo.address, () => { });
 });
 
