@@ -6,6 +6,7 @@
 #include <WiFiUdp.h>
 #include <HTTPClient.h>
 #include <math.h>
+#include "driver/gpio.h"
 
 WiFiMulti wifiMulti;
 WiFiUDP udp;
@@ -245,6 +246,8 @@ void setup() {
   // Configuração dos pinos com pull-up interno no sensor
   pinMode(PINO_SENSOR_IR, INPUT_PULLUP);
   pinMode(PINO_BUZZER, OUTPUT);
+  // Buzzer mais alto: corrente máxima do pino (~40 mA, o padrão é ~20 mA)
+  gpio_set_drive_capability((gpio_num_t)PINO_BUZZER, GPIO_DRIVE_CAP_3);
   pinMode(PINO_RELE_1, OUTPUT);
   pinMode(PINO_RELE_2, OUTPUT);
   pinMode(PINO_LED_REDE, OUTPUT);

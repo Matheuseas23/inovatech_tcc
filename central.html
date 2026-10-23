@@ -1265,6 +1265,45 @@
 			} catch (e) { }
 		}
 
+		// Som da Central: o navegador só libera áudio depois do 1º clique/tecla na página
+		var audioCentral = null;
+		function liberarSomCentral() {
+			try {
+				if (!audioCentral) audioCentral = new (window.AudioContext || window.webkitAudioContext)();
+				if (audioCentral.state === 'suspended') audioCentral.resume();
+				[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) {
+					a.muted = true;
+					a.play().then(function () { a.pause(); a.currentTime = 0; a.muted = false; }).catch(function () { a.muted = false; });
+				});
+			} catch (e) { }
+			document.removeEventListener('pointerdown', liberarSomCentral);
+			document.removeEventListener('keydown', liberarSomCentral);
+		}
+		document.addEventListener('pointerdown', liberarSomCentral);
+		document.addEventListener('keydown', liberarSomCentral);
+
+		// Sirene de alerta: dois tons alternados enquanto o motorista estiver em ALARME
+		var sireneTimer = null;
+		function tocarBipSirene() {
+			if (!audioCentral || audioCentral.state !== 'running') return;
+			if (!vozCritico10sAudio.paused || !vozAcidente20sAudio.paused) return; // Não cobre as vozes
+			var t = audioCentral.currentTime;
+			[[880, 0], [660, 0.32]].forEach(function (n) {
+				var osc = audioCentral.createOscillator();
+				var ganho = audioCentral.createGain();
+				osc.type = 'square';
+				osc.frequency.setValueAtTime(n[0], t + n[1]);
+				ganho.gain.setValueAtTime(0.18, t + n[1]);
+				ganho.gain.exponentialRampToValueAtTime(0.001, t + n[1] + 0.3);
+				osc.connect(ganho); ganho.connect(audioCentral.destination);
+				osc.start(t + n[1]); osc.stop(t + n[1] + 0.3);
+			});
+		}
+		function atualizarSireneCentral(emAlarme) {
+			if (emAlarme && !sireneTimer) { tocarBipSirene(); sireneTimer = setInterval(tocarBipSirene, 700); }
+			else if (!emAlarme && sireneTimer) { clearInterval(sireneTimer); sireneTimer = null; }
+		}
+
 		// ------------------------------------------------------------------------------
 		// INTERPOLAÇÃO A 60 FPS: o servidor manda o tempo exato e o navegador anima entre pacotes
 		// ------------------------------------------------------------------------------
@@ -1431,6 +1470,7 @@
 			var recuperando = status === 'ALARME_ATIVADO' && estado.alerta_travado && estado.tempo_recuperacao_ms > 0;
 
 			anim.status = recuperando ? 'RECUPERANDO' : status;
+			atualizarSireneCentral(status === 'ALARME_ATIVADO' && !recuperando);
 			anim.baseCabecaMs = status === 'PRE_ALERTA' ? agora - (estado.tempo_cabeca_baixa_ms || 0) : 0;
 			anim.baseRecuperacaoMs = recuperando ? agora - estado.tempo_recuperacao_ms : 0;
 
