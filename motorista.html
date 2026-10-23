@@ -55,7 +55,7 @@
 		.driver-bg-overlay {
 			position: absolute;
 			inset: 0;
-			background: radial-gradient(circle at 50% 30%, rgba(2, 11, 18, 0.15) 0%, rgba(3, 21, 34, 0.40) 60%, rgba(2, 11, 18, 0.70) 100%);
+			background: radial-gradient(circle at 50% 30%, rgba(2, 11, 18, 0.10) 0%, rgba(3, 21, 34, 0.30) 60%, rgba(2, 11, 18, 0.60) 100%);
 		}
 
 		.driver-app-shell {
@@ -76,9 +76,9 @@
 			justify-content: space-between;
 			align-items: center;
 			padding: 12px 16px;
-			background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(6, 28, 43, 0.75) 45%, rgba(2, 14, 24, 0.90) 100%);
-			backdrop-filter: blur(24px) saturate(180%);
-			-webkit-backdrop-filter: blur(24px) saturate(180%);
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(6, 28, 43, 0.30) 45%, rgba(2, 14, 24, 0.44) 100%);
+			backdrop-filter: blur(6px) saturate(150%);
+			-webkit-backdrop-filter: blur(6px) saturate(150%);
 			border: 1px solid rgba(255, 255, 255, 0.14);
 			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px rgba(0, 0, 0, 0.5);
 			border-radius: 12px;
@@ -111,10 +111,17 @@
 			display: block;
 		}
 
+		/* Vidro mais transparente: a foto do caminhão aparece através dos cards */
+		.driver-topbar,
+		.driver-shift-card,
+		.driver-live-card {
+			text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+		}
+
 		.driver-shift-card {
-			background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(10, 34, 52, 0.45) 35%, rgba(4, 18, 30, 0.65) 100%);
-			backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-			-webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%);
+			background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(10, 34, 52, 0.18) 35%, rgba(4, 18, 30, 0.32) 100%);
+			backdrop-filter: blur(6px) saturate(150%) contrast(105%);
+			-webkit-backdrop-filter: blur(6px) saturate(150%) contrast(105%);
 			border: 1px solid rgba(255, 255, 255, 0.18);
 			box-shadow:
 				inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35),
@@ -190,9 +197,9 @@
 		}
 
 		.driver-live-card {
-			background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(10, 34, 52, 0.48) 35%, rgba(4, 18, 30, 0.70) 100%);
-			backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-			-webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%);
+			background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(10, 34, 52, 0.20) 35%, rgba(4, 18, 30, 0.34) 100%);
+			backdrop-filter: blur(6px) saturate(150%) contrast(105%);
+			-webkit-backdrop-filter: blur(6px) saturate(150%) contrast(105%);
 			border: 2px solid #0052ff;
 			border-radius: 16px;
 			padding: 20px 18px;
@@ -213,20 +220,20 @@
 
 		.driver-live-card.estado-pre-alerta {
 			border-color: #ffaa00 !important;
-			background: linear-gradient(135deg, rgba(255, 170, 0, 0.22) 0%, rgba(20, 30, 42, 0.65) 45%, rgba(10, 18, 26, 0.80) 100%) !important;
+			background: linear-gradient(135deg, rgba(255, 170, 0, 0.20) 0%, rgba(20, 30, 42, 0.40) 45%, rgba(10, 18, 26, 0.55) 100%) !important;
 			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.4), 0 10px 35px rgba(255, 170, 0, 0.45);
 		}
 
 		.driver-live-card.estado-alarme {
 			border-color: #ff2a55 !important;
-			background: linear-gradient(135deg, rgba(255, 42, 85, 0.32) 0%, rgba(35, 10, 18, 0.70) 50%, rgba(18, 4, 8, 0.88) 100%) !important;
+			background: linear-gradient(135deg, rgba(255, 42, 85, 0.30) 0%, rgba(35, 10, 18, 0.48) 50%, rgba(18, 4, 8, 0.62) 100%) !important;
 			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.45), 0 0 45px rgba(255, 42, 85, 0.7);
 			animation: bordaNeonAlarme 0.8s infinite alternate;
 		}
 
 		.driver-live-card.estado-recuperando {
 			border-color: #55ee77 !important;
-			background: linear-gradient(135deg, rgba(85, 238, 119, 0.22) 0%, rgba(10, 38, 25, 0.65) 50%, rgba(4, 18, 12, 0.80) 100%) !important;
+			background: linear-gradient(135deg, rgba(85, 238, 119, 0.20) 0%, rgba(10, 38, 25, 0.40) 50%, rgba(4, 18, 12, 0.55) 100%) !important;
 			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.4), 0 0 35px rgba(85, 238, 119, 0.55);
 		}
 
