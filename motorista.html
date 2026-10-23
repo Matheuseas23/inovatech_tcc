@@ -543,7 +543,7 @@
 				btnToggleShift.className = 'btn-toggle-shift active-shift';
 				shiftStatusBadge.className = 'driver-badge-live';
 				shiftStatusBadge.innerHTML = '<span class="pulse-dot"></span><span>OPERANDO</span>';
-				shiftBtnText.innerHTML = '<span class="material-symbols-outlined g-icon">power_settings_new</span> TURNO ATIVO · MONITORAMENTO SEGURO LIGADO';
+				shiftBtnText.textContent = 'TURNO ATIVO · MONITORAMENTO SEGURO LIGADO';
 				if (ultimoEstadoRecebido) {
 					atualizarEstadoNoApp(ultimoEstadoRecebido);
 				} else {
@@ -555,7 +555,7 @@
 				btnToggleShift.className = 'btn-toggle-shift';
 				shiftStatusBadge.className = 'driver-badge-inactive';
 				shiftStatusBadge.innerHTML = '<span>STANDBY / INATIVO</span>';
-				shiftBtnText.innerHTML = '<span class="material-symbols-outlined g-icon">power_settings_new</span> ATIVAR MONITORAMENTO SEGURO / INICIAR VIAGEM';
+				shiftBtnText.textContent = 'ATIVAR MONITORAMENTO SEGURO / INICIAR VIAGEM';
 				fecharChamadaTelaCheia();
 				anim.status = 'STANDBY';
 				driverLiveCard.className = 'driver-live-card estado-normal';
