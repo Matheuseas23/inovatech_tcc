@@ -40,7 +40,7 @@ const ESPELHAR_NUVEM = !IS_RENDER_CLOUD && process.env.ESPELHAR_NUVEM !== '0';
 // ------------------------------------------------------------------------------
 // CALIBRAÇÃO OFICIAL (mesmos valores exibidos na Central e no App do Motorista)
 // ------------------------------------------------------------------------------
-const LIMIAR_PADRAO_MS = 3500;           // Tolerância da ESP32 (sobrescrita pelo limiar_ms enviado pela placa)
+const LIMIAR_PADRAO_MS = 1500;           // Tolerância da ESP32 (sobrescrita pelo limiar_ms enviado pela placa)
 const LIMIAR_SIMULACAO_MS = 1500;        // Botão "Simular Alerta" (modo rápido de demonstração)
 const RECUPERACAO_MS = 3000;             // Cabeça erguida por 3s encerra o alerta automaticamente
 const ESCALONAMENTO = { critico_ms: 9000, acidente_ms: 15000 };
@@ -528,7 +528,7 @@ function processarTelemetriaESP32(p, fonte) {
     estado.estado = estadoEsp;
     if (anterior !== 'PRE_ALERTA' && estadoEsp === 'PRE_ALERTA') {
       registrarEvento('PRE_ALERTA', 'Aviso: Cabeça baixa detectada (contagem de segurança iniciada)',
-        `Tolerância: ${(estado.limiar_seguranca_ms / 1000).toFixed(1)}s com 3 bips progressivos.`);
+        `Tolerância: ${(estado.limiar_seguranca_ms / 1000).toFixed(1)}s com 1 bip de aviso e pisca-alerta armado.`);
     } else if (anterior === 'PRE_ALERTA' && estadoEsp === 'NORMAL') {
       registrarEvento('NORMAL', 'Cabeça erguida antes do disparo do alarme', 'Pré-alerta cancelado pelo próprio motorista.');
     }

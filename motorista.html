@@ -454,7 +454,7 @@
 
 			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
 				<span style="font-size:11px;color:var(--muted)">CRONÔMETRO DE TOLERÂNCIA:</span>
-				<div class="driver-timer-large" id="driverTimerCount">0.00s / 3.50s</div>
+				<div class="driver-timer-large" id="driverTimerCount">0.00s / 1.50s</div>
 			</div>
 
 			<div class="progresso-bar-bg" style="height:12px">
@@ -497,7 +497,7 @@
 	<script src="conexao-backend.js"></script>
 	<script>
 		// O servidor (ou a própria ESP32) define o limiar; estes valores só valem até a 1ª mensagem
-		var LIMIAR_PADRAO_MS = 3500;
+		var LIMIAR_PADRAO_MS = 1500;
 		var LIMIAR_SIMULACAO_RAPIDA_MS = 1500;
 		var audioCtx = null;
 		var callRingtoneTimer = null;

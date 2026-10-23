@@ -6,7 +6,7 @@
  * - Envia o mesmo JSON de telemetria por UDP na porta 3002 (5 pacotes/s).
  * - Recebe a resposta {"srv":"INOVATECH","cmds":[...]} e executa os comandos
  *   da Central (TEST_ALARM, SILENCIAR, CALIBRAR, TOGGLE_RELE1/2).
- * - Repete um ciclo: 6s dirigindo normal -> cabeça baixa por 5s (alarme aos 3,5s)
+ * - Repete um ciclo: 6s dirigindo normal -> cabeça baixa por 5s (bip + Relé 2 em 1s, alarme aos 1,5s)
  *   -> cabeça erguida (recuperação automática de 3s no servidor).
  *
  * Uso: npm run simulate   (com o servidor já rodando em outra janela)
@@ -17,7 +17,7 @@ const dgram = require('dgram');
 
 const SERVIDOR_HOST = process.env.BACKEND_HOST || '127.0.0.1';
 const SERVIDOR_PORTA_UDP = Number(process.env.BACKEND_UDP_PORT || 3002);
-const LIMIAR_MS = 3500;
+const LIMIAR_MS = 1500;
 const CICLO_MS = 16000;
 
 const socket = dgram.createSocket('udp4');
@@ -42,7 +42,8 @@ function montarTelemetria() {
   const tempo = inicioCabecaBaixa ? agora - inicioCabecaBaixa : 0;
   const teste = agora < testeAtivoAte;
   const alarme = (cabecaBaixa && tempo >= LIMIAR_MS) || teste;
-  const bip = cabecaBaixa && !alarme && [700, 1700, 2700].some((i) => tempo >= i && tempo < i + 350);
+  const bip = cabecaBaixa && !alarme && tempo >= 1000 && tempo < 1300;
+  const avisoPiscaAlerta = cabecaBaixa && tempo >= 1000;
   const estado = alarme ? 'ALARME_ATIVADO' : (cabecaBaixa ? 'PRE_ALERTA' : 'NORMAL');
   const inclinacao = cabecaBaixa ? 38 + Math.random() * 3 : 2 + Math.random() * 2;
 
@@ -56,7 +57,7 @@ function montarTelemetria() {
     buzzer: alarme || bip ? 1 : 0,
     rele: alarme || rele1Manual ? 1 : 0,
     rele_1: alarme || rele1Manual ? 1 : 0,
-    rele_2: alarme || rele2Manual ? 1 : 0,
+    rele_2: alarme || avisoPiscaAlerta || rele2Manual ? 1 : 0,
     alarme_teste: teste ? 1 : 0,
     estado,
     acelerometro: {
@@ -106,6 +107,6 @@ socket.on('error', (err) => console.error('[ESP32 SIM ERRO]:', err.message));
 
 socket.bind(0, () => {
   console.log(`\nSimulador ESP32 InovaTech enviando UDP para ${SERVIDOR_HOST}:${SERVIDOR_PORTA_UDP}`);
-  console.log('Ciclo: 6s normal -> 5s cabeça baixa (alarme aos 3,5s) -> cabeça erguida.\n');
+  console.log('Ciclo: 6s normal -> 5s cabeça baixa (alarme aos 1,5s) -> cabeça erguida.\n');
   enviarTelemetria();
 });

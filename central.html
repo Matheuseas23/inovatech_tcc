@@ -446,7 +446,7 @@
 							<li>Placa: <strong>INO-2026 · São Paulo/SP</strong></li>
 							<li>Rota: <strong>BR-116 (São Paulo -> Curitiba) · KM 284</strong></li>
 							<li>Dispositivo: <strong>Óculos Smart Driver ESP32 DevKit (Wi-Fi)</strong></li>
-							<li>Tolerância de Fadiga: <strong><span class="limiar-txt">3,50s</span> (Filtro Temporal de Segurança)</strong></li>
+							<li>Tolerância de Fadiga: <strong><span class="limiar-txt">1,50s</span> (Filtro Temporal de Segurança)</strong></li>
 							<li>Status de Telemetria: <strong id="garciaTelemetriaStatus" style="color:#8ca4ad">EM
 									ESPERA (CABINE INATIVA)</strong>
 							</li>
@@ -738,8 +738,8 @@
 							<div style="text-align:right">
 								<span
 									style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CRONÔMETRO
-									DE TOLERÂNCIA (<span class="limiar-txt">3,50s</span>)</span>
-								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 3.50s</div>
+									DE TOLERÂNCIA (<span class="limiar-txt">1,50s</span>)</span>
+								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 1.50s</div>
 							</div>
 						</div>
 
@@ -748,8 +748,8 @@
 							<div
 								style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap;gap:4px">
 								<span>ESTÁVEL (0.00s)</span>
-								<span>CONTAGEM ATIVA · 3 BIPS NOS ÓCULOS</span>
-								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (<span class="limiar-txt">3,50s</span>)</span>
+								<span>BIP DE AVISO + PISCA-ALERTA (1,00s)</span>
+								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (<span class="limiar-txt">1,50s</span>)</span>
 							</div>
 							<div class="progresso-bar-bg">
 								<div class="progresso-bar-fill" id="barraProgressoTempo"></div>
@@ -776,7 +776,7 @@
 
 						<p id="descricaoEstadoCondutor" style="margin-top:12px;font-size:11px;line-height:1.6">
 							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de
-							<span class="limiar-txt">3,50s</span> para evitar alarmes falsos ao checar painel e espelhos.
+							<span class="limiar-txt">1,50s</span> para evitar alarmes falsos ao checar painel e espelhos.
 						</p>
 
 						<!-- BOTÕES DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA (EMBAIXO DA SITUAÇÃO ATUAL) -->
@@ -852,12 +852,12 @@
 							<div class="axis-item">
 								<div class="axis-label">TEMPO DE REFLEXÃO</div>
 								<div class="axis-val" id="irTempoMs">0 ms</div>
-								<span style="font-size:10px;color:var(--muted)" id="irLimiteLabel">Limite: 3500 ms</span>
+								<span style="font-size:10px;color:var(--muted)" id="irLimiteLabel">Limite: 1500 ms</span>
 							</div>
 						</div>
 						<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
-							Feixe infravermelho calibrado com margem de segurança de <span class="limiar-txt">3,50s</span>
-							(3 bips de aviso) e recuperação automática de 3 segundos com cabeça erguida.
+							Feixe infravermelho calibrado com margem de segurança de <span class="limiar-txt">1,50s</span>
+							(1 bip de aviso) e recuperação automática de 3 segundos com cabeça erguida.
 						</div>
 					</article>
 
@@ -983,7 +983,7 @@
 							<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
 								<span style="font-size:10px;color:var(--muted)">TESTE RÁPIDO:</span>
 								<button class="btn-tactical" id="btnSimularCabecaBaixa"
-									style="padding:4px 10px;font-size:10px">Simular Cabeça Baixa Real (3,5s)</button>
+									style="padding:4px 10px;font-size:10px">Simular Cabeça Baixa Real (<span class="limiar-txt">1,50s</span>)</button>
 								<button class="btn-tactical" id="btnSimularCabecaErguida"
 									style="padding:4px 10px;font-size:10px">Erguer Cabeça</button>
 							</div>
@@ -998,7 +998,7 @@
 	<script src="conexao-backend.js"></script>
 	<script>
 		// O servidor (ou a própria ESP32) define o limiar; estes valores só valem até a 1ª mensagem
-		var LIMIAR_PADRAO_MS = 3500;
+		var LIMIAR_PADRAO_MS = 1500;
 		var LIMIAR_SIMULACAO_RAPIDA_MS = 1500;
 		var ultimoEstado = null;
 
@@ -1462,7 +1462,7 @@
 			if (descricaoEstadoCondutor) {
 				if (recuperando) descricaoEstadoCondutor.textContent = 'Cabeça erguida detectada. Mantendo por ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + 's o alerta é encerrado automaticamente.';
 				else if (status === 'ALARME_ATIVADO') descricaoEstadoCondutor.textContent = 'Alarme ativo: buzzer contínuo nos óculos, relés acionados e chamada de descanso no celular do motorista.';
-				else if (status === 'PRE_ALERTA') descricaoEstadoCondutor.textContent = 'Cabeça baixa detectada: contagem de segurança em andamento com 3 bips de aviso nos óculos.';
+				else if (status === 'PRE_ALERTA') descricaoEstadoCondutor.textContent = 'Cabeça baixa detectada: bip de aviso nos óculos e pisca-alerta armado (Relé 2). Alarme contínuo em seguida.';
 				else descricaoEstadoCondutor.textContent = 'Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de ' + formatarSegundos(anim.limiarMs).replace('.', ',') + 's para evitar alarmes falsos ao checar painel e espelhos.';
 			}
 

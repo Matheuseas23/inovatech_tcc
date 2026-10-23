@@ -257,8 +257,8 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 ## 11. Estabilização da Comunicação (23 de Outubro de 2026) — SUBSTITUI os tempos das seções anteriores
 - **Fonte única da verdade**: a ESP32 decide `NORMAL` / `PRE_ALERTA` / `ALARME_ATIVADO`. O `server.js` **não** cronometra a cabeça baixa sozinho (antes ele disparava em 1,5 s enquanto o óculos disparava em 3,5 s).
 - **Tempos oficiais** (todos lidos do servidor pelas páginas; não escrever números fixos no HTML):
-  - Tolerância real da ESP32: **3,5 s** com 3 bips (700–1050, 1700–2050, 2700–3050 ms).
-  - Botão "Simular Alerta": **1,5 s** (modo rápido); "Simular Cabeça Baixa Real": 3,5 s.
+  - Tolerância real da ESP32: **1,5 s** (mudou de 3,5 s em 23/10/2026). Em **1,0 s**: 1 bip (1,0–1,3 s) + "tec" do **Relé 2** (pisca-alerta arma). Em **1,5 s**: bip contínuo + "tec" do **Relé 1** (safe-stop). Cabeça erguida: buzzer para e os dois relés soltam juntos ("tec").
+  - Botão "Simular Alerta": **1,5 s** (modo rápido); "Simular Cabeça Baixa Real": usa o limiar da placa (hoje 1,5 s).
   - Alerta Crítico na Central: **9 s** sem resposta · Possível Acidente / SOS: **15 s** (constante `ESCALONAMENTO` no `server.js`).
   - Recuperação automática: cabeça erguida por **3 s** encerra o alerta (feita no servidor; só para alertas reais do sensor — teste e simulação exigem confirmação).
 - **Protocolo ESP32 ⇄ Servidor (zero configuração de IP)**: telemetria por UDP broadcast na porta 3002 → o servidor responde `{"srv":"INOVATECH","cmds":[...]}` → a ESP32 aprende o IP do PC e recebe os comandos (`TEST_ALARM`, `SILENCIAR`, `CALIBRAR`, `TOGGLE_RELE1/2`). Sem servidor local por 5 s, a ESP32 envia por HTTPS para o Render.

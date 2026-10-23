@@ -77,8 +77,13 @@ const int NIVEL_RELE_DESLIGADO   = HIGH;
 // ------------------------------------------------------------------------------
 // 3. CALIBRAÇÃO TEMPORAL E ANGULAR
 // ------------------------------------------------------------------------------
-// Filtro Temporal de Segurança: 3.5 segundos de tolerância com 3 bips progressivos
-const unsigned long LIMIAR_CABECA_BAIXA_MS = 3500;
+// Filtro Temporal de Segurança: 1,5 s de tolerância. Linha do tempo da cabeça baixa:
+//   1,0 s -> 1 bip de aviso + "tec" do Relé 2 (pisca-alerta arma)
+//   1,5 s -> bip contínuo + "tec" do Relé 1 (safe-stop)
+//   cabeça erguida -> buzzer para e os dois relés soltam juntos ("tec")
+const unsigned long LIMIAR_CABECA_BAIXA_MS = 1500;
+const unsigned long BIP_AVISO_INICIO_MS    = 1000;
+const unsigned long BIP_AVISO_FIM_MS       = 1300; // 200 ms de silêncio antes do contínuo
 
 // Acelerômetro: ângulo medido em relação à postura calibrada (cabeça erguida).
 // Funciona em qualquer orientação de montagem do GY-521 na haste dos óculos.
@@ -177,8 +182,7 @@ float historicoInclinacao[10] = {0};       // 10 amostras x 10 ms = janela de 10
 uint8_t indiceHistorico = 0;
 
 // Protótipos de Funções
-void ativarAlarmes();
-void desativarAlarmes();
+void aplicarAtuadores(bool buzzer, bool rele1, bool rele2);
 void processarComandosSerial();
 void aplicarComandosRemotos();
 void agendarComando(uint8_t cmd);
@@ -217,7 +221,7 @@ void setup() {
   pinMode(PINO_MPU_GND, OUTPUT);
   digitalWrite(PINO_MPU_GND, LOW);
 
-  desativarAlarmes();
+  aplicarAtuadores(false, false, false);
 
   // Aguarda 150ms para o sensor GY-521 estabilizar a alimentação
   delay(150);
@@ -488,12 +492,8 @@ void loop() {
           Serial.println(F(">>> ALERTA CRITICO: Fadiga confirmada! Buzzer continuo e Reles ativados!"));
         }
       } else {
-        // 3 BIPS PROGRESSIVOS ALONGADOS (350 ms cada):
-        // 1º Bip: 700 a 1050 ms | 2º Bip: 1700 a 2050 ms | 3º Bip: 2700 a 3050 ms
-        // Aos 3.5s (3500ms): Alarme contínuo ininterrupto + relés!
-        bipPreAlertaAtivo = (tempoDecorridoMs >= 700 && tempoDecorridoMs < 1050) ||
-                            (tempoDecorridoMs >= 1700 && tempoDecorridoMs < 2050) ||
-                            (tempoDecorridoMs >= 2700 && tempoDecorridoMs < 3050);
+        // 1 BIP DE AVISO (1,0 a 1,3 s); aos 1,5 s vem o alarme contínuo + relés
+        bipPreAlertaAtivo = tempoDecorridoMs >= BIP_AVISO_INICIO_MS && tempoDecorridoMs < BIP_AVISO_FIM_MS;
       }
     }
   } else if (cabecaEstavaBaixa) {
@@ -509,22 +509,23 @@ void loop() {
   }
 
   bool alarmeGeral = alarmeAtivo || testeAlarmeAtivo;
-  if (alarmeGeral) {
-    estadoAtualTexto = "ALARME_ATIVADO";
-    ativarAlarmes();
-  } else {
-    if (cabecaEstavaBaixa) estadoAtualTexto = "PRE_ALERTA";
-    desativarAlarmes();
-    digitalWrite(PINO_BUZZER, bipPreAlertaAtivo ? NIVEL_BUZZER_LIGADO : NIVEL_BUZZER_DESLIGADO);
-  }
+  // Relé 2 (pisca-alerta) arma já no bip de aviso; o Relé 1 (safe-stop) só no alarme contínuo.
+  // Cada mudança de estado de um relé é um "tec" audível no módulo.
+  bool avisoPiscaAlerta = cabecaEstavaBaixa && tempoDecorridoMs >= BIP_AVISO_INICIO_MS;
+  bool buzzerLigado = alarmeGeral || bipPreAlertaAtivo;
+  bool rele1Ligado  = alarmeGeral || testeManualRele1;
+  bool rele2Ligado  = alarmeGeral || avisoPiscaAlerta || testeManualRele2;
+  if (alarmeGeral) estadoAtualTexto = "ALARME_ATIVADO";
+  else if (cabecaEstavaBaixa) estadoAtualTexto = "PRE_ALERTA";
+  aplicarAtuadores(buzzerLigado, rele1Ligado, rele2Ligado);
 
   // Atualiza os dados compartilhados com o Core 0 de forma atômica
   portENTER_CRITICAL(&mutexDados);
   dadosGlobais.sensorIr = estadoLeitura;
   dadosGlobais.tempoCabecaBaixaMs = tempoDecorridoMs;
-  dadosGlobais.buzzer = (alarmeGeral || bipPreAlertaAtivo) ? 1 : 0;
-  dadosGlobais.rele1 = (alarmeGeral || testeManualRele1) ? 1 : 0;
-  dadosGlobais.rele2 = (alarmeGeral || testeManualRele2) ? 1 : 0;
+  dadosGlobais.buzzer = buzzerLigado ? 1 : 0;
+  dadosGlobais.rele1 = rele1Ligado ? 1 : 0;
+  dadosGlobais.rele2 = rele2Ligado ? 1 : 0;
   dadosGlobais.pitch = mpu.pitch;
   dadosGlobais.roll = mpu.roll;
   dadosGlobais.inclinacao = mpu.inclinacao;
@@ -615,16 +616,11 @@ void aplicarComandosRemotos() {
 // ------------------------------------------------------------------------------
 // 9. ATUADORES DE SEGURANÇA
 // ------------------------------------------------------------------------------
-void ativarAlarmes() {
-  digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
-  digitalWrite(PINO_RELE_1, NIVEL_RELE_LIGADO);
-  digitalWrite(PINO_RELE_2, NIVEL_RELE_LIGADO);
-}
-
-void desativarAlarmes() {
-  digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO);
-  digitalWrite(PINO_RELE_1, testeManualRele1 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
-  digitalWrite(PINO_RELE_2, testeManualRele2 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
+// Escreve o estado de todos os atuadores de uma vez (sem pulsos intermediários nos relés)
+void aplicarAtuadores(bool buzzer, bool rele1, bool rele2) {
+  digitalWrite(PINO_BUZZER, buzzer ? NIVEL_BUZZER_LIGADO : NIVEL_BUZZER_DESLIGADO);
+  digitalWrite(PINO_RELE_1, rele1 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
+  digitalWrite(PINO_RELE_2, rele2 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
 }
 
 // ------------------------------------------------------------------------------
