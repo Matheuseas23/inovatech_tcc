@@ -94,6 +94,12 @@ const float PESCADA_INCLINACAO_MIN  = 25.0;  // ...desde que termine a pelo meno
 const bool  PESCADA_DISPARA_ALARME  = true;  // Pescada dispara o alarme na hora
 const unsigned long ALARME_MINIMO_PESCADA_MS = 2000; // Alarme de pescada dura no mínimo 2s
 
+// Pegar objeto x sono (giroscópio): sono = cabeça baixa e PARADA; pegar um objeto = cabeça
+// baixa SE MEXENDO. Enquanto a cabeça se mexe de propósito, a contagem de 1,5 s não anda.
+const float LIMIAR_MOVIMENTO_GRAUS_S    = 25.0; // Rotação acima disso = movimento voluntário
+const unsigned long JANELA_MOVIMENTO_MS = 600;  // Depois de mexer, espera a cabeça assentar
+const unsigned long CONFIRMA_PESCADA_MS = 500;  // Pescada vale se a cabeça assentar parada em até 0,5 s
+
 // Calibração guiada por bipes (sem PC por perto, ex.: power bank nas costas):
 // ao ligar, 1 bip -> 4 s para pôr os óculos e olhar para frente -> 2 bips = calibrado.
 // Cabeça mexendo durante a medição = 1 bip longo e nova tentativa em 2 s.
@@ -183,6 +189,7 @@ struct LeituraMPU {
   float roll;
   float inclinacao;
   bool pescada;
+  float giro; // Velocidade de rotação da cabeça em qualquer direção (°/s, filtrada)
 };
 
 bool mpuDetectado             = false;
@@ -194,6 +201,12 @@ float gRefX = 0, gRefY = 0, gRefZ = 1;     // Vetor de referência (cabeça ergu
 float rotRef[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}; // Leva a postura calibrada para o eixo Z
 float historicoInclinacao[10] = {0};       // 10 amostras x 10 ms = janela de 100 ms
 uint8_t indiceHistorico = 0;
+float biasGx = 0, biasGy = 0, biasGz = 0;  // Desvio de fábrica do giroscópio (medido na calibração)
+float giroFiltrado = 0;                    // °/s
+bool cabecaInclinada               = false; // Ângulo além do limite (com histerese)
+unsigned long ultimoMovimentoMs    = 0;     // Última vez que a cabeça se mexeu de propósito
+unsigned long pescadaCandidataMs   = 0;     // Queda brusca aguardando a cabeça assentar
+unsigned long inicioBaixaParadaMs  = 0;     // Diagnóstico: cabeça baixa e parada desde...
 
 // Protótipos de Funções
 void aplicarAtuadores(bool buzzer, bool rele1, bool rele2);
@@ -203,7 +216,7 @@ void agendarComando(uint8_t cmd);
 void interpretarComandosTexto(const char* texto);
 void taskTelemetria(void *pvParameters);
 bool inicializarMPU6050();
-bool lerAcelerometroBruto(float &ax, float &ay, float &az);
+bool lerMPUBruto(float &ax, float &ay, float &az, float &gx, float &gy, float &gz);
 bool calibrarMPU6050();
 void calibrarComAviso();
 void bipAviso(uint8_t vezes, unsigned int duracaoMs);
@@ -318,22 +331,36 @@ bool inicializarMPU6050() {
   Wire.write(0x00);
   Wire.endTransmission(true);
 
+  // Fundo de escala do giroscópio (+/- 250 °/s)
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x1B); // GYRO_CONFIG
+  Wire.write(0x00);
+  Wire.endTransmission(true);
+
   mpuDetectado = true;
   return true;
 }
 
-bool lerAcelerometroBruto(float &ax, float &ay, float &az) {
+// Lê acelerômetro (g) e giroscópio (°/s) numa única transação I2C de 14 bytes
+bool lerMPUBruto(float &ax, float &ay, float &az, float &gx, float &gy, float &gz) {
   Wire.beginTransmission(MPU6050_ADDR);
   Wire.write(0x3B); // Registrador ACCEL_XOUT_H
   if (Wire.endTransmission(false) != 0) return false;
-  if (Wire.requestFrom((uint8_t)MPU6050_ADDR, (size_t)6, true) != 6) return false;
+  if (Wire.requestFrom((uint8_t)MPU6050_ADDR, (size_t)14, true) != 14) return false;
 
   int16_t rx = (Wire.read() << 8) | Wire.read();
   int16_t ry = (Wire.read() << 8) | Wire.read();
   int16_t rz = (Wire.read() << 8) | Wire.read();
+  Wire.read(); Wire.read(); // Temperatura (não usada)
+  int16_t qx = (Wire.read() << 8) | Wire.read();
+  int16_t qy = (Wire.read() << 8) | Wire.read();
+  int16_t qz = (Wire.read() << 8) | Wire.read();
   ax = rx / 16384.0;
   ay = ry / 16384.0;
   az = rz / 16384.0;
+  gx = qx / 131.0;
+  gy = qy / 131.0;
+  gz = qz / 131.0;
   return true;
 }
 
@@ -341,12 +368,14 @@ bool lerAcelerometroBruto(float &ax, float &ay, float &az) {
 // Retorna false se a leitura falhar ou a cabeça estiver mexendo (mantém a referência anterior).
 bool calibrarMPU6050() {
   float somaX = 0, somaY = 0, somaZ = 0, somaQuadrados = 0;
+  float somaGx = 0, somaGy = 0, somaGz = 0;
   int amostras = 0;
   for (int i = 0; i < 50; i++) {
-    float ax, ay, az;
-    if (lerAcelerometroBruto(ax, ay, az)) {
+    float ax, ay, az, gx, gy, gz;
+    if (lerMPUBruto(ax, ay, az, gx, gy, gz)) {
       somaX += ax; somaY += ay; somaZ += az;
       somaQuadrados += ax * ax + ay * ay + az * az;
+      somaGx += gx; somaGy += gy; somaGz += gz;
       amostras++;
     }
     delay(10);
@@ -371,6 +400,9 @@ bool calibrarMPU6050() {
 
   gRefX = mx / modulo; gRefY = my / modulo; gRefZ = mz / modulo;
   gFiltX = gRefX; gFiltY = gRefY; gFiltZ = gRefZ;
+  // Cabeça parada: a média do giroscópio é o desvio de fábrica, descontado nas leituras
+  biasGx = somaGx / n; biasGy = somaGy / n; biasGz = somaGz / n;
+  giroFiltrado = 0;
   // Rotação mínima que leva a gravidade da postura calibrada até o eixo Z (Rodrigues).
   // Assim pitch e roll partem de 0° com a cabeça erguida, em qualquer montagem do sensor
   // (preso de pé na haste, o cálculo direto do roll ficava instável e pulava até 280°).
@@ -458,7 +490,7 @@ void calibrarComAviso() {
 }
 
 LeituraMPU lerMPU6050(unsigned long agora) {
-  LeituraMPU r = {false, 0.0, 0.0, 0.0, false};
+  LeituraMPU r = {false, 0.0, 0.0, 0.0, false, 0.0};
 
   if (!mpuDetectado) {
     // Tenta reconectar no máximo 1x por segundo (não sobrecarrega o barramento I2C)
@@ -470,8 +502,8 @@ LeituraMPU lerMPU6050(unsigned long agora) {
     if (!mpuCalibrado && !calibracaoAgendadaMs) calibracaoAgendadaMs = agora + 1000;
   }
 
-  float ax, ay, az;
-  if (!lerAcelerometroBruto(ax, ay, az)) {
+  float ax, ay, az, gx, gy, gz;
+  if (!lerMPUBruto(ax, ay, az, gx, gy, gz)) {
     mpuDetectado = false;
     ultimaTentativaMpu = agora;
     Serial.println(F("[MPU-6050] Leitura falhou (modulo desconectado?)."));
@@ -482,6 +514,11 @@ LeituraMPU lerMPU6050(unsigned long agora) {
   gFiltX = gFiltX * 0.7 + ax * 0.3;
   gFiltY = gFiltY * 0.7 + ay * 0.3;
   gFiltZ = gFiltZ * 0.7 + az * 0.3;
+
+  // Giroscópio: rotação da cabeça em qualquer direção (inclusive virar para os lados), sem o desvio
+  float wx = gx - biasGx, wy = gy - biasGy, wz = gz - biasGz;
+  giroFiltrado = giroFiltrado * 0.8 + sqrt(wx * wx + wy * wy + wz * wz) * 0.2;
+  r.giro = giroFiltrado;
 
   float modulo = sqrt(gFiltX * gFiltX + gFiltY * gFiltY + gFiltZ * gFiltZ);
   if (modulo < 0.3 || !mpuCalibrado) return r;
@@ -556,10 +593,27 @@ void loop() {
 
   // Leitura do Acelerômetro GY-521
   LeituraMPU mpu = lerMPU6050(agora);
-  // Histerese: dispara acima de 32°, mas só volta a "erguida" abaixo de 25° (sem liga-desliga)
-  float limiarAtual = cabecaEstavaBaixa ? LIMIAR_RETORNO_GRAUS : LIMIAR_INCLINACAO_GRAUS;
-  bool inclinadoDemais = mpu.valida && (mpu.inclinacao > limiarAtual);
-  bool pescadaSono = mpu.valida && mpu.pescada;
+  // Histerese: inclinada acima de 32°, só volta a "erguida" abaixo de 25° (sem liga-desliga)
+  float limiarAtual = (cabecaInclinada || alarmeAtivo) ? LIMIAR_RETORNO_GRAUS : LIMIAR_INCLINACAO_GRAUS;
+  cabecaInclinada = mpu.valida && (mpu.inclinacao > limiarAtual);
+
+  // Pegar objeto x sono: cabeça se mexendo = movimento voluntário, a contagem não anda.
+  // Depois que o alarme dispara, mexer não cancela: só erguer a cabeça encerra.
+  if (mpu.valida && mpu.giro > LIMIAR_MOVIMENTO_GRAUS_S) ultimoMovimentoMs = agora;
+  bool movimentoAtivo = ultimoMovimentoMs && agora - ultimoMovimentoMs < JANELA_MOVIMENTO_MS;
+  bool inclinadoDemais = cabecaInclinada && (alarmeAtivo || !movimentoAtivo);
+
+  // Pescada: queda brusca que "assenta" parada lá embaixo em até 0,5 s (quem pega algo segue se mexendo)
+  if (mpu.valida && mpu.pescada) pescadaCandidataMs = agora;
+  bool pescadaSono = false;
+  if (pescadaCandidataMs) {
+    if (agora - pescadaCandidataMs > CONFIRMA_PESCADA_MS) {
+      pescadaCandidataMs = 0;
+    } else if (mpu.inclinacao > PESCADA_INCLINACAO_MIN && mpu.giro < LIMIAR_MOVIMENTO_GRAUS_S) {
+      pescadaSono = true;
+      pescadaCandidataMs = 0;
+    }
+  }
 
   // Sensor IR só conta na falta do acelerômetro, e se estiver vivo
   if (estadoLeitura != NIVEL_CABECA_BAIXA) ultimoIrLivreMs = agora;

@@ -1033,8 +1033,10 @@
 			if (garciaViagemAtiva === !!ativo) return;
 			garciaViagemAtiva = !!ativo;
 			if (btnAcessarCabineGarcia) {
-				btnAcessarCabineGarcia.className = 'btn-access-cabine';
-				btnAcessarCabineGarcia.removeAttribute('disabled');
+				// O monitoramento só abre com a viagem ativada no app do motorista
+				btnAcessarCabineGarcia.className = garciaViagemAtiva ? 'btn-access-cabine' : 'btn-access-disabled';
+				if (garciaViagemAtiva) btnAcessarCabineGarcia.removeAttribute('disabled');
+				else btnAcessarCabineGarcia.setAttribute('disabled', 'disabled');
 			}
 			if (garciaViagemAtiva) {
 				if (cardFrotaGarcia) cardFrotaGarcia.className = 'driver-card active-route';
@@ -1063,12 +1065,18 @@
 					garciaTelemetriaStatus.style.color = '#8ca4ad';
 					garciaTelemetriaStatus.textContent = 'EM ESPERA (CABINE INATIVA)';
 				}
-				if (garciaBtnIcon) garciaBtnIcon.textContent = 'visibility';
-				if (garciaBtnText) garciaBtnText.textContent = 'Acessar Cockpit de Telemetria';
+				if (garciaBtnIcon) garciaBtnIcon.textContent = 'lock';
+				if (garciaBtnText) garciaBtnText.textContent = 'Ative o Monitoramento no App';
+				// Viagem encerrada com o cockpit aberto: volta para a frota
+				if (cockpitView && cockpitView.classList.contains('active')) {
+					cockpitView.classList.remove('active');
+					fleetView.classList.remove('hidden');
+				}
 			}
 		}
 
 		function abrirCockpit() {
+			if (!garciaViagemAtiva) return;
 			fleetView.classList.add('hidden');
 			cockpitView.classList.add('active');
 			window.scrollTo({ top: 0, behavior: 'smooth' });
