@@ -2,47 +2,76 @@
  * ==============================================================================
  * INOVATECH SMART DRIVER — BACKEND API & WEBSOCKET ENGINE (TCC)
  * ==============================================================================
- * Servidor central de telemetria em tempo real para comunicação com o ESP32,
- * processamento do filtro temporal de segurança (2500 ms) e transmissão
- * instantânea para o Painel de Controle na Central (Vercel ou Local).
- * 
- * Port: 3001 (ou process.env.PORT)
- * Protocolos: HTTP REST + WebSockets (/ws)
+ * Servidor central de telemetria em tempo real entre a ESP32 (óculos), a
+ * Central Tech (central.html) e o App do Motorista (motorista.html).
+ *
+ * Regras de ouro desta versão:
+ * - A ESP32 é a fonte da verdade do estado postural (NORMAL / PRÉ-ALERTA / ALARME).
+ *   O servidor NÃO cronometra a cabeça baixa por conta própria.
+ * - O servidor é dono do "alerta travado" (escalonamento 9s crítico -> 15s SOS) e
+ *   da recuperação automática (cabeça erguida por 3s encerra o alerta).
+ * - Comandos da Central chegam à ESP32 pela resposta UDP (rede local) ou pela
+ *   resposta do POST /api/telemetry (quando a ESP32 fala direto com a nuvem).
+ * - Rodando no PC, o servidor espelha o estado na nuvem (Render) e recebe de volta
+ *   os comandos de quem abriu o site pela internet (celular via Vercel).
+ *
+ * Portas: 3001 HTTP + WebSocket (/ws) | 3002 UDP (telemetria da ESP32)
  * ==============================================================================
  */
 
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const WebSocket = require('ws');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const dgram = require('dgram');
+const { execFile, spawn } = require('child_process');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const UDP_PORT = 3002;
+const IS_RENDER_CLOUD = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
+const RENDER_CLOUD_URL = process.env.RENDER_CLOUD_URL || 'https://inovatech-tcc.onrender.com/api/telemetry';
+const ESPELHAR_NUVEM = !IS_RENDER_CLOUD && process.env.ESPELHAR_NUVEM !== '0';
+
+// ------------------------------------------------------------------------------
+// CALIBRAÇÃO OFICIAL (mesmos valores exibidos na Central e no App do Motorista)
+// ------------------------------------------------------------------------------
+const LIMIAR_PADRAO_MS = 3500;           // Tolerância da ESP32 (sobrescrita pelo limiar_ms enviado pela placa)
+const LIMIAR_SIMULACAO_MS = 1500;        // Botão "Simular Alerta" (modo rápido de demonstração)
+const RECUPERACAO_MS = 3000;             // Cabeça erguida por 3s encerra o alerta automaticamente
+const ESCALONAMENTO = { critico_ms: 9000, acidente_ms: 15000 };
+const COOLDOWN_NORMALIZACAO_MS = 2500;   // Evita re-disparo imediato logo após normalizar
+const TIMEOUT_ESP32_MS = 6000;
+const TIMEOUT_ESPELHO_MS = 5000;
 
 // Configuração para suporte a proxies reversos do Render / Nginx
 app.set('trust proxy', 1);
 
-// Configuração de Middlewares
 app.use(cors({
   origin: '*', // Permite Vercel, localhost e qualquer origem autorizada
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '64kb' }));
 
-// Servir frontend estático para apresentação local e contingência
+// Servir frontend estático para apresentação local e contingência.
+// Bloqueia pastas internas (firmware com senhas de Wi-Fi, dados, git, ADB).
 const frontendRoot = path.join(__dirname, '..');
+const PASTAS_PRIVADAS = /^\/(backend|smart(%20| )driver|\.git|\.agents|\.vscode|espelhamento-celular|audios_professor)(\/|$)/i;
+const ARQUIVOS_PRIVADOS = /\.(md|bat|ini|json\.bak)$/i;
+app.use((req, res, next) => {
+  if (PASTAS_PRIVADAS.test(req.path) || ARQUIVOS_PRIVADOS.test(req.path)) return res.status(404).end();
+  next();
+});
 if (fs.existsSync(path.join(frontendRoot, 'index.html'))) {
-  app.use(express.static(frontendRoot));
+  app.use(express.static(frontendRoot, { dotfiles: 'ignore', index: false }));
 }
 
-// Criação do servidor HTTP integrado
 const server = http.createServer(app);
-
-// Servidor WebSocket no endpoint /ws
 const wss = new WebSocket.Server({ server, path: '/ws' });
 
 // ------------------------------------------------------------------------------
@@ -52,20 +81,36 @@ const estado = {
   dispositivo: 'ESP32_SMART_DRIVER_01',
   online: false,
   ultimoVisto: null,
+  fonte_conexao: null, // 'UDP' | 'HTTP' | 'SERIAL' | 'WS'
+  servidor: IS_RENDER_CLOUD ? 'NUVEM' : 'LOCAL',
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
   tempo_cabeca_baixa_ms: 0,
-  limiar_seguranca_ms: 1500,
-  limiar_seguranca_ms: 1500,
+  limiar_seguranca_ms: LIMIAR_PADRAO_MS,
   estado: 'NORMAL', // 'NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'
-  buzzer: 0, // 0 = Desligado, 1 = Ligado
-  rele: 0, // 0 = Desligado, 1 = Acionado
+  buzzer: 0,
+  rele: 0,   // Relé 1 Safe-Stop (GPIO 18)
+  rele_2: 0, // Relé 2 Pisca-Alerta (GPIO 19)
+  alarme_teste: 0,
   acelerometro: {
     pitch: 0.0,
     roll: 0.0,
-    yaw: 0.0,
+    inclinacao: 0.0,
     pescada_detectada: false,
-    status: 'Aguardando módulo / Simulação'
+    online: false,
+    calibrado: false,
+    status: 'AGUARDANDO MODULO'
   },
+  wifi: { ssid: '', rssi: 0, ip: '' },
+  alerta_travado: false,
+  chamada_celular_ativa: false,
+  origem_alerta: null, // 'SENSOR' | 'TESTE_REMOTO' | 'SIMULACAO'
+  tempo_sem_resposta_ms: 0,
+  nivel_escalonamento: 0, // 1 = Celular | 2 = Crítico na Central | 3 = Possível Acidente / SOS
+  tempo_recuperacao_ms: 0,
+  recuperacao_limite_ms: RECUPERACAO_MS,
+  escalonamento: { ...ESCALONAMENTO },
+  simulacao_ativa: false,
+  modo_espelho: false,
   contadores: {
     totalAlarmesSessao: 0,
     inicioSessao: new Date().toISOString()
@@ -92,37 +137,39 @@ const estado = {
 
 // Histórico de eventos (máximo 100 registros)
 const MAX_HISTORICO = 100;
-let historicoEventos = [
-  {
-    id: 'evt_init',
-    timestamp: new Date().toISOString(),
-    horaFormatada: new Date().toLocaleTimeString('pt-BR'),
-    tipo: 'NORMAL',
-    mensagem: 'Central de Operações Inicializada. Aguardando conexão do ESP32...',
-    detalhes: 'Sistema em prontidão operacional.'
-  }
-];
+let historicoEventos = [];
 
-// Fila de comandos pendentes para a placa ESP32
-let comandosPendentes = [];
+// Fila de comandos para a placa ESP32 (entregue na resposta UDP/HTTP)
+let comandosESP32 = [];
+// Nuvem em modo espelho: comandos recebidos pela internet que o servidor local deve executar
+let comandosParaLocal = [];
+// Servidor local: eventos ainda não enviados para a nuvem
+let eventosParaNuvem = [];
+
+// Controle interno do alerta
+let inicioSemRespostaMs = 0;
+let inicioRecuperacaoMs = 0;
+let cooldownNormalizacaoAte = 0;
+let ultimoEspelhoRecebidoMs = 0;
+let ignorarAlarmeEspelhoAte = 0;
+let limiarEsp32Ms = LIMIAR_PADRAO_MS; // Último limiar informado pela placa
+const simulacao = { ativa: false, inicioMs: 0, duracaoMs: LIMIAR_SIMULACAO_MS, timer: null };
 
 // ------------------------------------------------------------------------------
-// PERSISTÊNCIA DE DADOS EM DISCO (STORAGE LOCAL & NUVEM)
+// PERSISTÊNCIA DE DADOS EM DISCO (com debounce para não brigar com o OneDrive)
 // ------------------------------------------------------------------------------
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) { }
 }
 const EVENTOS_FILE = path.join(DATA_DIR, 'historico_eventos.json');
 const ESTADO_FILE = path.join(DATA_DIR, 'ultimo_estado.json');
 
-// Carregar histórico prévio do disco
 try {
   if (fs.existsSync(EVENTOS_FILE)) {
-    const raw = fs.readFileSync(EVENTOS_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      historicoEventos = parsed;
+    const parsed = JSON.parse(fs.readFileSync(EVENTOS_FILE, 'utf8'));
+    if (Array.isArray(parsed)) {
+      historicoEventos = parsed.slice(0, MAX_HISTORICO);
       console.log(`[STORAGE] Carregados ${historicoEventos.length} eventos persistidos do disco.`);
     }
   }
@@ -130,68 +177,68 @@ try {
   console.warn('[STORAGE] Falha ao ler historico_eventos.json:', e.message);
 }
 
-// Carregar contadores e estado prévio do disco
+// Restaura só o que faz sentido sobreviver a um reinício (contadores e turno).
+// O estado postural NUNCA é restaurado: um alarme antigo não pode "ressuscitar".
 try {
   if (fs.existsSync(ESTADO_FILE)) {
-    const rawEst = fs.readFileSync(ESTADO_FILE, 'utf8');
-    const parsedEst = JSON.parse(rawEst);
-    if (parsedEst && typeof parsedEst === 'object') {
-      if (parsedEst.contadores && parsedEst.contadores.totalAlarmesSessao !== undefined) {
-        estado.contadores.totalAlarmesSessao = parsedEst.contadores.totalAlarmesSessao;
-      }
-      if (parsedEst.estado) estado.estado = parsedEst.estado;
-      console.log(`[STORAGE] Estado persistido carregado. Total acumulado de alarmes: ${estado.contadores.totalAlarmesSessao}`);
+    const salvo = JSON.parse(fs.readFileSync(ESTADO_FILE, 'utf8'));
+    if (salvo && salvo.contadores && Number.isFinite(salvo.contadores.totalAlarmesSessao)) {
+      estado.contadores.totalAlarmesSessao = salvo.contadores.totalAlarmesSessao;
     }
+    const turnoSalvo = salvo && salvo.motoristas && salvo.motoristas.matheus_garcia;
+    if (turnoSalvo && (turnoSalvo.status === 'EM_VIAGEM' || turnoSalvo.status === 'INATIVO')) {
+      estado.motoristas.matheus_garcia.status = turnoSalvo.status;
+    }
+    console.log(`[STORAGE] Total acumulado de alarmes: ${estado.contadores.totalAlarmesSessao}`);
   }
 } catch (e) {
   console.warn('[STORAGE] Falha ao ler ultimo_estado.json:', e.message);
 }
 
-// Função para salvar alterações no disco com debounce
 let salvarTimer = null;
 function persistirEmDisco() {
   clearTimeout(salvarTimer);
   salvarTimer = setTimeout(() => {
-    try {
-      fs.writeFile(EVENTOS_FILE, JSON.stringify(historicoEventos, null, 2), (err) => {
-        if (err) console.error('[STORAGE ERROR] Ao salvar eventos:', err.message);
-      });
-      fs.writeFile(ESTADO_FILE, JSON.stringify(estado, null, 2), (err) => {
-        if (err) console.error('[STORAGE ERROR] Ao salvar estado:', err.message);
-      });
-    } catch (e) {
-      console.error('[STORAGE] Erro crítico de persistência:', e.message);
-    }
-  }, 100);
+    fs.writeFile(EVENTOS_FILE, JSON.stringify(historicoEventos, null, 2), (err) => {
+      if (err) console.error('[STORAGE ERROR] Ao salvar eventos:', err.message);
+    });
+    const resumo = {
+      salvoEm: new Date().toISOString(),
+      contadores: estado.contadores,
+      motoristas: estado.motoristas,
+      gps: estado.gps
+    };
+    fs.writeFile(ESTADO_FILE, JSON.stringify(resumo, null, 2), (err) => {
+      if (err) console.error('[STORAGE ERROR] Ao salvar estado:', err.message);
+    });
+  }, 1500);
 }
 
 // ------------------------------------------------------------------------------
-// FUNÇÕES AUXILIARES DE TELEMETRIA
+// FUNÇÕES AUXILIARES
 // ------------------------------------------------------------------------------
+function inserirEvento(evento) {
+  historicoEventos.unshift(evento);
+  if (historicoEventos.length > MAX_HISTORICO) historicoEventos.length = MAX_HISTORICO;
+  persistirEmDisco();
+  broadcast({ tipo: 'NOVO_EVENTO', evento });
+}
+
 function registrarEvento(tipo, mensagem, detalhes = '') {
   const novoEvento = {
-    id: 'evt_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+    id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
     timestamp: new Date().toISOString(),
-    horaFormatada: new Date().toLocaleTimeString('pt-BR'),
+    horaFormatada: new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
     tipo,
     mensagem,
     detalhes
   };
-
-  historicoEventos.unshift(novoEvento);
-  if (historicoEventos.length > MAX_HISTORICO) {
-    historicoEventos.pop();
+  inserirEvento(novoEvento);
+  if (ESPELHAR_NUVEM) {
+    eventosParaNuvem.push(novoEvento);
+    if (eventosParaNuvem.length > 30) eventosParaNuvem.shift();
   }
-
-  // Persiste no arquivo JSON em disco
-  persistirEmDisco();
-
-  // Notifica todos os clientes conectados via WebSocket
-  broadcast({
-    tipo: 'NOVO_EVENTO',
-    evento: novoEvento
-  });
-
+  console.log(`[EVENTO] ${tipo}: ${mensagem}`);
   return novoEvento;
 }
 
@@ -199,63 +246,43 @@ function broadcast(dados) {
   const mensagemStr = JSON.stringify(dados);
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      try {
-        client.send(mensagemStr);
-      } catch (err) {
-        console.error('[WS BROADCAST ERROR]:', err.message);
-      }
+      try { client.send(mensagemStr); } catch (err) { console.error('[WS BROADCAST ERROR]:', err.message); }
     }
   });
 }
 
-// Watchdog para detectar se o ESP32 ficou offline (se não enviar ping por 6s)
-setInterval(() => {
-  if (estado.ultimoVisto) {
-    const diffMs = Date.now() - new Date(estado.ultimoVisto).getTime();
-    if (diffMs > 6000 && estado.online) {
-      estado.online = false;
-      registrarEvento('DESCONEXAO', 'Alerta: Conexão com o ESP32 perdida (Timeout)', 'Último pacote recebido há mais de 6 segundos.');
-      broadcast({
-        tipo: 'STATUS_DISPOSITIVO',
-        online: false,
-        estado
-      });
-    }
-  }
-}, 2000);
+function transmitirEstado(tipo = 'TELEMETRIA_UPDATE') {
+  broadcast({ tipo, estado });
+  espelharParaNuvem(tipo !== 'TELEMETRIA_UPDATE');
+}
+
+function modoEspelhoAtivo() {
+  return IS_RENDER_CLOUD && (Date.now() - ultimoEspelhoRecebidoMs < TIMEOUT_ESPELHO_MS);
+}
+
+// Comandos da Central traduzidos para o vocabulário do firmware
+const MAPA_COMANDOS_ESP32 = {
+  DISPARAR_TESTE: 'TEST_ALARM',
+  SILENCIAR_ALARME: 'SILENCIAR',
+  CALIBRAR_MPU: 'CALIBRAR',
+  TOGGLE_RELE1: 'TOGGLE_RELE1',
+  TOGGLE_RELE2: 'TOGGLE_RELE2'
+};
+
+function enfileirarComandoESP32(cmdFirmware) {
+  if (!comandosESP32.includes(cmdFirmware)) comandosESP32.push(cmdFirmware);
+  if (comandosESP32.length > 10) comandosESP32.shift();
+}
+
+function retirarComandosESP32() {
+  const cmds = comandosESP32;
+  comandosESP32 = [];
+  return cmds;
+}
 
 // ------------------------------------------------------------------------------
-// ROTAS HTTP (REST API)
+// ADB: ACORDA O CELULAR DO MOTORISTA PELO CABO USB (opcional, só no PC)
 // ------------------------------------------------------------------------------
-
-// Rota raiz inteligente: serve o frontend para navegadores ou JSON descritivo para APIs
-app.get(['/', '/api'], (req, res) => {
-  const wantsHtml = req.accepts(['html', 'json']) === 'html';
-  const indexPath = path.join(frontendRoot, 'index.html');
-  if (wantsHtml && fs.existsSync(indexPath) && req.path === '/') {
-    return res.sendFile(indexPath);
-  }
-  res.json({
-    projeto: 'INOVATECH SMART DRIVER — BACKEND API',
-    status: 'OPERACIONAL',
-    porta: PORT,
-    esp32_online: estado.online,
-    estado_atual: estado.estado,
-    clientes_ws: wss.clients.size,
-    documentacao_endpoints: {
-      'POST /api/telemetry': 'ESP32 envia dados de leitura em tempo real',
-      'GET /api/telemetry': 'Central obtém estado consolidado atual',
-      'POST /api/command': 'Central envia comando remoto (DISPARAR_TESTE, SILENCIAR, RESET)',
-      'GET /api/commands': 'ESP32 obtém comandos pendentes para execução',
-      'GET /api/events': 'Lista histórico cronológico de alarmes e eventos',
-      'GET /api/health': 'Status de integridade do servidor'
-    }
-  });
-});
-
-// Espelhamento automático para a Nuvem (Render) quando rodando localmente no PC
-const https = require('https');
-const { execFile } = require('child_process');
 const ADB_PATH = path.join(frontendRoot, 'espelhamento-celular', 'adb.exe');
 let chamadaCelularAbertaViaAdb = false;
 
@@ -272,7 +299,7 @@ function dispararChamadaCelularADB() {
   execFile(ADB_PATH, ['shell', cmdShell], { timeout: 7000 }, () => { });
 }
 
-// Quando o motorista clica em "Vou parar para descansar", retorna automaticamente para o app da câmera Linklemo
+// Quando o motorista confirma o alerta, retorna automaticamente para o app da câmera Linklemo
 function voltarParaLinklemoCelularADB() {
   if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH) || !chamadaCelularAbertaViaAdb) return;
   chamadaCelularAbertaViaAdb = false;
@@ -280,501 +307,565 @@ function voltarParaLinklemoCelularADB() {
 }
 
 // ------------------------------------------------------------------------------
-// MOTOR DE ESCALONAMENTO DE EMERGÊNCIA (FASE 1: CELULAR -> FASE 2: +10s CRÍTICO -> FASE 3: +10s POSSÍVEL ACIDENTE)
+// MOTOR DO ALERTA TRAVADO (FASE 1: CELULAR -> FASE 2: CRÍTICO -> FASE 3: SOS)
 // ------------------------------------------------------------------------------
-let inicioSemRespostaTimestamp = 0;
-let cooldownNormalizacaoUntil = 0;
-
-function iniciarProtocoloAlertaTravado() {
-  if (!estado.chamada_celular_ativa) {
-    estado.chamada_celular_ativa = true;
-    estado.alerta_travado = true;
-    inicioSemRespostaTimestamp = Date.now();
-    estado.tempo_sem_resposta_ms = 0;
-    estado.nivel_escalonamento = 1; // 1 = Alerta Físico + Celular | 2 = Alerta Crítico Central (>10s) | 3 = Possível Acidente + SOS (>20s)
-    dispararChamadaCelularADB();
-  }
-}
-
-function encerrarProtocoloAlertaTravado() {
-  estado.chamada_celular_ativa = false;
-  estado.alerta_travado = false;
-  inicioSemRespostaTimestamp = 0;
+function dispararAlerta(origem, mensagem, detalhes) {
+  if (estado.alerta_travado) return;
+  estado.estado = 'ALARME_ATIVADO';
+  estado.alerta_travado = true;
+  estado.chamada_celular_ativa = true;
+  estado.origem_alerta = origem;
+  estado.nivel_escalonamento = 1;
   estado.tempo_sem_resposta_ms = 0;
-  estado.nivel_escalonamento = 0;
-  estado.estado = 'NORMAL';
-  estado.buzzer = 0;
-  estado.rele = 0;
-  estado.tempo_cabeca_baixa_ms = 0;
-  cooldownNormalizacaoUntil = Date.now() + 2500;
-  voltarParaLinklemoCelularADB();
-  espelharParaNuvem({
-    dispositivo: estado.dispositivo,
-    sensor_ir: 1,
-    tempo_cabeca_baixa_ms: 0,
-    buzzer: 0,
-    rele: 0,
-    estado: 'NORMAL',
-    chamada_celular_ativa: false,
-    alerta_travado: false,
-    tempo_sem_resposta_ms: 0,
-    nivel_escalonamento: 0,
-    _forceReset: true,
-    acelerometro: estado.acelerometro
-  }, true);
+  estado.tempo_recuperacao_ms = 0;
+  inicioSemRespostaMs = Date.now();
+  inicioRecuperacaoMs = 0;
+  estado.contadores.totalAlarmesSessao++;
+
+  dispararChamadaCelularADB();
+  registrarEvento('ALARME_ATIVADO', mensagem, detalhes || 'Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista.');
+  broadcast({ tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR', dispararChamadaCafe: true, estado });
+  espelharParaNuvem(true);
   persistirEmDisco();
 }
 
-// Loop de alta precisão (250ms) que monitora o tempo sem resposta do motorista no celular
-setInterval(() => {
-  if (!estado.chamada_celular_ativa || !inicioSemRespostaTimestamp) return;
+function encerrarAlerta(mensagem, detalhes = '') {
+  const haviaAlerta = estado.alerta_travado || estado.estado !== 'NORMAL' || simulacao.ativa;
+  pararSimulacao();
 
-  const decorridoMs = Date.now() - inicioSemRespostaTimestamp;
+  estado.alerta_travado = false;
+  estado.chamada_celular_ativa = false;
+  estado.origem_alerta = null;
+  estado.nivel_escalonamento = 0;
+  estado.tempo_sem_resposta_ms = 0;
+  estado.tempo_recuperacao_ms = 0;
+  estado.estado = 'NORMAL';
+  estado.tempo_cabeca_baixa_ms = 0;
+  estado.limiar_seguranca_ms = limiarEsp32Ms;
+  inicioSemRespostaMs = 0;
+  inicioRecuperacaoMs = 0;
+  cooldownNormalizacaoAte = Date.now() + COOLDOWN_NORMALIZACAO_MS;
+
+  // Desliga também um teste remoto que esteja tocando no óculos
+  enfileirarComandoESP32('SILENCIAR');
+  voltarParaLinklemoCelularADB();
+  if (haviaAlerta) registrarEvento('NORMAL', mensagem, detalhes);
+  transmitirEstado('ALERTA_ENCERRADO');
+  persistirEmDisco();
+}
+
+// Loop de 250ms: cronômetro sem resposta, níveis de escalonamento e recuperação automática
+setInterval(() => {
+  if (!estado.alerta_travado || !inicioSemRespostaMs || modoEspelhoAtivo()) return;
+  const agora = Date.now();
+
+  // Recuperação automática: cabeça erguida (ESP32 em NORMAL) por 3s seguidos
+  if (inicioRecuperacaoMs) {
+    estado.tempo_recuperacao_ms = agora - inicioRecuperacaoMs;
+    if (estado.tempo_recuperacao_ms >= RECUPERACAO_MS) {
+      encerrarAlerta('Recuperação automática: motorista manteve a cabeça erguida por 3s',
+        'Alarmes físicos, chamada no celular e escalonamento encerrados.');
+      return;
+    }
+  }
+
+  const decorridoMs = agora - inicioSemRespostaMs;
   estado.tempo_sem_resposta_ms = decorridoMs;
   estado.estado = 'ALARME_ATIVADO';
-  estado.buzzer = 1;
-  estado.rele = 1;
-
   let mudouNivel = false;
 
-  // Passou de 10 segundos sem o motorista desativar o alerta no celular -> ALERTA CRÍTICO NA CENTRAL
-  if (decorridoMs >= 9000 && decorridoMs < 15000 && estado.nivel_escalonamento < 2) {
+  if (decorridoMs >= ESCALONAMENTO.critico_ms && estado.nivel_escalonamento < 2) {
     estado.nivel_escalonamento = 2;
     mudouNivel = true;
-    registrarEvento(
-      'ALARME_ATIVADO',
-      '🚨 ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!',
-      'Iniciando contagem de emergência de 6s restantes para protocolo de Possível Acidente (15s).'
-    );
-    // Reforça despertar da tela do celular via ADB
+    registrarEvento('ALARME_ATIVADO',
+      `ALERTA CRÍTICO NA CENTRAL (${ESCALONAMENTO.critico_ms / 1000}s SEM RESPOSTA): Motorista não confirmou o alerta no celular!`,
+      `Protocolo de Possível Acidente em ${(ESCALONAMENTO.acidente_ms - ESCALONAMENTO.critico_ms) / 1000}s.`);
     dispararChamadaCelularADB();
   }
 
-  // Passou de +10 segundos após o Alerta Crítico (20s no total) -> POSSÍVEL ACIDENTE + PROTOCOLO SAFE-STOP & SOS
-  if (decorridoMs >= 15000 && estado.nivel_escalonamento < 3) {
+  if (decorridoMs >= ESCALONAMENTO.acidente_ms && estado.nivel_escalonamento < 3) {
     estado.nivel_escalonamento = 3;
     mudouNivel = true;
-    registrarEvento(
-      'ALARME_ATIVADO',
-      '💥 POSSÍVEL ACIDENTE CONFIRMADO (15s SEM RESPOSTA)! Localização GPS enviada para Resgate SAMU 192 e Safe-Stop Acionado!',
-      'Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192.'
-    );
+    registrarEvento('ALARME_ATIVADO',
+      `POSSÍVEL ACIDENTE (${ESCALONAMENTO.acidente_ms / 1000}s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!`,
+      'Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192.');
   }
 
-  broadcast({
-    tipo: mudouNivel ? 'ESCALONAMENTO_EMERGENCIA' : 'TELEMETRIA_UPDATE',
-    estado,
-    comandosPendentesParaESP32: comandosPendentes.length
-  });
-
-  espelharParaNuvem({
-    dispositivo: estado.dispositivo,
-    sensor_ir: estado.sensor_ir,
-    tempo_cabeca_baixa_ms: estado.tempo_cabeca_baixa_ms,
-    buzzer: estado.buzzer,
-    rele: estado.rele,
-    estado: estado.estado,
-    chamada_celular_ativa: true,
-    alerta_travado: true,
-    tempo_sem_resposta_ms: estado.tempo_sem_resposta_ms,
-    nivel_escalonamento: estado.nivel_escalonamento,
-    acelerometro: estado.acelerometro
-  }, mudouNivel);
+  transmitirEstado(mudouNivel ? 'ESCALONAMENTO_EMERGENCIA' : 'TELEMETRIA_UPDATE');
 }, 250);
 
-const RENDER_CLOUD_URL = process.env.RENDER_CLOUD_URL || 'https://inovatech-tcc.onrender.com/api/telemetry';
-const IS_RENDER_CLOUD = Boolean(process.env.RENDER || process.env.RENDER_EXTERNAL_URL);
-let ultimoEnvioNuvemMs = 0;
-let ultimoEstadoEnviadoNuvem = '';
+// ------------------------------------------------------------------------------
+// SIMULAÇÃO CENTRALIZADA (Central e celular veem exatamente a mesma contagem)
+// ------------------------------------------------------------------------------
+function iniciarSimulacao(duracaoMs, origem) {
+  if (estado.alerta_travado) return false;
+  pararSimulacao();
+  simulacao.ativa = true;
+  simulacao.inicioMs = Date.now();
+  simulacao.duracaoMs = Math.min(10000, Math.max(500, Number(duracaoMs) || LIMIAR_SIMULACAO_MS));
+  estado.simulacao_ativa = true;
+  estado.limiar_seguranca_ms = simulacao.duracaoMs;
+  estado.sensor_ir = 0;
+  estado.estado = 'PRE_ALERTA';
+  estado.tempo_cabeca_baixa_ms = 0;
+  registrarEvento('PRE_ALERTA', `Simulação de fadiga iniciada (${(simulacao.duracaoMs / 1000).toFixed(1)}s)`, `Origem: ${origem}`);
 
-function espelharParaNuvem(payloadEspelho, forcarImediato = false) {
-  if (IS_RENDER_CLOUD || payloadEspelho._fromLocalMirror) return;
-  const agora = Date.now();
-  const mudouEstado = payloadEspelho.estado !== ultimoEstadoEnviadoNuvem;
-  const intervaloMin = (payloadEspelho.estado === 'PRE_ALERTA' || payloadEspelho.estado === 'ALARME_ATIVADO') ? 120 : 600;
-  if (!forcarImediato && !mudouEstado && (agora - ultimoEnvioNuvemMs < intervaloMin)) {
-    return;
-  }
-  ultimoEnvioNuvemMs = agora;
-  ultimoEstadoEnviadoNuvem = payloadEspelho.estado;
-
-  try {
-    const bodyStr = JSON.stringify({ ...payloadEspelho, _fromLocalMirror: true });
-    const urlObj = new URL(RENDER_CLOUD_URL);
-    const req = https.request({
-      hostname: urlObj.hostname,
-      port: 443,
-      path: urlObj.pathname,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(bodyStr)
-      },
-      timeout: 4000
-    }, (res) => {
-      res.resume();
-    });
-    req.on('error', () => { });
-    req.write(bodyStr);
-    req.end();
-  } catch (e) { }
+  simulacao.timer = setInterval(() => {
+    const decorrido = Date.now() - simulacao.inicioMs;
+    estado.tempo_cabeca_baixa_ms = Math.min(decorrido, simulacao.duracaoMs);
+    if (decorrido >= simulacao.duracaoMs) {
+      clearInterval(simulacao.timer);
+      simulacao.timer = null;
+      simulacao.ativa = false;
+      estado.simulacao_ativa = false;
+      dispararAlerta('SIMULACAO', `PERIGO: CABEÇA BAIXA SIMULADA (${(simulacao.duracaoMs / 1000).toFixed(1)}s)!`,
+        'Simulação: chamada de descanso no celular e escalonamento da Central iniciados.');
+    } else {
+      transmitirEstado();
+    }
+  }, 100);
+  return true;
 }
 
-// Função centralizada de processamento de telemetria (HTTP, WebSocket e USB Serial)
-function processarTelemetria(payload = {}) {
-  const estadoAnterior = estado.estado;
+function pararSimulacao() {
+  if (simulacao.timer) clearInterval(simulacao.timer);
+  simulacao.timer = null;
+  simulacao.ativa = false;
+  estado.simulacao_ativa = false;
+}
 
-  // Atualiza flags de presença
+// ------------------------------------------------------------------------------
+// PROCESSAMENTO DE MENSAGENS (ESP32, App do Motorista, Central e Espelho)
+// ------------------------------------------------------------------------------
+function ehPacoteESP32(p) {
+  return (typeof p.dispositivo === 'string' && p.dispositivo.toUpperCase().startsWith('ESP32')) ||
+    (p.sensor_ir !== undefined && p.dispositivo === undefined);
+}
+
+function processarTelemetriaESP32(p, fonte) {
+  const agora = Date.now();
+  const estavaOnline = estado.online;
   estado.online = true;
   estado.ultimoVisto = new Date().toISOString();
-
-  if (payload.dispositivo) estado.dispositivo = payload.dispositivo;
-
-  // Sincronização de Turno / Viagem do Motorista
-  if (payload.tipo === 'STATUS_MOTORISTA' || payload.status_viagem !== undefined) {
-    if (!estado.motoristas) estado.motoristas = {};
-    if (!estado.motoristas.matheus_garcia) {
-      estado.motoristas.matheus_garcia = {
-        nome: 'Matheus Garcia',
-        status: 'EM_VIAGEM',
-        veiculo: 'Scania R-450 (Placa INO-2026)',
-        rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
-      };
-    }
-    const novoStatus = payload.status_viagem || (payload.ativo ? 'EM_VIAGEM' : 'INATIVO');
-    estado.motoristas.matheus_garcia.status = novoStatus;
-    estado.motoristas.matheus_garcia.atualizadoEm = new Date().toISOString();
-    registrarEvento('TURNO_MOTORISTA', `Condutor Matheus Garcia: Viagem ${novoStatus === 'EM_VIAGEM' ? 'Ativada' : 'Pausada'}`, `Origem: ${payload.origem || 'App do Motorista'}`);
-    broadcast({
-      tipo: 'STATUS_MOTORISTA',
-      motorista: 'Matheus Garcia',
-      status_viagem: novoStatus,
-      estado
-    });
-    persistirEmDisco();
+  estado.fonte_conexao = fonte;
+  if (p.dispositivo) estado.dispositivo = p.dispositivo;
+  if (!estavaOnline) {
+    registrarEvento('CONEXAO', `ESP32 conectada ao servidor (${fonte})`,
+      p.wifi && p.wifi.ssid ? `Rede: ${p.wifi.ssid} · IP ${p.wifi.ip} · ${p.wifi.rssi} dBm` : 'Telemetria em tempo real ativa.');
   }
 
-  // Sensor IR (GPIO 32)
-  if (payload.sensor_ir !== undefined) {
-    estado.sensor_ir = Number(payload.sensor_ir);
-  }
-
-  // Tempo de cabeça baixa contínuo em ms
-  if (payload.tempo_cabeca_baixa_ms !== undefined) {
-    estado.tempo_cabeca_baixa_ms = Math.max(0, Number(payload.tempo_cabeca_baixa_ms));
-  }
-
-  // Atuadores
-  if (payload.buzzer !== undefined) estado.buzzer = Number(payload.buzzer);
-  if (payload.rele !== undefined) estado.rele = Number(payload.rele);
-
-  // Acelerômetro (I2C)
-  if (payload.acelerometro && typeof payload.acelerometro === 'object') {
+  if (p.acelerometro && typeof p.acelerometro === 'object') {
+    const a = p.acelerometro;
     estado.acelerometro = {
-      pitch: Number(payload.acelerometro.pitch || 0),
-      roll: Number(payload.acelerometro.roll || 0),
-      yaw: Number(payload.acelerometro.yaw || 0),
-      pescada_detectada: Boolean(payload.acelerometro.pescada_detectada),
-      status: payload.acelerometro.status || 'Ativo'
+      pitch: Number(a.pitch) || 0,
+      roll: Number(a.roll) || 0,
+      inclinacao: Number(a.inclinacao) || 0,
+      pescada_detectada: Boolean(a.pescada_detectada),
+      online: a.online !== undefined ? Boolean(a.online) : true,
+      calibrado: Boolean(a.calibrado),
+      status: String(a.status || 'ATIVO').slice(0, 40)
     };
   }
-
-  // Se vier espelhado do backend local para a nuvem, preserva campos de escalonamento
-  if (payload.tempo_sem_resposta_ms !== undefined) {
-    estado.tempo_sem_resposta_ms = Number(payload.tempo_sem_resposta_ms);
-  }
-  if (payload.nivel_escalonamento !== undefined) {
-    estado.nivel_escalonamento = Number(payload.nivel_escalonamento);
-  }
-  if (payload.alerta_travado !== undefined) {
-    estado.alerta_travado = Boolean(payload.alerta_travado);
+  if (p.wifi && typeof p.wifi === 'object') {
+    estado.wifi = { ssid: String(p.wifi.ssid || ''), rssi: Number(p.wifi.rssi) || 0, ip: String(p.wifi.ip || '') };
   }
 
-  // Enquanto o motorista NÃO apertar para desativar o alerta no celular, mantém o alerta travado ativo!
-  if (estado.alerta_travado && !payload._forceReset) {
+  // Atuadores sempre mostram o estado FÍSICO real dos pinos da placa
+  if (p.buzzer !== undefined) estado.buzzer = Number(p.buzzer) ? 1 : 0;
+  if (p.rele_1 !== undefined || p.rele !== undefined) estado.rele = Number(p.rele_1 ?? p.rele) ? 1 : 0;
+  if (p.rele_2 !== undefined) estado.rele_2 = Number(p.rele_2) ? 1 : 0;
+  estado.alarme_teste = Number(p.alarme_teste) ? 1 : 0;
+
+  // Durante uma simulação, a postura exibida é a simulada
+  const controladoPorSimulacao = simulacao.ativa || (estado.alerta_travado && estado.origem_alerta === 'SIMULACAO');
+  if (controladoPorSimulacao) {
+    transmitirEstado();
+    return;
+  }
+
+  if (p.sensor_ir !== undefined) estado.sensor_ir = Number(p.sensor_ir) ? 1 : 0;
+  estado.tempo_cabeca_baixa_ms = Math.max(0, Number(p.tempo_cabeca_baixa_ms) || 0);
+  if (Number(p.limiar_ms) > 0) limiarEsp32Ms = Number(p.limiar_ms);
+  estado.limiar_seguranca_ms = limiarEsp32Ms;
+
+  // Estado decidido pela ESP32 (ou derivado, para simuladores antigos)
+  let estadoEsp = p.estado;
+  if (!['NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'].includes(estadoEsp)) {
+    if (estado.sensor_ir === 0) {
+      estadoEsp = estado.tempo_cabeca_baixa_ms >= estado.limiar_seguranca_ms ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
+    } else {
+      estadoEsp = 'NORMAL';
+    }
+  }
+
+  if (estado.alerta_travado) {
     estado.estado = 'ALARME_ATIVADO';
-    estado.buzzer = 1;
-    estado.rele = 1;
-    estado.chamada_celular_ativa = true;
-    estado.tempo_cabeca_baixa_ms = Math.max(3000, estado.tempo_cabeca_baixa_ms || 3000);
-  } else if (Date.now() < cooldownNormalizacaoUntil && payload.estado !== 'ALARME_ATIVADO') {
+    // Recuperação automática só vale para alertas reais do sensor (teste/simulação exigem confirmação)
+    if (estado.origem_alerta === 'SENSOR') {
+      if (estadoEsp === 'NORMAL') {
+        if (!inicioRecuperacaoMs) inicioRecuperacaoMs = agora;
+      } else {
+        inicioRecuperacaoMs = 0;
+        estado.tempo_recuperacao_ms = 0;
+      }
+    }
+  } else if (agora < cooldownNormalizacaoAte && estadoEsp !== 'NORMAL') {
     estado.estado = 'NORMAL';
     estado.tempo_cabeca_baixa_ms = 0;
-    estado.buzzer = 0;
-    estado.rele = 0;
-  } else if (payload.estado) {
-    estado.estado = payload.estado;
   } else {
-    if (estado.sensor_ir === 0) {
-      if (estado.tempo_cabeca_baixa_ms >= estado.limiar_seguranca_ms) {
-        estado.estado = 'ALARME_ATIVADO';
-        estado.buzzer = 1;
-        estado.rele = 1;
-      } else {
-        estado.estado = 'PRE_ALERTA';
-      }
-    } else {
+    const anterior = estado.estado;
+    if (estadoEsp === 'ALARME_ATIVADO') {
+      const pescada = estado.acelerometro.pescada_detectada;
+      const teste = estado.alarme_teste === 1;
+      dispararAlerta(teste ? 'TESTE_REMOTO' : 'SENSOR',
+        teste ? 'Teste remoto: alarme físico tocando nos óculos'
+          : pescada ? 'PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!'
+            : `PERIGO: CABEÇA BAIXA POR ${(estado.limiar_seguranca_ms / 1000).toFixed(1)}s!`);
+      return;
+    }
+    estado.estado = estadoEsp;
+    if (anterior !== 'PRE_ALERTA' && estadoEsp === 'PRE_ALERTA') {
+      registrarEvento('PRE_ALERTA', 'Aviso: Cabeça baixa detectada (contagem de segurança iniciada)',
+        `Tolerância: ${(estado.limiar_seguranca_ms / 1000).toFixed(1)}s com 3 bips progressivos.`);
+    } else if (anterior === 'PRE_ALERTA' && estadoEsp === 'NORMAL') {
+      registrarEvento('NORMAL', 'Cabeça erguida antes do disparo do alarme', 'Pré-alerta cancelado pelo próprio motorista.');
+    }
+  }
+
+  transmitirEstado();
+}
+
+function atualizarTurno(statusViagem, origem) {
+  const novoStatus = statusViagem === 'INATIVO' ? 'INATIVO' : 'EM_VIAGEM';
+  const motorista = estado.motoristas.matheus_garcia;
+  motorista.atualizadoEm = new Date().toISOString();
+  if (motorista.status === novoStatus) {
+    broadcast({ tipo: 'STATUS_MOTORISTA', motorista: motorista.nome, status_viagem: novoStatus, estado });
+    return;
+  }
+  motorista.status = novoStatus;
+  if (modoEspelhoAtivo()) {
+    // O servidor local registra o evento e devolve pelo espelho (evita log duplicado)
+    comandosParaLocal.push({ tipo: 'STATUS_MOTORISTA', status_viagem: novoStatus, origem });
+    broadcast({ tipo: 'STATUS_MOTORISTA', motorista: motorista.nome, status_viagem: novoStatus, estado });
+    return;
+  }
+  registrarEvento('TURNO_MOTORISTA', `Condutor ${motorista.nome}: Viagem ${novoStatus === 'EM_VIAGEM' ? 'Iniciada' : 'Pausada'}`, `Origem: ${origem}`);
+  broadcast({ tipo: 'STATUS_MOTORISTA', motorista: motorista.nome, status_viagem: novoStatus, estado });
+  espelharParaNuvem(true);
+  persistirEmDisco();
+}
+
+let ultimoBroadcastGpsMs = 0;
+function atualizarGps(gps, origem) {
+  const lat = Number(gps && gps.lat);
+  const lon = Number(gps && gps.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return false;
+  estado.gps = {
+    lat,
+    lon,
+    precisao: Number(gps.precisao) || 5,
+    velocidade: Number(gps.velocidade) || 0,
+    heading: Number(gps.heading) || 0,
+    origem: origem || 'CELULAR_MOTORISTA',
+    atualizadoEm: new Date().toISOString()
+  };
+  if (modoEspelhoAtivo()) {
+    comandosParaLocal = comandosParaLocal.filter((c) => c.tipo !== 'GPS_UPDATE');
+    comandosParaLocal.push({ tipo: 'GPS_UPDATE', gps: estado.gps });
+  }
+  if (Date.now() - ultimoBroadcastGpsMs > 1000) {
+    ultimoBroadcastGpsMs = Date.now();
+    broadcast({ tipo: 'GPS_UPDATE', gps: estado.gps });
+  }
+  return true;
+}
+
+// Ponto único de entrada para comandos (REST, WebSocket ou repassados pela nuvem)
+function executarComando(comando, origem = 'CENTRAL', extras = {}) {
+  const cmd = String(comando || '').toUpperCase();
+  const normalizar = ['SILENCIAR_ALARME', 'RESET', 'NORMALIZAR'].includes(cmd);
+  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2'];
+  if (!normalizar && !conhecidos.includes(cmd)) return { ok: false, mensagem: `Comando desconhecido: ${comando}` };
+
+  // Na nuvem em modo espelho, quem executa é o servidor local (a nuvem só repassa)
+  if (modoEspelhoAtivo()) {
+    comandosParaLocal.push({ tipo: 'COMANDO', comando: cmd, origem, extras });
+    if (normalizar) {
+      // Resposta otimista para quem está conectado na nuvem não ver o alerta "voltar"
+      ignorarAlarmeEspelhoAte = Date.now() + 3000;
+      estado.alerta_travado = false;
+      estado.chamada_celular_ativa = false;
+      estado.nivel_escalonamento = 0;
+      estado.tempo_sem_resposta_ms = 0;
       estado.estado = 'NORMAL';
-      estado.tempo_cabeca_baixa_ms = 0;
-      estado.buzzer = 0;
-      estado.rele = 0;
+      transmitirEstado('ALERTA_ENCERRADO');
     }
+    return { ok: true, mensagem: `Comando ${cmd} repassado ao servidor local.` };
   }
 
-  // Detecção de transição de estado para gerar log e métricas
-  const houveTransicao = (estadoAnterior !== estado.estado);
-  if (houveTransicao) {
-    if (estado.estado === 'PRE_ALERTA') {
-      registrarEvento('PRE_ALERTA', 'Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)', `Tempo decorrido: ${estado.tempo_cabeca_baixa_ms}ms`);
-    } else if (estado.estado === 'ALARME_ATIVADO') {
-      estado.contadores.totalAlarmesSessao++;
-      iniciarProtocoloAlertaTravado();
-      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (1,5s)!', `Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!`);
-      broadcast({
-        tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
-        dispararChamadaCafe: true,
-        estado
-      });
-    } else if (estado.estado === 'NORMAL') {
-      registrarEvento('NORMAL', 'Postura Normalizada: Motorista confirmou alerta', 'Alarme físico e virtual encerrados.');
-    }
+  if (normalizar) {
+    encerrarAlerta(`Alerta desativado (${origem})`, 'Confirmação recebida: alarmes físicos e virtuais encerrados.');
+    return { ok: true, mensagem: 'Alerta encerrado.' };
   }
 
-  // Transmite atualização aos navegadores em tempo real via WebSocket
-  broadcast({
-    tipo: 'TELEMETRIA_UPDATE',
-    estado,
-    comandosPendentesParaESP32: comandosPendentes.length
+  if (MAPA_COMANDOS_ESP32[cmd]) enfileirarComandoESP32(MAPA_COMANDOS_ESP32[cmd]);
+
+  if (cmd === 'DISPARAR_TESTE') {
+    pararSimulacao();
+    dispararAlerta('TESTE_REMOTO', 'Comando remoto: Alerta físico e virtual disparado pela Central',
+      'Buzzer e Relés 1/2 acionados na ESP32 até a confirmação do motorista.');
+  } else if (cmd === 'SIMULAR_ALERTA') {
+    if (!iniciarSimulacao(extras.duracao_ms, origem)) return { ok: false, mensagem: 'Já existe um alerta ativo. Normalize antes de simular.' };
+  } else if (cmd === 'CALIBRAR_MPU') {
+    registrarEvento('COMANDO_CENTRAL', 'Recalibração do acelerômetro solicitada', 'O motorista deve manter a cabeça erguida por 1 segundo.');
+  } else {
+    registrarEvento('COMANDO_CENTRAL', `Comando manual enviado à ESP32: ${cmd}`, `Origem: ${origem}`);
+  }
+  broadcast({ tipo: 'COMANDO_EXECUTADO', comando: cmd, estado });
+  return { ok: true, mensagem: `Comando ${cmd} executado.` };
+}
+
+// Nuvem: aplica o estado espelhado pelo servidor local do PC
+const CAMPOS_ESPELHO = ['dispositivo', 'online', 'ultimoVisto', 'fonte_conexao', 'sensor_ir', 'tempo_cabeca_baixa_ms',
+  'limiar_seguranca_ms', 'estado', 'buzzer', 'rele', 'rele_2', 'alarme_teste', 'acelerometro', 'wifi', 'alerta_travado',
+  'chamada_celular_ativa', 'origem_alerta', 'tempo_sem_resposta_ms', 'nivel_escalonamento', 'tempo_recuperacao_ms',
+  'recuperacao_limite_ms', 'escalonamento', 'simulacao_ativa', 'contadores', 'motoristas', 'gps'];
+const CAMPOS_ALERTA = ['estado', 'alerta_travado', 'chamada_celular_ativa', 'nivel_escalonamento', 'tempo_sem_resposta_ms'];
+
+function aplicarEspelho(p) {
+  ultimoEspelhoRecebidoMs = Date.now();
+  const snap = p.estado_completo || {};
+  const travadoAntes = estado.alerta_travado;
+  const nivelAntes = estado.nivel_escalonamento;
+  const ignorarAlerta = Date.now() < ignorarAlarmeEspelhoAte && snap.estado !== 'NORMAL';
+  CAMPOS_ESPELHO.forEach((campo) => {
+    if (snap[campo] === undefined) return;
+    if (ignorarAlerta && CAMPOS_ALERTA.includes(campo)) return;
+    estado[campo] = snap[campo];
   });
-
-  // Espelha imediatamente para a nuvem Render para que TODOS os dispositivos recebam o alerta
-  if (payload.chamada_celular_ativa !== undefined) {
-    estado.chamada_celular_ativa = Boolean(payload.chamada_celular_ativa);
+  estado.modo_espelho = true;
+  if (Array.isArray(p.eventos)) {
+    p.eventos.slice().reverse().forEach((ev) => {
+      if (ev && ev.id && !historicoEventos.some((h) => h.id === ev.id)) inserirEvento(ev);
+    });
   }
-  if (!payload._fromLocalMirror) {
-    espelharParaNuvem({
-      dispositivo: estado.dispositivo,
-      sensor_ir: estado.sensor_ir,
-      tempo_cabeca_baixa_ms: estado.tempo_cabeca_baixa_ms,
-      buzzer: estado.buzzer,
-      rele: estado.rele,
-      estado: estado.estado,
-      chamada_celular_ativa: Boolean(estado.chamada_celular_ativa),
-      alerta_travado: Boolean(estado.alerta_travado),
-      tempo_sem_resposta_ms: estado.tempo_sem_resposta_ms || 0,
-      nivel_escalonamento: estado.nivel_escalonamento || 0,
-      acelerometro: estado.acelerometro
-    }, houveTransicao);
-  }
+  let tipo = 'TELEMETRIA_UPDATE';
+  if (!travadoAntes && estado.alerta_travado) tipo = 'ALERTA_FISICO_E_VIRTUAL_CELULAR';
+  else if (travadoAntes && !estado.alerta_travado) tipo = 'ALERTA_ENCERRADO';
+  else if (estado.nivel_escalonamento > nivelAntes) tipo = 'ESCALONAMENTO_EMERGENCIA';
+  broadcast({ tipo, estado });
+  const pendentes = comandosParaLocal;
+  comandosParaLocal = [];
+  return pendentes;
+}
 
-  // Salva no disco apenas quando houver transição de estado (evita conflitos de sincronização contínua no OneDrive/VS Code)
-  if (houveTransicao) {
-    persistirEmDisco();
+// Ponto único de entrada para pacotes vindos de qualquer canal
+function processarPacote(payload, fonte) {
+  const p = payload && typeof payload === 'object' ? payload : {};
+  if (p._fromLocalMirror) {
+    return IS_RENDER_CLOUD ? { comandos_para_local: aplicarEspelho(p) } : {};
+  }
+  if (p.tipo === 'STATUS_MOTORISTA' || p.status_viagem !== undefined) {
+    atualizarTurno(p.status_viagem || (p.ativo === false ? 'INATIVO' : 'EM_VIAGEM'), p.origem || `App do Motorista (${fonte})`);
+    return {};
+  }
+  if (p.gps && !ehPacoteESP32(p)) {
+    atualizarGps(p.gps, p.dispositivo || 'CELULAR_MOTORISTA');
+    return {};
+  }
+  if (ehPacoteESP32(p)) {
+    processarTelemetriaESP32(p, fonte);
+    return { cmds: retirarComandosESP32() };
+  }
+  return {};
+}
+
+// Watchdog: ESP32 offline se não enviar nada por 6s
+setInterval(() => {
+  if (modoEspelhoAtivo() || !estado.online || !estado.ultimoVisto) return;
+  if (Date.now() - new Date(estado.ultimoVisto).getTime() > TIMEOUT_ESP32_MS) {
+    estado.online = false;
+    inicioRecuperacaoMs = 0;
+    registrarEvento('DESCONEXAO', 'Alerta: Conexão com a ESP32 perdida (Timeout)', `Último pacote recebido há mais de ${TIMEOUT_ESP32_MS / 1000} segundos.`);
+    broadcast({ tipo: 'STATUS_DISPOSITIVO', online: false, estado });
+    espelharParaNuvem(true);
+  }
+  if (IS_RENDER_CLOUD && estado.modo_espelho && !modoEspelhoAtivo()) {
+    estado.modo_espelho = false;
+    console.log('[NUVEM] Servidor local parou de espelhar. Nuvem assume o controle.');
+  }
+}, 2000);
+
+// ------------------------------------------------------------------------------
+// ESPELHAMENTO PC -> NUVEM (RENDER) com retorno de comandos da internet
+// ------------------------------------------------------------------------------
+let ultimoEnvioNuvemMs = 0;
+let espelhoEmVoo = false;
+let espelhoPendente = false;
+let nuvemDisponivel = null;
+
+function espelharParaNuvem(forcarImediato = false) {
+  if (!ESPELHAR_NUVEM) return;
+  const agora = Date.now();
+  const intervaloMin = estado.estado === 'NORMAL' ? 1000 : 250;
+  if (espelhoEmVoo) {
+    if (forcarImediato) espelhoPendente = true;
+    return;
+  }
+  if (!forcarImediato && agora - ultimoEnvioNuvemMs < intervaloMin) return;
+  ultimoEnvioNuvemMs = agora;
+  espelhoEmVoo = true;
+
+  const eventosEnviados = eventosParaNuvem.slice();
+  const snapshot = {};
+  CAMPOS_ESPELHO.forEach((campo) => { snapshot[campo] = estado[campo]; });
+  const bodyStr = JSON.stringify({ _fromLocalMirror: true, estado_completo: snapshot, eventos: eventosEnviados });
+
+  const finalizar = (sucesso) => {
+    espelhoEmVoo = false;
+    if (sucesso) eventosParaNuvem = eventosParaNuvem.filter((ev) => !eventosEnviados.includes(ev));
+    if (nuvemDisponivel !== sucesso) {
+      nuvemDisponivel = sucesso;
+      console.log(sucesso ? '[NUVEM] Espelhamento ativo com o Render.' : '[NUVEM] Render indisponível (seguindo 100% local).');
+    }
+    if (espelhoPendente) {
+      espelhoPendente = false;
+      setTimeout(() => espelharParaNuvem(true), 50);
+    }
+  };
+
+  try {
+    const urlObj = new URL(RENDER_CLOUD_URL);
+    const cliente = urlObj.protocol === 'http:' ? http : https;
+    const req = cliente.request({
+      hostname: urlObj.hostname,
+      port: urlObj.port || (urlObj.protocol === 'http:' ? 80 : 443),
+      path: urlObj.pathname,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bodyStr) },
+      timeout: 5000
+    }, (res) => {
+      let corpo = '';
+      res.setEncoding('utf8');
+      res.on('data', (c) => { if (corpo.length < 65536) corpo += c; });
+      res.on('end', () => {
+        finalizar(res.statusCode === 200);
+        try {
+          const resposta = JSON.parse(corpo);
+          (resposta.comandos_para_local || []).forEach(executarMensagemDaNuvem);
+        } catch (e) { }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.on('error', () => finalizar(false));
+    req.write(bodyStr);
+    req.end();
+  } catch (e) {
+    finalizar(false);
   }
 }
 
-// Endpoint de telemetria recebida do ESP32 ou simulador
+function executarMensagemDaNuvem(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.tipo === 'COMANDO') executarComando(msg.comando, `${msg.origem || 'INTERNET'} via nuvem`, msg.extras || {});
+  else if (msg.tipo === 'STATUS_MOTORISTA') atualizarTurno(msg.status_viagem, `${msg.origem || 'App do Motorista'} via nuvem`);
+  else if (msg.tipo === 'GPS_UPDATE') atualizarGps(msg.gps, 'CELULAR_MOTORISTA (via nuvem)');
+}
+
+// Batimento: mantém a nuvem atualizada (e busca comandos) mesmo sem a ESP32
+if (ESPELHAR_NUVEM) setInterval(() => espelharParaNuvem(false), 1000);
 
 // ------------------------------------------------------------------------------
-// MOTOR DE ALTA FREQUÊNCIA PARA CONTAGEM SUAVE DO CRONÔMETRO (20 FPS / 50ms)
+// ROTAS HTTP (REST API)
 // ------------------------------------------------------------------------------
-let inicioCabecaBaixaServerMs = 0;
-
-setInterval(() => {
-  if (estado.sensor_ir === 0 && estado.estado !== 'ALARME_ATIVADO' && !estado.alerta_travado) {
-    if (!inicioCabecaBaixaServerMs) {
-      inicioCabecaBaixaServerMs = Date.now() - (estado.tempo_cabeca_baixa_ms || 0);
-    }
-    const decorrido = Date.now() - inicioCabecaBaixaServerMs;
-    estado.tempo_cabeca_baixa_ms = decorrido;
-
-    if (decorrido >= 1500) {
-      estado.estado = 'ALARME_ATIVADO';
-      estado.buzzer = 1;
-      estado.rele = 1;
-      estado.contadores.totalAlarmesSessao++;
-      iniciarProtocoloAlertaTravado();
-      registrarEvento('ALARME_ATIVADO', 'PERIGO: CABEÇA BAIXA DETECTADA (1,5s)!', 'Alerta Físico e Virtual acionados.');
-      broadcast({
-        tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
-        dispararChamadaCafe: true,
-        estado
-      });
-    } else {
-      estado.estado = 'PRE_ALERTA';
-    }
-
-    // Transmite a cada 50ms para Central e Celular acompanharem com fluidez total
-    broadcast({
-      tipo: 'TELEMETRIA_UPDATE',
-      estado,
-      comandosPendentesParaESP32: comandosPendentes.length
-    });
-  } else if (estado.sensor_ir === 1) {
-    inicioCabecaBaixaServerMs = 0;
+app.get(['/', '/api'], (req, res) => {
+  const wantsHtml = req.accepts(['html', 'json']) === 'html';
+  const indexPath = path.join(frontendRoot, 'index.html');
+  if (wantsHtml && fs.existsSync(indexPath) && req.path === '/') {
+    return res.sendFile(indexPath);
   }
-}, 50);
+  res.json({
+    projeto: 'INOVATECH SMART DRIVER — BACKEND API',
+    status: 'OPERACIONAL',
+    servidor: estado.servidor,
+    porta: PORT,
+    esp32_online: estado.online,
+    estado_atual: estado.estado,
+    clientes_ws: wss.clients.size,
+    documentacao_endpoints: {
+      'POST /api/telemetry': 'ESP32 envia leitura em tempo real (resposta traz os comandos pendentes)',
+      'GET /api/telemetry': 'Estado consolidado atual + eventos recentes',
+      'POST /api/command': 'DISPARAR_TESTE, SIMULAR_ALERTA, SILENCIAR_ALARME, CALIBRAR_MPU, TOGGLE_RELE1/2',
+      'POST /api/driver/shift': 'Inicia/pausa a viagem do motorista',
+      'POST /api/gps': 'Posição GPS do celular do motorista',
+      'GET /api/events': 'Histórico cronológico de alarmes e eventos',
+      'GET /api/health': 'Status de integridade do servidor'
+    }
+  });
+});
 
 app.post('/api/telemetry', (req, res) => {
-  processarTelemetria(req.body || {});
-  return res.status(200).json({
-    sucesso: true,
-    estado_processado: estado.estado,
-    comandos_pendentes: comandosPendentes
-  });
-});
-
-// Endpoint dedicado para ligar/desligar turno do motorista via REST
-app.post(['/api/driver/shift', '/api/driver/status'], (req, res) => {
-  const { status_viagem = 'EM_VIAGEM', motorista = 'Matheus Garcia' } = req.body || {};
-  if (!estado.motoristas) estado.motoristas = {};
-  if (!estado.motoristas.matheus_garcia) {
-    estado.motoristas.matheus_garcia = {
-      nome: 'Matheus Garcia',
-      status: 'EM_VIAGEM',
-      veiculo: 'Scania R-450 (Placa INO-2026)',
-      rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
-    };
+  const resultado = processarPacote(req.body, 'HTTP');
+  if (resultado.cmds) {
+    // Resposta enxuta para a ESP32 (o firmware procura os nomes dos comandos no texto)
+    return res.status(200).json({ sucesso: true, srv: 'INOVATECH', cmds: resultado.cmds });
   }
-  const novoStatus = (status_viagem === 'INATIVO') ? 'INATIVO' : 'EM_VIAGEM';
-  estado.motoristas.matheus_garcia.status = novoStatus;
-  estado.motoristas.matheus_garcia.atualizadoEm = new Date().toISOString();
-  registrarEvento('TURNO_MOTORISTA', `Condutor ${motorista}: Turno ${novoStatus === 'EM_VIAGEM' ? 'Iniciado' : 'Pausado'} (REST)`);
-  broadcast({
-    tipo: 'STATUS_MOTORISTA',
-    motorista,
-    status_viagem: novoStatus,
-    estado
-  });
-  persistirEmDisco();
-  return res.json({ sucesso: true, motoristas: estado.motoristas });
+  return res.status(200).json({ sucesso: true, estado_processado: estado.estado, ...resultado });
 });
 
-// Endpoint para o Painel obter o estado atual
-
-// Endpoint de telemetria atual compatível (/api/telemetry/current e /api/telemetry)
 app.get(['/api/telemetry/current', '/api/telemetry/latest'], (req, res) => {
-  res.json({
-    sucesso: true,
-    estado,
-    comandosPendentesParaESP32: comandosPendentes.length,
-    timestamp: new Date().toISOString()
-  });
+  res.json({ sucesso: true, estado, timestamp: new Date().toISOString() });
 });
 
 app.get('/api/telemetry', (req, res) => {
-  res.json({
-    sucesso: true,
-    estado,
-    eventosRecentes: historicoEventos.slice(0, 10)
-  });
+  res.json({ sucesso: true, estado, eventosRecentes: historicoEventos.slice(0, 10) });
 });
 
-// Endpoint para a Central enviar comando remoto
+app.post(['/api/driver/shift', '/api/driver/status'], (req, res) => {
+  const { status_viagem = 'EM_VIAGEM', origem } = req.body || {};
+  atualizarTurno(status_viagem, origem || 'App do Motorista (REST)');
+  return res.json({ sucesso: true, motoristas: estado.motoristas });
+});
+
 app.post('/api/command', (req, res) => {
-  const { comando, origem = 'CENTRAL_WEB' } = req.body || {};
-
-  if (!comando) {
-    return res.status(400).json({ erro: 'Comando não especificado' });
-  }
-
-  const comandoItem = {
-    id: 'cmd_' + Date.now(),
-    comando,
-    origem,
-    timestamp: new Date().toISOString()
-  };
-
-  comandosPendentes.push(comandoItem);
-
-  if (comando === 'DISPARAR_TESTE') {
-    estado.estado = 'ALARME_ATIVADO';
-    estado.buzzer = 1;
-    estado.rele = 1;
-    estado.tempo_cabeca_baixa_ms = 2500;
-    estado.contadores.totalAlarmesSessao++;
-    iniciarProtocoloAlertaTravado();
-    registrarEvento('COMANDO_CENTRAL', 'Comando Remoto: Alerta Físico e Virtual no Celular Disparado');
-    broadcast({
-      tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
-      dispararChamadaCafe: true,
-      estado
-    });
-  } else if (comando === 'SILENCIAR_ALARME' || comando === 'RESET') {
-    encerrarProtocoloAlertaTravado();
-    registrarEvento('COMANDO_CENTRAL', 'Confirmação Recebida: Alerta Desativado pelo Motorista / Central');
-  }
-
-  // Notifica todos via WebSocket imediatamente
-  broadcast({
-    tipo: 'COMANDO_EXECUTADO',
-    comando: comandoItem,
-    estado
-  });
-
-  return res.status(200).json({
-    sucesso: true,
-    mensagem: `Comando ${comando} registrado com sucesso.`,
-    comandoItem
-  });
+  const { comando, origem = 'CENTRAL_WEB', ...extras } = req.body || {};
+  if (!comando) return res.status(400).json({ erro: 'Comando não especificado' });
+  const r = executarComando(comando, origem, extras);
+  return res.status(r.ok ? 200 : 400).json({ sucesso: r.ok, mensagem: r.mensagem, estado });
 });
 
-// Endpoint para receber atualização de GPS real do celular do motorista
 app.post('/api/gps', (req, res) => {
-  const { lat, lon, precisao, velocidade, heading, origem } = req.body || {};
-  if (lat !== undefined && lon !== undefined) {
-    estado.gps = {
-      lat: Number(lat),
-      lon: Number(lon),
-      precisao: Number(precisao || 5),
-      velocidade: Number(velocidade || 0),
-      heading: Number(heading || 0),
-      origem: origem || 'CELULAR_MOTORISTA',
-      atualizadoEm: new Date().toISOString()
-    };
-    broadcast({
-      tipo: 'GPS_UPDATE',
-      gps: estado.gps
-    });
-    return res.json({ sucesso: true, gps: estado.gps });
-  }
+  const body = req.body || {};
+  if (atualizarGps(body.gps || body, body.origem)) return res.json({ sucesso: true, gps: estado.gps });
   return res.status(400).json({ erro: 'Coordenadas inválidas' });
 });
 
-// Endpoint para o ESP32 consumir e limpar comandos pendentes
+// Compatibilidade: ESP32 antiga consumindo a fila de comandos
 app.get('/api/commands', (req, res) => {
-  const enviados = [...comandosPendentes];
-  comandosPendentes = []; // Limpa após consumo
-  res.json({
-    sucesso: true,
-    total: enviados.length,
-    comandos: enviados
-  });
+  const enviados = retirarComandosESP32();
+  res.json({ sucesso: true, total: enviados.length, comandos: enviados });
 });
 
-// Endpoint de histórico de eventos
 app.get('/api/events', (req, res) => {
-  res.json({
-    sucesso: true,
-    total: historicoEventos.length,
-    eventos: historicoEventos
-  });
+  res.json({ sucesso: true, total: historicoEventos.length, eventos: historicoEventos });
 });
 
-// Endpoint para limpar o histórico
 app.post('/api/events/clear', (req, res) => {
   historicoEventos = [];
   registrarEvento('NORMAL', 'Histórico de eventos resetado pela Central.');
   res.json({ sucesso: true, mensagem: 'Histórico limpo' });
 });
 
-// Endpoints de saúde do servidor (compatíveis com Render e Monitoramento)
 app.get(['/health', '/api/health'], (req, res) => {
   res.status(200).json({
     status: 'ONLINE',
+    servidor: estado.servidor,
+    modo_espelho: modoEspelhoAtivo(),
     uptime_segundos: Math.floor(process.uptime()),
     clientes_conectados: wss.clients.size,
     esp32_conectado: estado.online,
+    esp32_fonte: estado.fonte_conexao,
     timestamp: new Date().toISOString()
   });
 });
@@ -783,116 +874,90 @@ app.get(['/health', '/api/health'], (req, res) => {
 // GERENCIAMENTO DE WEBSOCKETS
 // ------------------------------------------------------------------------------
 wss.on('connection', (ws, req) => {
-  const ip = req.socket.remoteAddress;
-  console.log(`[WS] Novo cliente conectado: ${ip} (Total ativos: ${wss.clients.size})`);
+  ws.vivo = true;
+  ws.on('pong', () => { ws.vivo = true; });
+  console.log(`[WS] Novo cliente conectado: ${req.socket.remoteAddress} (Total ativos: ${wss.clients.size})`);
 
-  // Envia estado inicial imediatamente ao conectar
-  ws.send(JSON.stringify({
-    tipo: 'ESTADO_INICIAL',
-    estado,
-    eventos: historicoEventos.slice(0, 20)
-  }));
+  ws.send(JSON.stringify({ tipo: 'ESTADO_INICIAL', estado, eventos: historicoEventos.slice(0, 20) }));
 
   ws.on('message', (message) => {
-    try {
-      const parsed = JSON.parse(message);
+    let parsed;
+    try { parsed = JSON.parse(message); } catch (err) { return; }
+    if (!parsed || typeof parsed !== 'object') return;
 
-      // Se for telemetria enviada via WebSocket direto do ESP32/cliente
-      if (parsed.tipo === 'TELEMETRIA') {
-        // Redireciona para o mesmo fluxo
-        app.handle({
-          method: 'POST',
-          url: '/api/telemetry',
-          body: parsed.dados || parsed
-        });
-      } else if (parsed.tipo === 'COMANDO') {
-        // Processa comando recebido via WS
-        if (parsed.comando === 'DISPARAR_TESTE') {
-          estado.estado = 'ALARME_ATIVADO';
-          estado.buzzer = 1;
-          estado.rele = 1;
-          estado.tempo_cabeca_baixa_ms = 2500;
-          estado.contadores.totalAlarmesSessao++;
-          iniciarProtocoloAlertaTravado();
-          registrarEvento('COMANDO_CENTRAL', 'Comando Remoto (WS): Alerta Físico e Virtual Disparado');
-          broadcast({
-            tipo: 'ALERTA_FISICO_E_VIRTUAL_CELULAR',
-            dispararChamadaCafe: true,
-            estado
-          });
-        } else if (parsed.comando === 'SILENCIAR_ALARME' || parsed.comando === 'RESET') {
-          encerrarProtocoloAlertaTravado();
-          registrarEvento('COMANDO_CENTRAL', 'Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central');
-        }
-        broadcast({
-          tipo: 'COMANDO_EXECUTADO',
-          comando: parsed.comando,
-          estado
-        });
-      } else if (parsed.tipo === 'GPS_UPDATE' && parsed.gps) {
-        estado.gps = {
-          lat: Number(parsed.gps.lat),
-          lon: Number(parsed.gps.lon),
-          precisao: Number(parsed.gps.precisao || 5),
-          velocidade: Number(parsed.gps.velocidade || 0),
-          heading: Number(parsed.gps.heading || 0),
-          origem: 'CELULAR_MOTORISTA',
-          atualizadoEm: new Date().toISOString()
-        };
-        broadcast({
-          tipo: 'GPS_UPDATE',
-          gps: estado.gps
-        });
-      } else if (parsed.tipo === 'STATUS_MOTORISTA') {
-        const statusViagem = parsed.status_viagem || (parsed.ativo ? 'EM_VIAGEM' : 'INATIVO');
-        if (!estado.motoristas) estado.motoristas = {};
-        if (!estado.motoristas.matheus_garcia) {
-          estado.motoristas.matheus_garcia = {
-            nome: 'Matheus Garcia',
-            status: 'EM_VIAGEM',
-            veiculo: 'Scania R-450 (Placa INO-2026)',
-            rota: 'Rodovia BR-116 KM 284 · Régis Bittencourt'
-          };
-        }
-        estado.motoristas.matheus_garcia.status = statusViagem;
-        estado.motoristas.matheus_garcia.atualizadoEm = new Date().toISOString();
-        registrarEvento('TURNO_MOTORISTA', `Condutor Matheus Garcia: Turno ${statusViagem === 'EM_VIAGEM' ? 'Iniciado' : 'Pausado'} (WS)`);
-        broadcast({
-          tipo: 'STATUS_MOTORISTA',
-          motorista: 'Matheus Garcia',
-          status_viagem: statusViagem,
-          estado
-        });
-        persistirEmDisco();
-      }
-    } catch (err) {
-      console.error('[WS PARSE ERROR]:', err.message);
+    if (parsed.tipo === 'TELEMETRIA') {
+      processarPacote(parsed.dados || parsed, 'WS');
+    } else if (parsed.tipo === 'COMANDO') {
+      const r = executarComando(parsed.comando, parsed.origem || 'CENTRAL (WS)', parsed.extras || {});
+      if (!r.ok) ws.send(JSON.stringify({ tipo: 'ERRO_COMANDO', mensagem: r.mensagem }));
+    } else if (parsed.tipo === 'GPS_UPDATE' && parsed.gps) {
+      atualizarGps(parsed.gps, 'CELULAR_MOTORISTA');
+    } else if (parsed.tipo === 'STATUS_MOTORISTA') {
+      atualizarTurno(parsed.status_viagem || (parsed.ativo === false ? 'INATIVO' : 'EM_VIAGEM'), parsed.origem || 'App do Motorista (WS)');
+    } else if (parsed.tipo === 'PING') {
+      ws.send(JSON.stringify({ tipo: 'PONG', t: Date.now() }));
     }
   });
 
-  ws.on('close', () => {
-    console.log(`[WS] Cliente desconectado (Ativos restantes: ${wss.clients.size})`);
-  });
-
-  ws.on('error', (err) => {
-    console.error('[WS ERROR]:', err.message);
-  });
+  ws.on('close', () => console.log(`[WS] Cliente desconectado (Ativos restantes: ${wss.clients.size})`));
+  ws.on('error', (err) => console.error('[WS ERROR]:', err.message));
 });
 
+// Derruba conexões "zumbis" e mantém o túnel do Render aberto
+setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.vivo === false) return ws.terminate();
+    ws.vivo = false;
+    try { ws.ping(); } catch (e) { }
+  });
+}, 25000);
+
 // ------------------------------------------------------------------------------
-// PONTE AUTOMÁTICA USB SERIAL (WINDOWS COM PORT -> PAINEL EM TEMPO REAL + NUVEM)
+// RECEPTOR UDP (ZERO CONFIGURAÇÃO DE IP) — responde com os comandos pendentes
 // ------------------------------------------------------------------------------
-const { spawn } = require('child_process');
+const udpServer = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+
+udpServer.on('message', (msg, rinfo) => {
+  let dados;
+  try {
+    const raw = msg.toString('utf8').trim();
+    if (!raw.startsWith('{')) return;
+    dados = JSON.parse(raw);
+  } catch (e) { return; }
+
+  const resultado = processarPacote(dados, 'UDP');
+  // A resposta ensina o IP do servidor para a ESP32 e entrega os comandos da Central
+  const resposta = Buffer.from(JSON.stringify({ srv: 'INOVATECH', cmds: resultado.cmds || [] }));
+  udpServer.send(resposta, rinfo.port, rinfo.address, () => { });
+});
+
+udpServer.on('error', (err) => {
+  console.log(`[UDP ERROR]: ${err.message} (a porta ${UDP_PORT} pode estar em uso por outro server.js aberto)`);
+});
+
+if (!IS_RENDER_CLOUD) {
+  udpServer.bind(UDP_PORT, '0.0.0.0', () => {
+    try { udpServer.setBroadcast(true); } catch (e) { }
+    console.log(`  ✔ Receptor UDP da ESP32 ativo na porta: ${UDP_PORT}`);
+  });
+}
+
+// ------------------------------------------------------------------------------
+// PONTE USB SERIAL OPCIONAL (WINDOWS) — ative com PONTE_SERIAL=COM5 (ou "auto") no .env
+// Fica desligada por padrão para a porta COM ficar livre para o PlatformIO gravar.
+// ------------------------------------------------------------------------------
 let serialBridgeProc = null;
 
-function iniciarPonteSerialUSB() {
+function iniciarPonteSerialUSB(portaPreferida) {
   if (process.platform !== 'win32' || IS_RENDER_CLOUD) return;
+  const porta = /^COM\d+$/i.test(portaPreferida) ? portaPreferida.toUpperCase() : '';
 
   const psScript = `
     $ErrorActionPreference = 'SilentlyContinue'
+    $preferida = '${porta}'
     while ($true) {
       $ports = [System.IO.Ports.SerialPort]::getportnames()
-      $target = if ($ports -contains 'COM5') { 'COM5' } else { $ports | Select-Object -First 1 }
+      $target = if ($preferida -and ($ports -contains $preferida)) { $preferida } elseif (-not $preferida) { $ports | Select-Object -First 1 } else { $null }
       if ($target) {
         $sp = New-Object System.IO.Ports.SerialPort $target, 115200, 'None', 8, 'One'
         $sp.ReadTimeout = 1000
@@ -928,87 +993,79 @@ function iniciarPonteSerialUSB() {
     buffer = lines.pop() || '';
     for (const rawLine of lines) {
       const line = rawLine.trim();
-      if (!line) continue;
       if (line.startsWith('SERIAL_CONNECTED:')) {
         const portName = line.split(':')[1];
-        console.log(`[USB SERIAL] Conectado automaticamente à ESP32 na porta ${portName} (115200 bps)`);
-        registrarEvento('NORMAL', `ESP32 conectada via USB Serial (${portName})`, 'Leitura em tempo real ativa.');
+        console.log(`[USB SERIAL] Conectado à ESP32 na porta ${portName} (115200 bps)`);
       } else if (line.startsWith('TELEMETRY:')) {
         try {
-          const jsonStr = line.substring('TELEMETRY:'.length).trim();
-          const dados = JSON.parse(jsonStr);
-          processarTelemetria(dados);
+          processarPacote(JSON.parse(line.substring('TELEMETRY:'.length)), 'SERIAL');
         } catch (e) { }
+      } else if (line) {
+        console.log(`[ESP32] ${line}`);
       }
     }
   });
 
   serialBridgeProc.on('exit', () => {
-    setTimeout(iniciarPonteSerialUSB, 3000);
+    serialBridgeProc = null;
+    setTimeout(() => iniciarPonteSerialUSB(portaPreferida), 3000);
   });
 }
 
-// Inicia escuta na porta e host configurados (0.0.0.0 é obrigatório para Render e Docker)
-
-// ------------------------------------------------------------------------------
-// RECEPTOR UDP BROADCAST LOCAL (ZERO CONFIGURAÇÃO DE IP / LATÊNCIA < 1MS)
-// ------------------------------------------------------------------------------
-const dgram = require('dgram');
-const udpServer = dgram.createSocket('udp4');
-const UDP_PORT = 3002;
-
-udpServer.on('message', (msg, rinfo) => {
-  try {
-    const raw = msg.toString('utf8').trim();
-    if (raw.startsWith('{')) {
-      const dados = JSON.parse(raw);
-      processarTelemetria(dados);
-    }
-  } catch (e) {}
-});
-
-udpServer.on('error', (err) => {
-  console.log('[UDP ERROR]:', err.message);
-});
-
-try {
-  udpServer.bind(UDP_PORT, '0.0.0.0', () => {
-    console.log(`  ✔ Receptor UDP Broadcast ativo na porta: ${UDP_PORT} (Zero Latência)`);
+function listarIpsDaRede() {
+  const ips = [];
+  Object.entries(require('os').networkInterfaces()).forEach(([nome, interfaces]) => {
+    (interfaces || []).forEach((i) => {
+      if (i.family === 'IPv4' && !i.internal && !/vEthernet|VirtualBox|VMware|WSL/i.test(nome)) ips.push(`${i.address} (${nome})`);
+    });
   });
-} catch (e) {
-  console.log('[UDP BIND ERROR]:', e.message);
+  return ips;
 }
 
 server.listen(PORT, '0.0.0.0', () => {
+  if (!IS_RENDER_CLOUD) {
+    console.log('\n  Endereços deste PC na rede (use no celular: http://ENDEREÇO:' + PORT + '/motorista.html):');
+    listarIpsDaRede().forEach((ip) => console.log('    • ' + ip));
+  }
   console.log(`
   ===================================================================
-    INOVA TECH SMART DRIVER — BACKEND ATIVO
+    INOVA TECH SMART DRIVER — BACKEND ATIVO (${estado.servidor})
   ===================================================================
-  ✔ Servidor HTTP & WebSocket iniciado na porta: ${PORT}
-  ✔ Endpoint Local / Cloud: http://0.0.0.0:${PORT}
-  ✔ WebSocket URL:         ws://0.0.0.0:${PORT}/ws
-  ✔ REST Telemetria (POST): http://0.0.0.0:${PORT}/api/telemetry
-  ✔ REST Comandos (POST):   http://0.0.0.0:${PORT}/api/command
-  ✔ Health Check:          http://0.0.0.0:${PORT}/health
+  ✔ Servidor HTTP & WebSocket na porta: ${PORT}
+  ✔ Central Tech:        http://localhost:${PORT}/central.html
+  ✔ App do Motorista:    http://<IP-DO-PC>:${PORT}/motorista.html
+  ✔ WebSocket:           ws://localhost:${PORT}/ws
+  ✔ Health Check:        http://localhost:${PORT}/health
+  ✔ Espelho na nuvem:    ${ESPELHAR_NUVEM ? RENDER_CLOUD_URL : 'desativado'}
   ===================================================================
   `);
-  // Ponte serial desativada para a porta COM5 ficar 100% livre para o PlatformIO gravar
-  // iniciarPonteSerialUSB();
+  if (process.env.PONTE_SERIAL) iniciarPonteSerialUSB(process.env.PONTE_SERIAL);
+});
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[ERRO] A porta ${PORT} já está em uso. Feche a outra janela do servidor (ou o processo node.exe) e tente de novo.\n`);
+    process.exit(1);
+  }
+  throw err;
 });
 
 // Encerramento gracioso para orquestradores de nuvem (Render, Docker, Kubernetes)
 function encerrarGraciosamente(sinal) {
   console.log(`[SERVER] Sinal ${sinal} recebido. Encerrando conexões graciosamente...`);
   if (serialBridgeProc) {
+    serialBridgeProc.removeAllListeners('exit');
     try { serialBridgeProc.kill(); } catch (e) { }
   }
-  wss.clients.forEach(client => {
+  try { udpServer.close(); } catch (e) { }
+  wss.clients.forEach((client) => {
     try { client.close(1001, 'Servidor reiniciando'); } catch (e) { }
   });
   server.close(() => {
     console.log('[SERVER] Servidor HTTP e WebSocket finalizados com sucesso.');
     process.exit(0);
   });
+  setTimeout(() => process.exit(0), 2000).unref();
 }
 
 process.on('SIGTERM', () => encerrarGraciosamente('SIGTERM'));

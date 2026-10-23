@@ -5,10 +5,10 @@
 #include <WiFiClientSecure.h>
 #include <WiFiUdp.h>
 #include <HTTPClient.h>
+#include <math.h>
 
 WiFiMulti wifiMulti;
-WiFiUDP udpClient;
-const uint16_t UDP_PORT_DESTINO = 3002;
+WiFiUDP udp;
 
 // ==============================================================================
 // INOVA TECH — SMART DRIVER (FIRMWARE ESP32 DUAL-CORE DE ALTA PRECISÃO)
@@ -16,7 +16,14 @@ const uint16_t UDP_PORT_DESTINO = 3002;
 // Monitoramento biométrico de postura e combate à fadiga / sono ao volante.
 // Arquitetura Dual-Core (FreeRTOS):
 // - CORE 1: Sensor IR, Acelerômetro GY-521 (MPU-6050), Buzzer e Relé Duplo HL-52S.
-// - CORE 0: Conectividade Wi-Fi e Telemetria IoT (Local + Nuvem).
+// - CORE 0: Conectividade Wi-Fi e Telemetria IoT (Local via UDP + Nuvem via HTTPS).
+//
+// Protocolo de rede (zero configuração de IP):
+// 1. A ESP32 envia o JSON de telemetria por UDP broadcast na porta 3002.
+// 2. O servidor Node.js responde por UDP com {"srv":"INOVATECH","cmds":[...]}.
+// 3. A ESP32 aprende o IP do servidor pela resposta e passa a enviar direto (unicast).
+// 4. Sem servidor local por 5s, envia por HTTPS para a nuvem Render (fallback).
+// Os comandos da Central (TEST_ALARM, SILENCIAR, CALIBRAR...) chegam nessas respostas.
 // ==============================================================================
 
 // ------------------------------------------------------------------------------
@@ -34,10 +41,12 @@ const char* WIFI_REDMI_PASS = "Garcia2026";
 const char* WIFI_IPHONE_SSID = "iPhone de Matheus";
 const char* WIFI_IPHONE_PASS = "12345678910";
 
-// Endereços do Servidor de Telemetria:
-const char* BACKEND_URL_CASA      = "http://192.168.1.218:3001/api/telemetry";
-const char* BACKEND_URL_IPHONE_PC = "http://172.20.10.2:3001/api/telemetry";
-const char* BACKEND_URL_CLOUD     = "https://inovatech-tcc.onrender.com/api/telemetry";
+// Servidor na nuvem (usado somente quando nenhum servidor local responde):
+const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
+const bool  ENVIAR_NUVEM_SEM_SERVIDOR_LOCAL = true;
+
+const uint16_t UDP_PORTA_SERVIDOR = 3002; // Porta onde o server.js escuta
+const uint16_t UDP_PORTA_LOCAL    = 3003; // Porta onde a ESP32 recebe as respostas
 
 // ------------------------------------------------------------------------------
 // 2. MAPEAMENTO DOS PINOS DE HARDWARE
@@ -61,15 +70,31 @@ const uint8_t MPU6050_ADDR   = 0x68;
 const int NIVEL_CABECA_BAIXA     = LOW;
 const int NIVEL_BUZZER_LIGADO    = HIGH;
 const int NIVEL_BUZZER_DESLIGADO = LOW;
-const int NIVEL_RELE_LIGADO      = LOW;
+const int NIVEL_RELE_LIGADO      = LOW;  // HL-52S é Active LOW
 const int NIVEL_RELE_DESLIGADO   = HIGH;
 
-// Filtro Temporal de Segurança: 3.5 segundos de tolerância com aviso sonoro progressivo
+// ------------------------------------------------------------------------------
+// 3. CALIBRAÇÃO TEMPORAL E ANGULAR
+// ------------------------------------------------------------------------------
+// Filtro Temporal de Segurança: 3.5 segundos de tolerância com 3 bips progressivos
 const unsigned long LIMIAR_CABECA_BAIXA_MS = 3500;
-const unsigned long INTERVALO_TELEMETRIA_MS = 200; // 5 pacotes por segundo
+
+// Acelerômetro: ângulo medido em relação à postura calibrada (cabeça erguida).
+// Funciona em qualquer orientação de montagem do GY-521 na haste dos óculos.
+const float LIMIAR_INCLINACAO_GRAUS = 32.0;  // Cabeça caída além disso = cabeça baixa
+const float PESCADA_VARIACAO_GRAUS  = 15.0;  // Queda em 100 ms (~150°/s) = pescada brusca
+const float PESCADA_INCLINACAO_MIN  = 25.0;  // ...desde que termine a pelo menos 25°
+const bool  PESCADA_DISPARA_ALARME  = true;  // Pescada dispara o alarme na hora
+const unsigned long ALARME_MINIMO_PESCADA_MS = 2000; // Alarme de pescada dura no mínimo 2s
+
+const unsigned long DURACAO_MAX_TESTE_MS     = 30000; // Teste remoto se desliga sozinho em 30s
+const unsigned long INTERVALO_TELEMETRIA_MS  = 200;   // 5 pacotes/s em operação normal
+const unsigned long INTERVALO_TELEMETRIA_ALERTA_MS = 100; // 10 pacotes/s durante alertas
+const unsigned long TIMEOUT_SERVIDOR_LOCAL_MS = 5000;
+const unsigned long INTERVALO_NUVEM_MS        = 1000;
 
 // ------------------------------------------------------------------------------
-// 3. ESTRUTURA DE TELEMETRIA COMPARTILHADA ENTRE OS CORES
+// 4. ESTRUTURA DE TELEMETRIA COMPARTILHADA ENTRE OS CORES
 // ------------------------------------------------------------------------------
 struct DadosTelemetria {
   int sensorIr;
@@ -79,37 +104,70 @@ struct DadosTelemetria {
   int rele2;
   float pitch;
   float roll;
+  float inclinacao;
   bool pescadaDetectada;
   bool mpuOnline;
+  bool mpuCalibrado;
+  bool testeAtivo;
   char estado[24];
   bool alarmeAtivo;
 };
 
-DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, false, false, "NORMAL", false};
+DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, false, "NORMAL", false};
 portMUX_TYPE mutexDados = portMUX_INITIALIZER_UNLOCKED;
+
+// Comandos recebidos pela rede (Core 0) e executados no Core 1
+const uint8_t CMD_TESTE_ALARME = 0x01;
+const uint8_t CMD_SILENCIAR    = 0x02;
+const uint8_t CMD_TOGGLE_RELE1 = 0x04;
+const uint8_t CMD_TOGGLE_RELE2 = 0x08;
+const uint8_t CMD_CALIBRAR     = 0x10;
+volatile uint8_t comandosRemotos = 0;
+portMUX_TYPE mutexComandos = portMUX_INITIALIZER_UNLOCKED;
 
 // Variáveis de Estado no Core 1
 unsigned long tempoInicioCabecaBaixa = 0;
 bool cabecaEstavaBaixa               = false;
 bool alarmeAtivo                     = false;
+unsigned long alarmeMinimoAte        = 0;
+bool testeAlarmeAtivo                = false;
+unsigned long inicioTesteAlarme      = 0;
 bool testeManualRele1                = false;
 bool testeManualRele2                = false;
-bool mpuDetectado                    = false;
 
-float pitchFiltrado = 0.0;
-float rollFiltrado  = 0.0;
-float ultimoPitch    = 0.0;
+// Acelerômetro
+struct LeituraMPU {
+  bool valida;
+  float pitch;
+  float roll;
+  float inclinacao;
+  bool pescada;
+};
+
+bool mpuDetectado             = false;
+bool mpuCalibrado             = false;
+unsigned long ultimaTentativaMpu = 0;
+float gFiltX = 0, gFiltY = 0, gFiltZ = 1;  // Vetor gravidade filtrado (em g)
+float gRefX = 0, gRefY = 0, gRefZ = 1;     // Vetor de referência (cabeça erguida)
+float pitchRef = 0, rollRef = 0;
+float historicoInclinacao[10] = {0};       // 10 amostras x 10 ms = janela de 100 ms
+uint8_t indiceHistorico = 0;
 
 // Protótipos de Funções
 void ativarAlarmes();
 void desativarAlarmes();
 void processarComandosSerial();
+void aplicarComandosRemotos();
+void agendarComando(uint8_t cmd);
+void interpretarComandosTexto(const char* texto);
 void taskTelemetria(void *pvParameters);
-void inicializarMPU6050();
-void lerMPU6050(float &pitch, float &roll, bool &pescada);
+bool inicializarMPU6050();
+bool lerAcelerometroBruto(float &ax, float &ay, float &az);
+void calibrarMPU6050();
+LeituraMPU lerMPU6050(unsigned long agora);
 
 // ------------------------------------------------------------------------------
-// 4. SETUP INICIAL
+// 5. SETUP INICIAL
 // ------------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
@@ -140,35 +198,39 @@ void setup() {
 
   // Inicializa I2C nos pinos dedicados D21 (SDA) e D22 (SCL)
   Wire.begin(PINO_MPU_SDA, PINO_MPU_SCL, 400000);
-  inicializarMPU6050();
+  Wire.setTimeOut(20); // Nunca deixa um fio solto travar o Core 1
+  if (inicializarMPU6050()) {
+    calibrarMPU6050();
+  }
 
   Serial.println(F("\n=================================================="));
   Serial.println(F("     INOVA TECH - SMART DRIVER (SISTEMA ATIVO)    "));
   Serial.println(F("   Monitoramento de Postura e Fadiga Veicular     "));
   Serial.println(F("=================================================="));
   Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25"));
-  Serial.println(F("[HARDWARE] Relé 1: GPIO 18 | Relé 2: GPIO 19 | GND Relé: GPIO 13"));
-  Serial.printf("[HARDWARE] Acelerômetro GY-521: SDA=%d, SCL=%d, VCC=%d, GND=%d (RX2)\n",
+  Serial.println(F("[HARDWARE] Rele 1: GPIO 18 | Rele 2: GPIO 19 | GND Rele: GPIO 13"));
+  Serial.printf("[HARDWARE] Acelerometro GY-521: SDA=%d, SCL=%d, VCC=%d, GND=%d (RX2)\n",
                 PINO_MPU_SDA, PINO_MPU_SCL, PINO_MPU_VCC, PINO_MPU_GND);
-  Serial.printf("[HARDWARE] Status MPU-6050: %s\n", mpuDetectado ? "CONECTADO COM SUCESSO!" : "AGUARDANDO CONEXAO");
+  Serial.printf("[HARDWARE] Status MPU-6050: %s\n", mpuDetectado ? "CONECTADO E CALIBRADO" : "AGUARDANDO CONEXAO");
+  Serial.printf("[SEGURANCA] Tolerancia: %lu ms | Inclinacao maxima: %.0f graus\n",
+                LIMIAR_CABECA_BAIXA_MS, LIMIAR_INCLINACAO_GRAUS);
+  Serial.println(F("[DICA] Ligue (ou envie CMD:CALIBRAR) com a cabeca erguida para calibrar o acelerometro."));
 
   // Modo Station puro com reconexão resiliente
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
-  WiFi.persistent(true);
+  WiFi.persistent(false); // Evita gravar na flash a cada reconexão
 
-  // Registra as redes conhecidas
+  // Registra as redes conhecidas (o WiFiMulti escolhe a de melhor sinal)
   wifiMulti.addAP(WIFI_CASA_SSID, WIFI_CASA_PASS);
   wifiMulti.addAP(WIFI_REDMI_SSID, WIFI_REDMI_PASS);
   wifiMulti.addAP(WIFI_IPHONE_SSID, WIFI_IPHONE_PASS);
-
-  WiFi.begin(WIFI_CASA_SSID, WIFI_CASA_PASS);
 
   // Inicializa a Tarefa de Telemetria no Core 0 (Background)
   xTaskCreatePinnedToCore(
     taskTelemetria,
     "TaskTelemetria",
-    10240,
+    12288,
     NULL,
     1,
     NULL,
@@ -177,84 +239,141 @@ void setup() {
 }
 
 // ------------------------------------------------------------------------------
-// 5. INICIALIZAÇÃO E LEITURA DO ACELERÔMETRO MPU-6050 (I2C)
+// 6. INICIALIZAÇÃO, CALIBRAÇÃO E LEITURA DO ACELERÔMETRO MPU-6050 (I2C)
 // ------------------------------------------------------------------------------
-void inicializarMPU6050() {
+bool inicializarMPU6050() {
   Wire.beginTransmission(MPU6050_ADDR);
-  byte erro = Wire.endTransmission();
-  if (erro == 0) {
-    mpuDetectado = true;
-    // Acorda o MPU-6050 (limpa o registrador PWR_MGMT_1)
-    Wire.beginTransmission(MPU6050_ADDR);
-    Wire.write(0x6B); // Registrador PWR_MGMT_1
-    Wire.write(0x00); // 0 para acordar o chip
-    Wire.endTransmission(true);
-
-    // Configura fundo de escala do acelerômetro (+/- 2g)
-    Wire.beginTransmission(MPU6050_ADDR);
-    Wire.write(0x1C); // ACCEL_CONFIG
-    Wire.write(0x00);
-    Wire.endTransmission(true);
-  } else {
+  if (Wire.endTransmission() != 0) {
     mpuDetectado = false;
+    return false;
   }
+
+  // Acorda o MPU-6050 (limpa o registrador PWR_MGMT_1)
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x6B);
+  Wire.write(0x00);
+  Wire.endTransmission(true);
+
+  // Filtro digital passa-baixas interno de 44 Hz (reduz vibração do caminhão)
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x1A); // CONFIG
+  Wire.write(0x03);
+  Wire.endTransmission(true);
+
+  // Fundo de escala do acelerômetro (+/- 2g)
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x1C); // ACCEL_CONFIG
+  Wire.write(0x00);
+  Wire.endTransmission(true);
+
+  mpuDetectado = true;
+  return true;
 }
 
-void lerMPU6050(float &pitch, float &roll, bool &pescada) {
-  pescada = false;
-  if (!mpuDetectado) {
-    inicializarMPU6050();
-    if (!mpuDetectado) {
-      pitch = 0.0;
-      roll = 0.0;
-      return;
-    }
-  }
-
+bool lerAcelerometroBruto(float &ax, float &ay, float &az) {
   Wire.beginTransmission(MPU6050_ADDR);
   Wire.write(0x3B); // Registrador ACCEL_XOUT_H
-  if (Wire.endTransmission(false) != 0) {
-    mpuDetectado = false;
+  if (Wire.endTransmission(false) != 0) return false;
+  if (Wire.requestFrom((uint8_t)MPU6050_ADDR, (size_t)6, true) != 6) return false;
+
+  int16_t rx = (Wire.read() << 8) | Wire.read();
+  int16_t ry = (Wire.read() << 8) | Wire.read();
+  int16_t rz = (Wire.read() << 8) | Wire.read();
+  ax = rx / 16384.0;
+  ay = ry / 16384.0;
+  az = rz / 16384.0;
+  return true;
+}
+
+// Grava a postura atual (cabeça erguida) como referência zero. Bloqueia ~0,5s.
+void calibrarMPU6050() {
+  float somaX = 0, somaY = 0, somaZ = 0;
+  int amostras = 0;
+  for (int i = 0; i < 50; i++) {
+    float ax, ay, az;
+    if (lerAcelerometroBruto(ax, ay, az)) {
+      somaX += ax; somaY += ay; somaZ += az;
+      amostras++;
+    }
+    delay(10);
+  }
+  float mx = somaX / max(amostras, 1);
+  float my = somaY / max(amostras, 1);
+  float mz = somaZ / max(amostras, 1);
+  float modulo = sqrt(mx * mx + my * my + mz * mz);
+
+  // Gravidade medida tem que dar ~1g; fora disso o módulo está com defeito/solto
+  if (amostras < 40 || modulo < 0.6 || modulo > 1.4) {
+    mpuCalibrado = false;
+    Serial.println(F("[MPU-6050] Falha na calibracao (leitura instavel). Verifique os fios."));
     return;
   }
 
-  if (Wire.requestFrom((uint8_t)MPU6050_ADDR, (size_t)6, true) == 6) {
-    int16_t ax = (Wire.read() << 8) | Wire.read();
-    int16_t ay = (Wire.read() << 8) | Wire.read();
-    int16_t az = (Wire.read() << 8) | Wire.read();
+  gRefX = mx / modulo; gRefY = my / modulo; gRefZ = mz / modulo;
+  gFiltX = gRefX; gFiltY = gRefY; gFiltZ = gRefZ;
+  pitchRef = atan2(-gRefX, sqrt(gRefY * gRefY + gRefZ * gRefZ)) * RAD_TO_DEG;
+  rollRef  = atan2(gRefY, gRefZ) * RAD_TO_DEG;
+  for (uint8_t i = 0; i < 10; i++) historicoInclinacao[i] = 0;
+  mpuCalibrado = true;
+  Serial.println(F("[MPU-6050] Calibrado: postura atual registrada como cabeca erguida."));
+}
 
-    float axG = ax / 16384.0;
-    float ayG = ay / 16384.0;
-    float azG = az / 16384.0;
+LeituraMPU lerMPU6050(unsigned long agora) {
+  LeituraMPU r = {false, 0.0, 0.0, 0.0, false};
 
-    // Ângulo Pitch (Inclinação Frontal / Queixo para baixo) em graus
-    float pitchInst = atan2(-axG, sqrt(ayG * ayG + azG * azG)) * 57.2957795;
-    // Ângulo Roll (Inclinação Lateral) em graus
-    float rollInst  = atan2(ayG, azG) * 57.2957795;
-
-    // Filtro Passa-Baixas suave (90% anterior + 10% instantâneo)
-    pitchFiltrado = (pitchFiltrado * 0.85) + (pitchInst * 0.15);
-    rollFiltrado  = (rollFiltrado * 0.85) + (rollInst * 0.15);
-
-    pitch = pitchFiltrado;
-    roll  = rollFiltrado;
-
-    // Detecção de "Pescada" de Sono (queda angular brusca > 35°/s)
-    float deltaPitch = pitch - ultimoPitch;
-    if (deltaPitch > 25.0 || pitch > 38.0) {
-      pescada = true;
-    }
-    ultimoPitch = pitch;
-  } else {
-    mpuDetectado = false;
+  if (!mpuDetectado) {
+    // Tenta reconectar no máximo 1x por segundo (não sobrecarrega o barramento I2C)
+    if (agora - ultimaTentativaMpu < 1000) return r;
+    ultimaTentativaMpu = agora;
+    if (!inicializarMPU6050()) return r;
+    Serial.println(F("[MPU-6050] Modulo detectado. Calibrando..."));
+    calibrarMPU6050();
   }
+
+  float ax, ay, az;
+  if (!lerAcelerometroBruto(ax, ay, az)) {
+    mpuDetectado = false;
+    ultimaTentativaMpu = agora;
+    Serial.println(F("[MPU-6050] Leitura falhou (modulo desconectado?)."));
+    return r;
+  }
+
+  // Filtro passa-baixas leve (70% anterior + 30% atual): suave sem atrasar a pescada
+  gFiltX = gFiltX * 0.7 + ax * 0.3;
+  gFiltY = gFiltY * 0.7 + ay * 0.3;
+  gFiltZ = gFiltZ * 0.7 + az * 0.3;
+
+  float modulo = sqrt(gFiltX * gFiltX + gFiltY * gFiltY + gFiltZ * gFiltZ);
+  if (modulo < 0.3 || !mpuCalibrado) return r;
+
+  float nx = gFiltX / modulo, ny = gFiltY / modulo, nz = gFiltZ / modulo;
+
+  // Ângulo entre a gravidade atual e a de referência = quanto a cabeça saiu da postura
+  float cosAng = nx * gRefX + ny * gRefY + nz * gRefZ;
+  cosAng = constrain(cosAng, -1.0f, 1.0f);
+  r.inclinacao = acos(cosAng) * RAD_TO_DEG;
+
+  // Pitch e Roll relativos à postura calibrada (somente para exibição na Central)
+  r.pitch = atan2(-nx, sqrt(ny * ny + nz * nz)) * RAD_TO_DEG - pitchRef;
+  r.roll  = atan2(ny, nz) * RAD_TO_DEG - rollRef;
+
+  // Detecção de "Pescada" de Sono: queda angular brusca dentro de 100 ms
+  float inclinacao100msAtras = historicoInclinacao[indiceHistorico];
+  historicoInclinacao[indiceHistorico] = r.inclinacao;
+  indiceHistorico = (indiceHistorico + 1) % 10;
+  r.pescada = (r.inclinacao - inclinacao100msAtras > PESCADA_VARIACAO_GRAUS) &&
+              (r.inclinacao > PESCADA_INCLINACAO_MIN);
+
+  r.valida = true;
+  return r;
 }
 
 // ------------------------------------------------------------------------------
-// 6. LOOP PRINCIPAL (CORE 1 — 100 HZ / TEMPO REAL ESTRITO)
+// 7. LOOP PRINCIPAL (CORE 1 — 100 HZ / TEMPO REAL ESTRITO)
 // ------------------------------------------------------------------------------
 void loop() {
   processarComandosSerial();
+  aplicarComandosRemotos();
 
   // Leitura digital do Sensor Infravermelho
   int estadoLeitura = digitalRead(PINO_SENSOR_IR);
@@ -264,12 +383,18 @@ void loop() {
   const char* estadoAtualTexto = "NORMAL";
 
   // Leitura do Acelerômetro GY-521
-  float pAng = 0.0, rAng = 0.0;
-  bool pescadaSono = false;
-  lerMPU6050(pAng, rAng, pescadaSono);
+  LeituraMPU mpu = lerMPU6050(agora);
+  bool inclinadoDemais = mpu.valida && (mpu.inclinacao > LIMIAR_INCLINACAO_GRAUS);
+  bool pescadaSono = mpu.valida && mpu.pescada;
 
-  // Condição de Cabeça Baixa: Sensor IR detecta OU Acelerômetro inclina mais de 35 graus
-  bool condicaoCabecaBaixa = (estadoLeitura == NIVEL_CABECA_BAIXA) || (pAng > 32.0) || pescadaSono;
+  // Condição de Cabeça Baixa: Sensor IR detecta OU acelerômetro passa do ângulo OU pescada
+  bool condicaoCabecaBaixa = (estadoLeitura == NIVEL_CABECA_BAIXA) || inclinadoDemais || pescadaSono;
+
+  // Teste remoto da Central expira sozinho por segurança
+  if (testeAlarmeAtivo && (agora - inicioTesteAlarme >= DURACAO_MAX_TESTE_MS)) {
+    testeAlarmeAtivo = false;
+    Serial.println(F("[TESTE] Tempo maximo do teste remoto atingido. Encerrando."));
+  }
 
   if (condicaoCabecaBaixa) {
     if (!cabecaEstavaBaixa) {
@@ -280,57 +405,63 @@ void loop() {
     tempoDecorridoMs = agora - tempoInicioCabecaBaixa;
 
     if (!alarmeAtivo) {
-      if (tempoDecorridoMs >= LIMIAR_CABECA_BAIXA_MS || pescadaSono) {
+      bool disparoPescada = PESCADA_DISPARA_ALARME && pescadaSono;
+      if (tempoDecorridoMs >= LIMIAR_CABECA_BAIXA_MS || disparoPescada) {
         alarmeAtivo = true;
-        estadoAtualTexto = "ALARME_ATIVADO";
-        ativarAlarmes();
-        Serial.println(F(">>> ALERTA CRITICO: Fadiga confirmada! Buzzer continuo e Reles ativados!"));
+        if (disparoPescada) {
+          alarmeMinimoAte = agora + ALARME_MINIMO_PESCADA_MS;
+          Serial.printf(">>> PESCADA DE SONO DETECTADA (%.0f graus)! Alarme imediato.\n", mpu.inclinacao);
+        } else {
+          Serial.println(F(">>> ALERTA CRITICO: Fadiga confirmada! Buzzer continuo e Reles ativados!"));
+        }
       } else {
-        estadoAtualTexto = "PRE_ALERTA";
-
-        // 3 BIPS PROGRESSIVOS ALONGADOS:
-        // 1º Bip: aos 1.0s (700 a 1050 ms) -> Pulso de 350ms
-        // 2º Bip: aos 2.0s (1700 a 2050 ms) -> Pulso de 350ms
-        // 3º Bip: aos 3.0s (2700 a 3050 ms) -> Pulso de 350ms
+        // 3 BIPS PROGRESSIVOS ALONGADOS (350 ms cada):
+        // 1º Bip: 700 a 1050 ms | 2º Bip: 1700 a 2050 ms | 3º Bip: 2700 a 3050 ms
         // Aos 3.5s (3500ms): Alarme contínuo ininterrupto + relés!
         bipPreAlertaAtivo = (tempoDecorridoMs >= 700 && tempoDecorridoMs < 1050) ||
                             (tempoDecorridoMs >= 1700 && tempoDecorridoMs < 2050) ||
                             (tempoDecorridoMs >= 2700 && tempoDecorridoMs < 3050);
-
-        digitalWrite(PINO_BUZZER, bipPreAlertaAtivo ? NIVEL_BUZZER_LIGADO : NIVEL_BUZZER_DESLIGADO);
       }
-    } else {
-      estadoAtualTexto = "ALARME_ATIVADO";
-      digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
     }
-  } 
-  else {
-    if (cabecaEstavaBaixa || alarmeAtivo) {
-      desativarAlarmes();
+  } else if (cabecaEstavaBaixa) {
+    // Cabeça erguida: encerra o alarme (respeitando o tempo mínimo da pescada)
+    if (!alarmeAtivo || agora >= alarmeMinimoAte) {
+      if (alarmeAtivo) Serial.println(F("Postura Normalizada: Cabeca Erguida (Alarmes cessados)."));
       alarmeAtivo = false;
       cabecaEstavaBaixa = false;
       tempoInicioCabecaBaixa = 0;
-      Serial.println(F("Postura Normalizada: Cabeca Erguida (Alarmes cessados)."));
+    } else {
+      tempoDecorridoMs = agora - tempoInicioCabecaBaixa;
     }
-    estadoAtualTexto = "NORMAL";
-    tempoDecorridoMs = 0;
+  }
+
+  bool alarmeGeral = alarmeAtivo || testeAlarmeAtivo;
+  if (alarmeGeral) {
+    estadoAtualTexto = "ALARME_ATIVADO";
+    ativarAlarmes();
+  } else {
+    if (cabecaEstavaBaixa) estadoAtualTexto = "PRE_ALERTA";
+    desativarAlarmes();
+    digitalWrite(PINO_BUZZER, bipPreAlertaAtivo ? NIVEL_BUZZER_LIGADO : NIVEL_BUZZER_DESLIGADO);
   }
 
   // Atualiza os dados compartilhados com o Core 0 de forma atômica
-  int r1Val = (alarmeAtivo || testeManualRele1) ? 1 : 0;
-  int r2Val = (alarmeAtivo || testeManualRele2) ? 1 : 0;
-
   portENTER_CRITICAL(&mutexDados);
   dadosGlobais.sensorIr = estadoLeitura;
   dadosGlobais.tempoCabecaBaixaMs = tempoDecorridoMs;
-  dadosGlobais.buzzer = (alarmeAtivo || bipPreAlertaAtivo) ? 1 : 0;
-  dadosGlobais.rele1 = r1Val;
-  dadosGlobais.rele2 = r2Val;
-  dadosGlobais.pitch = pAng;
-  dadosGlobais.roll = rAng;
-  dadosGlobais.pescadaDetectada = pescadaSono;
+  dadosGlobais.buzzer = (alarmeGeral || bipPreAlertaAtivo) ? 1 : 0;
+  dadosGlobais.rele1 = (alarmeGeral || testeManualRele1) ? 1 : 0;
+  dadosGlobais.rele2 = (alarmeGeral || testeManualRele2) ? 1 : 0;
+  dadosGlobais.pitch = mpu.pitch;
+  dadosGlobais.roll = mpu.roll;
+  dadosGlobais.inclinacao = mpu.inclinacao;
+  // Mantém a pescada visível por um pacote inteiro de telemetria
+  if (pescadaSono) dadosGlobais.pescadaDetectada = true;
+  else if (!alarmeAtivo) dadosGlobais.pescadaDetectada = false;
   dadosGlobais.mpuOnline = mpuDetectado;
-  dadosGlobais.alarmeAtivo = alarmeAtivo;
+  dadosGlobais.mpuCalibrado = mpuCalibrado;
+  dadosGlobais.testeAtivo = testeAlarmeAtivo;
+  dadosGlobais.alarmeAtivo = alarmeGeral;
   strncpy(dadosGlobais.estado, estadoAtualTexto, sizeof(dadosGlobais.estado) - 1);
   portEXIT_CRITICAL(&mutexDados);
 
@@ -338,36 +469,71 @@ void loop() {
 }
 
 // ------------------------------------------------------------------------------
-// 7. PROCESSAMENTO DE COMANDOS DA SERIAL (PC / CENTRAL)
+// 8. PROCESSAMENTO DE COMANDOS (SERIAL USB + REDE)
 // ------------------------------------------------------------------------------
+void agendarComando(uint8_t cmd) {
+  portENTER_CRITICAL(&mutexComandos);
+  comandosRemotos |= cmd;
+  portEXIT_CRITICAL(&mutexComandos);
+}
+
+// Procura nomes de comandos em qualquer texto (resposta UDP, HTTP ou Serial)
+void interpretarComandosTexto(const char* texto) {
+  if (strstr(texto, "TEST_ALARM"))   agendarComando(CMD_TESTE_ALARME);
+  if (strstr(texto, "SILENCIAR") || strstr(texto, "RESET_ALARM")) agendarComando(CMD_SILENCIAR);
+  if (strstr(texto, "TOGGLE_RELE1")) agendarComando(CMD_TOGGLE_RELE1);
+  if (strstr(texto, "TOGGLE_RELE2")) agendarComando(CMD_TOGGLE_RELE2);
+  if (strstr(texto, "CALIBRAR"))     agendarComando(CMD_CALIBRAR);
+}
+
 void processarComandosSerial() {
   if (Serial.available()) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
-    if (cmd == "CMD:TEST_ALARM" || cmd == "TEST_ALARM") {
-      alarmeAtivo = true;
-      ativarAlarmes();
-      Serial.println(F("[COMANDO] Teste geral acionado via Serial!"));
-    } else if (cmd == "CMD:SILENCIAR" || cmd == "SILENCIAR_ALARME" || cmd == "RESET_ALARM") {
-      alarmeAtivo = false;
-      testeManualRele1 = false;
-      testeManualRele2 = false;
-      desativarAlarmes();
-      Serial.println(F("[COMANDO] Alarmes silenciados via Serial!"));
-    } else if (cmd == "CMD:TOGGLE_RELE1") {
-      testeManualRele1 = !testeManualRele1;
-      digitalWrite(PINO_RELE_1, testeManualRele1 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
-      Serial.println(testeManualRele1 ? F("[RELE 1] Safe-Stop LIGADO") : F("[RELE 1] Safe-Stop DESLIGADO"));
-    } else if (cmd == "CMD:TOGGLE_RELE2") {
-      testeManualRele2 = !testeManualRele2;
-      digitalWrite(PINO_RELE_2, testeManualRele2 ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
-      Serial.println(testeManualRele2 ? F("[RELE 2] Pisca-Alerta LIGADO") : F("[RELE 2] Pisca-Alerta DESLIGADO"));
+    if (cmd.length() > 0) interpretarComandosTexto(cmd.c_str());
+  }
+}
+
+// Executa no Core 1 os comandos agendados pelo Core 0 / Serial
+void aplicarComandosRemotos() {
+  portENTER_CRITICAL(&mutexComandos);
+  uint8_t cmds = comandosRemotos;
+  comandosRemotos = 0;
+  portEXIT_CRITICAL(&mutexComandos);
+  if (!cmds) return;
+
+  if (cmds & CMD_SILENCIAR) {
+    testeAlarmeAtivo = false;
+    testeManualRele1 = false;
+    testeManualRele2 = false;
+    alarmeMinimoAte = 0;
+    Serial.println(F("[COMANDO] Alarmes silenciados pela Central."));
+  }
+  if (cmds & CMD_TESTE_ALARME) {
+    testeAlarmeAtivo = true;
+    inicioTesteAlarme = millis();
+    Serial.println(F("[COMANDO] Teste remoto: Buzzer + Reles 1 e 2 ligados (ate SILENCIAR ou 30s)."));
+  }
+  if (cmds & CMD_TOGGLE_RELE1) {
+    testeManualRele1 = !testeManualRele1;
+    Serial.println(testeManualRele1 ? F("[RELE 1] Safe-Stop LIGADO") : F("[RELE 1] Safe-Stop DESLIGADO"));
+  }
+  if (cmds & CMD_TOGGLE_RELE2) {
+    testeManualRele2 = !testeManualRele2;
+    Serial.println(testeManualRele2 ? F("[RELE 2] Pisca-Alerta LIGADO") : F("[RELE 2] Pisca-Alerta DESLIGADO"));
+  }
+  if (cmds & CMD_CALIBRAR) {
+    if (mpuDetectado) {
+      Serial.println(F("[COMANDO] Recalibrando acelerometro (mantenha a cabeca erguida)..."));
+      calibrarMPU6050();
+    } else {
+      Serial.println(F("[COMANDO] Calibracao ignorada: MPU-6050 nao conectado."));
     }
   }
 }
 
 // ------------------------------------------------------------------------------
-// 8. ATUADORES DE SEGURANÇA
+// 9. ATUADORES DE SEGURANÇA
 // ------------------------------------------------------------------------------
 void ativarAlarmes() {
   digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO);
@@ -382,22 +548,67 @@ void desativarAlarmes() {
 }
 
 // ------------------------------------------------------------------------------
-// 9. TAREFA DE TELEMETRIA EM NUVEM E REDE (CORE 0 — EXECUTA EM SEGUNDO PLANO)
+// 10. TAREFA DE TELEMETRIA EM REDE LOCAL E NUVEM (CORE 0 — SEGUNDO PLANO)
 // ------------------------------------------------------------------------------
-void taskTelemetria(void *pvParameters) {
-  WiFiClient plainClient;
-  WiFiClientSecure secureClient;
-  secureClient.setInsecure();
+int montarPayload(const DadosTelemetria &d, uint32_t seq, char *buf, size_t cap) {
+  bool conectado = WiFi.status() == WL_CONNECTED;
+  String ssid = conectado ? WiFi.SSID() : String("");
+  String ip = conectado ? WiFi.localIP().toString() : String("");
+  const char* statusMpu = !d.mpuOnline ? "AGUARDANDO MODULO"
+                        : (d.mpuCalibrado ? "ONLINE (MPU-6050 ATIVO)" : "ONLINE (SEM CALIBRACAO)");
 
-  HTTPClient http;
-  unsigned long ultimoCheckMultiWifi = 0;
+  return snprintf(buf, cap,
+    "{\"dispositivo\":\"ESP32_SMART_DRIVER_01\",\"seq\":%lu,\"uptime_ms\":%lu,"
+    "\"sensor_ir\":%d,\"tempo_cabeca_baixa_ms\":%lu,\"limiar_ms\":%lu,"
+    "\"buzzer\":%d,\"rele\":%d,\"rele_1\":%d,\"rele_2\":%d,\"alarme_teste\":%d,"
+    "\"estado\":\"%s\","
+    "\"acelerometro\":{\"pitch\":%.1f,\"roll\":%.1f,\"inclinacao\":%.1f,"
+    "\"pescada_detectada\":%s,\"online\":%s,\"calibrado\":%s,\"status\":\"%s\"},"
+    "\"wifi\":{\"ssid\":\"%s\",\"rssi\":%d,\"ip\":\"%s\"}}",
+    (unsigned long)seq, millis(),
+    d.sensorIr, d.tempoCabecaBaixaMs, LIMIAR_CABECA_BAIXA_MS,
+    d.buzzer, d.rele1, d.rele1, d.rele2, d.testeAtivo ? 1 : 0,
+    d.estado,
+    d.pitch, d.roll, d.inclinacao,
+    d.pescadaDetectada ? "true" : "false", d.mpuOnline ? "true" : "false",
+    d.mpuCalibrado ? "true" : "false", statusMpu,
+    ssid.c_str(), conectado ? WiFi.RSSI() : 0, ip.c_str());
+}
+
+void taskTelemetria(void *pvParameters) {
+  WiFiClientSecure clienteSeguro;
+  clienteSeguro.setInsecure();
+  HTTPClient httpNuvem;
+  httpNuvem.setReuse(true); // Mantém a conexão TLS aberta (evita handshake a cada envio)
+
+  bool udpAtivo = false;
+  bool servidorConhecido = false;
+  IPAddress ipServidor;
+  unsigned long ultimoContatoServidor = 0;
+  unsigned long ultimoCheckWifi = 0;
+  unsigned long ultimoEnvioNuvem = 0;
+  uint32_t seq = 0;
+  char payload[700];
+  char resposta[256];
 
   for (;;) {
-    if (WiFi.status() != WL_CONNECTED) {
-      if (millis() - ultimoCheckMultiWifi >= 2500) {
-        ultimoCheckMultiWifi = millis();
-        wifiMulti.run();
+    bool conectado = (WiFi.status() == WL_CONNECTED);
+
+    if (!conectado) {
+      if (udpAtivo) {
+        udp.stop();
+        udpAtivo = false;
+        servidorConhecido = false;
+        Serial.println(F("[WIFI] Conexao perdida. Procurando redes conhecidas..."));
       }
+      if (ultimoCheckWifi == 0 || millis() - ultimoCheckWifi >= 2500) {
+        ultimoCheckWifi = millis();
+        wifiMulti.run(3000); // Bloqueia só o Core 0; o Core 1 segue protegendo o motorista
+      }
+    } else if (!udpAtivo) {
+      udpAtivo = udp.begin(UDP_PORTA_LOCAL);
+      Serial.printf("[WIFI] Conectado em \"%s\" | IP da ESP32: %s | RSSI: %d dBm\n",
+                    WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.RSSI());
     }
 
     DadosTelemetria snap;
@@ -405,45 +616,72 @@ void taskTelemetria(void *pvParameters) {
     snap = dadosGlobais;
     portEXIT_CRITICAL(&mutexDados);
 
-    // Monta o payload JSON completo incluindo os dados reais do acelerômetro
-    String payload = "{";
-    payload += "\"dispositivo\":\"ESP32_SMART_DRIVER_01\",";
-    payload += "\"sensor_ir\":" + String(snap.sensorIr) + ",";
-    payload += "\"tempo_cabeca_baixa_ms\":" + String(snap.tempoCabecaBaixaMs) + ",";
-    payload += "\"buzzer\":" + String(snap.buzzer) + ",";
-    payload += "\"rele\":" + String(snap.rele1) + ",";
-    payload += "\"rele_1\":" + String(snap.rele1) + ",";
-    payload += "\"rele_2\":" + String(snap.rele2) + ",";
-    payload += "\"estado\":\"" + String(snap.estado) + "\",";
-    payload += "\"acelerometro\":{";
-    payload += "\"pitch\":" + String(snap.pitch, 1) + ",";
-    payload += "\"roll\":" + String(snap.roll, 1) + ",";
-    payload += "\"pescada_detectada\":" + String(snap.pescadaDetectada ? "true" : "false") + ",";
-    payload += "\"status\":\"" + String(snap.mpuOnline ? "ONLINE (MPU-6050 ATIVO)" : "AGUARDANDO MODULO") + "\"";
-    payload += "},";
-    payload += "\"atuadores\":{\"rele1_safestop\":" + String(snap.rele1) + ",\"rele2_piscaalerta\":" + String(snap.rele2) + "}";
-    payload += "}";
+    int tamanho = montarPayload(snap, seq++, payload, sizeof(payload));
+    if (tamanho <= 0 || tamanho >= (int)sizeof(payload)) tamanho = 0;
 
-    // 1. Transmissão UDP Broadcast Instantânea na rede local (Zero Latência)
-    if (WiFi.status() == WL_CONNECTED) {
-      udpClient.beginPacket("255.255.255.255", UDP_PORT_DESTINO);
-      udpClient.print(payload);
-      udpClient.endPacket();
+    // 1. Transmissão Serial USB Contínua (ponte opcional do server.js)
+    if (tamanho) {
+      Serial.print(F("TELEMETRY:"));
+      Serial.println(payload);
     }
 
-    // 2. Transmissão Serial USB Contínua
-    Serial.println("TELEMETRY:" + payload);
+    if (conectado && udpAtivo && tamanho) {
+      // 2. UDP: unicast para o servidor já descoberto, ou broadcast para descobrir
+      IPAddress destino;
+      if (servidorConhecido) {
+        destino = ipServidor;
+      } else {
+        IPAddress ip = WiFi.localIP();
+        IPAddress mascara = WiFi.subnetMask();
+        destino = IPAddress(ip[0] | ~mascara[0], ip[1] | ~mascara[1],
+                            ip[2] | ~mascara[2], ip[3] | ~mascara[3]);
+      }
+      udp.beginPacket(destino, UDP_PORTA_SERVIDOR);
+      udp.write((const uint8_t*)payload, tamanho);
+      udp.endPacket();
 
-    // 3. Envio HTTP direto para o IP do computador na rede de casa
-    if (WiFi.status() == WL_CONNECTED) {
-      http.setTimeout(180);
-      if (http.begin(plainClient, BACKEND_URL_CASA)) {
-        http.addHeader("Content-Type", "application/json");
-        http.POST(payload);
-        http.end();
+      // Lê respostas do servidor (descoberta de IP + comandos da Central)
+      while (udp.parsePacket() > 0) {
+        int lidos = udp.read(resposta, sizeof(resposta) - 1);
+        if (lidos <= 0) continue;
+        resposta[lidos] = '\0';
+        if (strstr(resposta, "INOVATECH")) {
+          if (!servidorConhecido || ipServidor != udp.remoteIP()) {
+            Serial.printf("[REDE] Servidor local encontrado em %s\n", udp.remoteIP().toString().c_str());
+          }
+          ipServidor = udp.remoteIP();
+          servidorConhecido = true;
+          ultimoContatoServidor = millis();
+          interpretarComandosTexto(resposta);
+        }
+      }
+
+      if (servidorConhecido && millis() - ultimoContatoServidor > TIMEOUT_SERVIDOR_LOCAL_MS) {
+        servidorConhecido = false;
+        Serial.println(F("[REDE] Servidor local sem resposta. Voltando ao modo de descoberta."));
+      }
+
+      // 3. Fallback para a nuvem quando não há servidor local respondendo
+      bool semServidorLocal = !servidorConhecido &&
+                              (millis() - ultimoContatoServidor > TIMEOUT_SERVIDOR_LOCAL_MS);
+      if (ENVIAR_NUVEM_SEM_SERVIDOR_LOCAL && semServidorLocal &&
+          millis() - ultimoEnvioNuvem >= INTERVALO_NUVEM_MS) {
+        ultimoEnvioNuvem = millis();
+        httpNuvem.setConnectTimeout(4000);
+        httpNuvem.setTimeout(4000);
+        if (httpNuvem.begin(clienteSeguro, BACKEND_URL_CLOUD)) {
+          httpNuvem.addHeader("Content-Type", "application/json");
+          int codigo = httpNuvem.POST((uint8_t*)payload, tamanho);
+          if (codigo == 200) {
+            String corpo = httpNuvem.getString();
+            interpretarComandosTexto(corpo.c_str());
+          }
+          httpNuvem.end();
+        }
       }
     }
 
-    vTaskDelay(pdMS_TO_TICKS(INTERVALO_TELEMETRIA_MS));
+    bool emAlerta = strcmp(snap.estado, "NORMAL") != 0;
+    vTaskDelay(pdMS_TO_TICKS(emAlerta ? INTERVALO_TELEMETRIA_ALERTA_MS : INTERVALO_TELEMETRIA_MS));
   }
 }

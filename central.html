@@ -72,6 +72,8 @@
 			margin-bottom: 24px;
 			flex-wrap: wrap;
 			gap: 16px;
+			height: auto;
+			min-height: 76px;
 		}
 
 		.central-brand {
@@ -395,7 +397,7 @@
 				</div>
 				<div class="painel-chip" id="backendStatusChip">
 					<span class="material-symbols-outlined g-icon" style="color:var(--cyan)">bolt</span>
-					<span id="backendStatusLabel">BACKEND: ws://localhost:3001</span>
+					<span id="backendStatusLabel">BACKEND: PROCURANDO...</span>
 				</div>
 				<span class="eyebrow" id="centralClockDisplay" style="margin:0;color:var(--cyan);font-weight:700">AO
 					VIVO · 00:00:00</span>
@@ -443,8 +445,8 @@
 							<li>Veículo: <strong>Scania R-450 Highline (Bi-Trem 9 Eixos)</strong></li>
 							<li>Placa: <strong>INO-2026 · São Paulo/SP</strong></li>
 							<li>Rota: <strong>BR-116 (São Paulo -> Curitiba) · KM 284</strong></li>
-							<li>Dispositivo: <strong>Óculos Smart Driver ESP32-S3 (BLE/Wi-Fi)</strong></li>
-							<li>Tolerância de Fadiga: <strong>4,00s (Filtro Temporal de Segurança)</strong></li>
+							<li>Dispositivo: <strong>Óculos Smart Driver ESP32 DevKit (Wi-Fi)</strong></li>
+							<li>Tolerância de Fadiga: <strong><span class="limiar-txt">3,50s</span> (Filtro Temporal de Segurança)</strong></li>
 							<li>Status de Telemetria: <strong id="garciaTelemetriaStatus" style="color:#8ca4ad">EM
 									ESPERA (CABINE INATIVA)</strong>
 							</li>
@@ -570,16 +572,15 @@
 								style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO
 							CELULAR</span>
 					</span>
-					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s / 20.0s</span>
+					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s</span>
 				</div>
 
 				<h3 class="central-esc-title" id="centralEscTitle"><span class="material-symbols-outlined g-icon"
 						style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA
 				</h3>
 				<p class="central-esc-desc" id="centralEscDesc">
-					O alerta físico (Buzzer/Relé) e a chamada em tela inteira no celular foram disparados após 4,00
-					segundos de cabeça baixa. Caso o motorista não reaja ou não erga a cabeça por 3
-					segundos, a Central entrará em Suspeita de Acidente aos 20 segundos!
+					O alerta físico (Buzzer/Relés) e a chamada em tela inteira no celular foram disparados.
+					Aguardando a confirmação do motorista.
 				</p>
 
 				<div class="progresso-bar-bg" style="height:10px">
@@ -737,9 +738,8 @@
 							<div style="text-align:right">
 								<span
 									style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CRONÔMETRO
-									DE TOLERÂNCIA (4,00s)</span>
-									DE TOLERÂNCIA (1.50s)</span>
-								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 1.50s</div>
+									DE TOLERÂNCIA (<span class="limiar-txt">3,50s</span>)</span>
+								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 3.50s</div>
 							</div>
 						</div>
 
@@ -748,9 +748,8 @@
 							<div
 								style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap;gap:4px">
 								<span>ESTÁVEL (0.00s)</span>
-								<span>CONTAGEM ATIVA (0.01s - 3.99s)</span>
-								<span>CONTAGEM ATIVA (0.01s - 1.49s)</span>
-								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (1.50s)</span>
+								<span>CONTAGEM ATIVA · 3 BIPS NOS ÓCULOS</span>
+								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (<span class="limiar-txt">3,50s</span>)</span>
 							</div>
 							<div class="progresso-bar-bg">
 								<div class="progresso-bar-fill" id="barraProgressoTempo"></div>
@@ -776,9 +775,8 @@
 						</div>
 
 						<p id="descricaoEstadoCondutor" style="margin-top:12px;font-size:11px;line-height:1.6">
-							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de 4,00s para
-							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de 1.50s para
-							evitar alarmes falsos ao checar painel e espelhos.
+							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de
+							<span class="limiar-txt">3,50s</span> para evitar alarmes falsos ao checar painel e espelhos.
 						</p>
 
 						<!-- BOTÕES DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA (EMBAIXO DA SITUAÇÃO ATUAL) -->
@@ -794,19 +792,6 @@
 						</div>
 					</article>
 
-					<!-- PAINEL DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA DA CENTRAL -->
-					<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:10px;margin-top:-6px;margin-bottom:6px">
-						<button class="btn" id="btnSimularAlertaCentral" type="button" style="padding:14px;background:linear-gradient(90deg, #ff2a55 0%, #b30026 100%);color:#fff;border:none;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 16px rgba(255,42,85,0.4)">
-							<span class="material-symbols-outlined g-icon">warning</span>
-							<span>SIMULAR ALERTA DE FADIGA (1.5s)</span>
-						</button>
-						<button class="btn outline" id="btnNormalizarCentral" type="button" style="padding:14px;display:flex;align-items:center;justify-content:center;gap:8px">
-							<span class="material-symbols-outlined g-icon">check_circle</span>
-							<span>NORMALIZAR POSTURA</span>
-						</button>
-					</div>
-
-
 					<!-- Card 2: Rastreamento Satelital e Localização GPS em Tempo Real -->
 					<article class="card gps-tracker-card" id="cardLocalizacaoVeicular">
 						<div class="camera-alerta-banner" id="bannerAlertaAcidente" style="display:none;background:linear-gradient(90deg, #ff1a4b 0%, #b30026 100%);color:#fff;padding:10px 14px;border-radius:8px;font-family:'Space Mono';font-size:11px;font-weight:700;margin-bottom:12px;box-shadow:0 0 20px rgba(255,26,75,0.6)">
@@ -816,7 +801,7 @@
 						<div class="card-label">◉ RASTREAMENTO SATELITAL & TELEMETRIA GPS · SCANIA R-450</div>
 						<h3 style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">
 							<span>Localização do Veículo ao Vivo</span>
-							<span class="camera-live-badge" style="border-color:#55ee77;color:#55ee77"><span class="pulse-dot"></span> GPS ATIVO · 1.8m PRECISÃO</span>
+							<span class="camera-live-badge" style="border-color:#55ee77;color:#55ee77"><span class="pulse-dot"></span> <span id="gpsPrecisaoBadge">GPS ATIVO · 1.8m PRECISÃO</span></span>
 						</h3>
 						<p style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:12px">
 							Monitoramento geográfico contínuo. Em caso de ausência de resposta do motorista aos 15 segundos, a localização é destacada para resgate imediato.
@@ -867,12 +852,12 @@
 							<div class="axis-item">
 								<div class="axis-label">TEMPO DE REFLEXÃO</div>
 								<div class="axis-val" id="irTempoMs">0 ms</div>
-								<span style="font-size:10px;color:var(--muted)">Limite: 3500ms</span>
+								<span style="font-size:10px;color:var(--muted)" id="irLimiteLabel">Limite: 3500 ms</span>
 							</div>
 						</div>
 						<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
-							Feixe infravermelho calibrado com margem de segurança de 3 segundos (3 bips de aviso) e recuperação automática
-							de 3 segundos com cabeça erguida.
+							Feixe infravermelho calibrado com margem de segurança de <span class="limiar-txt">3,50s</span>
+							(3 bips de aviso) e recuperação automática de 3 segundos com cabeça erguida.
 						</div>
 					</article>
 
@@ -881,8 +866,8 @@
 						<div class="card-label">ϟ ACELERÔMETRO I2C · GPIO 21 / 22</div>
 						<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
 							<h3>Inércia & Inclinação da Cabeça</h3>
-							<span class="painel-chip" style="font-size:9px;padding:3px 8px">Simulação / Em
-								trânsito</span>
+							<span class="painel-chip offline" id="accStatusChip" style="font-size:9px;padding:3px 8px">MPU-6050:
+								AGUARDANDO</span>
 						</div>
 						<div class="axes-grid">
 							<div class="axis-item">
@@ -901,9 +886,17 @@
 								<span style="font-size:9px;color:var(--muted)">Solavanco G</span>
 							</div>
 						</div>
-						<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
-							Fusão sensorial com acelerômetro angular para detectar movimentos rápidos de sonolência e
-							fadiga muscular.
+						<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
+							<span style="font-size:11px;color:var(--muted)">INCLINAÇÃO TOTAL DA CABEÇA:
+								<strong id="accInclinacaoVal" style="color:var(--cyan);font-family:'Space Mono'">0.0° / 32°</strong></span>
+							<button class="btn-tactical" id="btnCalibrarMpu" type="button" style="padding:4px 10px;font-size:10px"
+								title="Grava a postura atual do motorista (cabeça erguida) como referência zero">
+								<span class="material-symbols-outlined g-icon" style="margin-right:4px">straighten</span> Recalibrar
+							</button>
+						</div>
+						<div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.6">
+							Ângulos medidos em relação à postura calibrada (cabeça erguida). Inclinação acima de 32° ou
+							queda brusca ("pescada") também dispara a contagem de segurança.
 						</div>
 					</article>
 
@@ -911,16 +904,21 @@
 					<article class="card">
 						<div class="card-label">◫ ATUADORES DE SEGURANÇA & CONTROLE REMOTO</div>
 						<h3>Estado dos Dispositivos & Ações</h3>
-						<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+						<div class="axes-grid">
 							<div class="axis-item">
-								<div class="axis-label">BUZZER NOS ÓCULOS (GPIO 25)</div>
+								<div class="axis-label">BUZZER (GPIO 25)</div>
 								<div class="axis-val" id="buzzerStatusBadge" style="color:#55ee77">DESLIGADO</div>
 								<span style="font-size:9px;color:var(--muted)">Alarme Acústico 3.3V</span>
 							</div>
 							<div class="axis-item">
-								<div class="axis-label">MÓDULO RELÉ (GPIO 18)</div>
+								<div class="axis-label">RELÉ 1 (GPIO 18)</div>
 								<div class="axis-val" id="releStatusBadge" style="color:#55ee77">EM ESPERA</div>
-								<span style="font-size:9px;color:var(--muted)">Proteção Veicular</span>
+								<span style="font-size:9px;color:var(--muted)">Safe-Stop / Tração</span>
+							</div>
+							<div class="axis-item">
+								<div class="axis-label">RELÉ 2 (GPIO 19)</div>
+								<div class="axis-val" id="rele2StatusBadge" style="color:#55ee77">EM ESPERA</div>
+								<span style="font-size:9px;color:var(--muted)">Pisca-Alerta</span>
 							</div>
 						</div>
 
@@ -977,15 +975,15 @@
 						<!-- Configuração de Conexão & Teste Rápido de 4 segundos -->
 						<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
 							<div style="display:flex;gap:8px;align-items:center">
-								<input type="text" id="inputBackendUrl" value="http://localhost:3001"
-									placeholder="URL do Backend"
+								<input type="text" id="inputBackendUrl" value=""
+									placeholder="Automático (vazio) ou http://IP-DO-PC:3001"
 									style="flex:1;background:rgba(2,11,18,0.7);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'Space Mono';font-size:11px">
 								<button class="btn-tactical" id="btnReconectarBackend">Conectar</button>
 							</div>
 							<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
 								<span style="font-size:10px;color:var(--muted)">TESTE RÁPIDO:</span>
 								<button class="btn-tactical" id="btnSimularCabecaBaixa"
-									style="padding:4px 10px;font-size:10px">Simular Cabeça Baixa (4,0s)</button>
+									style="padding:4px 10px;font-size:10px">Simular Cabeça Baixa Real (3,5s)</button>
 								<button class="btn-tactical" id="btnSimularCabecaErguida"
 									style="padding:4px 10px;font-size:10px">Erguer Cabeça</button>
 							</div>
@@ -997,13 +995,12 @@
 	</div>
 
 	<!-- SCRIPTS DE TELEMETRIA E SINCRONIZAÇÃO DA CENTRAL TECH -->
+	<script src="conexao-backend.js"></script>
 	<script>
-		var backendBaseUrl = 'https://inovatech-tcc.onrender.com';
-		var wsClient = null;
-		var wsLocalBridgeClient = null;
-		var pollingTimer = null;
-		var audioCtx = null;
-		var LIMIAR_TOLERANCIA_MS = 1500; // Tolerância oficial de 3 segundos (3 bips de aviso)
+		// O servidor (ou a própria ESP32) define o limiar; estes valores só valem até a 1ª mensagem
+		var LIMIAR_PADRAO_MS = 3500;
+		var LIMIAR_SIMULACAO_RAPIDA_MS = 1500;
+		var ultimoEstado = null;
 
 		// Alternância entre Seleção de Frota e Cockpit da Cabine
 		var fleetView = document.getElementById('fleetSelectionView');
@@ -1013,14 +1010,13 @@
 		var cardFrotaGarcia = document.getElementById('cardFrotaGarcia');
 		var garciaRoleSub = document.getElementById('garciaRoleSub');
 		var garciaBadgeStatus = document.getElementById('garciaBadgeStatus');
-		var garciaBadgeText = document.getElementById('garciaBadgeText');
 		var garciaTelemetriaStatus = document.getElementById('garciaTelemetriaStatus');
 		var garciaBtnIcon = document.getElementById('garciaBtnIcon');
 		var garciaBtnText = document.getElementById('garciaBtnText');
 		var centralToastBanner = document.getElementById('centralToastBanner');
 		var centralToastMsg = document.getElementById('centralToastMsg');
 
-		var garciaViagemAtiva = false;
+		var garciaViagemAtiva = null;
 		var toastTimeoutId = null;
 
 		function exibirToastCentral(mensagem) {
@@ -1033,12 +1029,16 @@
 			}, 4800);
 		}
 
+		// O cockpit fica sempre acessível; o card só muda o selo de status da viagem
 		function atualizarEstadoGarciaUI(ativo, comNotificacao) {
+			if (garciaViagemAtiva === !!ativo) return;
 			garciaViagemAtiva = !!ativo;
+			if (btnAcessarCabineGarcia) {
+				btnAcessarCabineGarcia.className = 'btn-access-cabine';
+				btnAcessarCabineGarcia.removeAttribute('disabled');
+			}
 			if (garciaViagemAtiva) {
-				if (cardFrotaGarcia) {
-					cardFrotaGarcia.className = 'driver-card active-route';
-				}
+				if (cardFrotaGarcia) cardFrotaGarcia.className = 'driver-card active-route';
 				if (garciaRoleSub) garciaRoleSub.textContent = 'Condutor Titular · Wearable Smart Driver Ativo';
 				if (garciaBadgeStatus) {
 					garciaBadgeStatus.className = 'driver-badge-live';
@@ -1048,21 +1048,13 @@
 					garciaTelemetriaStatus.style.color = '#55ee77';
 					garciaTelemetriaStatus.textContent = 'LINK OPERACIONAL AO VIVO';
 				}
-				if (btnAcessarCabineGarcia) {
-					btnAcessarCabineGarcia.className = 'btn-access-cabine';
-					btnAcessarCabineGarcia.removeAttribute('disabled');
-				}
 				if (garciaBtnIcon) garciaBtnIcon.textContent = 'monitor_heart';
 				if (garciaBtnText) garciaBtnText.textContent = 'Acessar Monitoramento da Cabine';
-
 				if (comNotificacao) {
-					exibirToastCentral('🔔 NOTIFICAÇÃO CENTRAL: CONDUTOR MATHEUS GARCIA INICIOU A VIAGEM! (SCANIA R-450 ATIVADO)');
-					adicionarLogLocal('NORMAL', 'CENTRAL TECH: Condutor Matheus Garcia ativou o monitoramento e iniciou a viagem.');
+					exibirToastCentral('NOTIFICAÇÃO CENTRAL: CONDUTOR MATHEUS GARCIA INICIOU A VIAGEM! (SCANIA R-450 ATIVADO)');
 				}
 			} else {
-				if (cardFrotaGarcia) {
-					cardFrotaGarcia.className = 'driver-card disabled-route';
-				}
+				if (cardFrotaGarcia) cardFrotaGarcia.className = 'driver-card disabled-route';
 				if (garciaRoleSub) garciaRoleSub.textContent = 'Condutor Titular · Aguardando Início de Viagem';
 				if (garciaBadgeStatus) {
 					garciaBadgeStatus.className = 'driver-badge-inactive';
@@ -1072,75 +1064,38 @@
 					garciaTelemetriaStatus.style.color = '#8ca4ad';
 					garciaTelemetriaStatus.textContent = 'EM ESPERA (CABINE INATIVA)';
 				}
-				if (btnAcessarCabineGarcia) {
-					btnAcessarCabineGarcia.className = 'btn-access-disabled';
-					btnAcessarCabineGarcia.setAttribute('disabled', 'true');
-					btnAcessarCabineGarcia.className = 'btn-access-cabine';
-					btnAcessarCabineGarcia.removeAttribute('disabled');
-				}
-				if (garciaBtnIcon) garciaBtnIcon.textContent = 'lock';
-				if (garciaBtnText) garciaBtnText.textContent = 'Aguardando Iniciar Viagem no App';
 				if (garciaBtnIcon) garciaBtnIcon.textContent = 'visibility';
 				if (garciaBtnText) garciaBtnText.textContent = 'Acessar Cockpit de Telemetria';
 			}
 		}
 
-		// Escuta eventos sincronizados via localStorage entre as abas/janelas
-		window.addEventListener('storage', function (e) {
-			if (e.key === 'inovatech_turno_matheus_garcia') {
-				var novoStatus = (e.newValue === 'ATIVO');
-				atualizarEstadoGarciaUI(novoStatus, novoStatus);
-			} else if (e.key === 'inovatech_gps_real_motorista' && e.newValue) {
-				try {
-					var gpsEv = JSON.parse(e.newValue);
-					if (gpsEv && gpsEv.lat) atualizarLocalizacaoGpsUI(gpsEv);
-				} catch (err) { }
-			} else if (e.key && e.key.indexOf('inovatech_evento_viagem_') === 0 && e.newValue) {
-				try {
-					var ev = JSON.parse(e.newValue);
-					if (ev && ev.acao === 'INICIOU_VIAGEM') {
-						atualizarEstadoGarciaUI(true, true);
-					} else if (ev && ev.acao === 'PAUSOU_VIAGEM') {
-						atualizarEstadoGarciaUI(false, false);
-					}
-				} catch (err) { }
-			}
-		});
-
-		// Checa se já havia status salvo previamente no navegador
-		var turnoSalvoCentral = localStorage.getItem('inovatech_turno_matheus_garcia');
-		if (turnoSalvoCentral === 'ATIVO') {
-			atualizarEstadoGarciaUI(true, false);
-		} else {
-			atualizarEstadoGarciaUI(false, false);
+		function abrirCockpit() {
+			fleetView.classList.add('hidden');
+			cockpitView.classList.add('active');
+			window.scrollTo({ top: 0, behavior: 'smooth' });
 		}
 
-		if (btnAcessarCabineGarcia) {
-			btnAcessarCabineGarcia.addEventListener('click', function () {
-				atualizarEstadoGarciaUI(true, false);
-				fleetView.classList.add('hidden');
-				cockpitView.classList.add('active');
-				window.scrollTo({ top: 0, behavior: 'smooth' });
-			});
-		}
-
+		if (btnAcessarCabineGarcia) btnAcessarCabineGarcia.addEventListener('click', abrirCockpit);
 		if (cardFrotaGarcia) {
 			cardFrotaGarcia.style.cursor = 'pointer';
 			cardFrotaGarcia.addEventListener('click', function (e) {
-				if (e.target && e.target.id === 'btnAcessarCabineGarcia') return;
-				atualizarEstadoGarciaUI(true, false);
-				fleetView.classList.add('hidden');
-				cockpitView.classList.add('active');
-				window.scrollTo({ top: 0, behavior: 'smooth' });
+				if (e.target && e.target.closest && e.target.closest('#btnAcessarCabineGarcia')) return;
+				abrirCockpit();
 			});
 		}
-
 		if (btnVoltarFrota) {
 			btnVoltarFrota.addEventListener('click', function () {
 				cockpitView.classList.remove('active');
 				fleetView.classList.remove('hidden');
 				window.scrollTo({ top: 0, behavior: 'smooth' });
 			});
+		}
+
+		// Estado inicial do card enquanto o servidor não responde
+		try {
+			atualizarEstadoGarciaUI(localStorage.getItem('inovatech_turno_matheus_garcia') !== 'INATIVO', false);
+		} catch (e) {
+			atualizarEstadoGarciaUI(true, false);
 		}
 
 		// Elementos da Interface da Central
@@ -1151,15 +1106,18 @@
 		var precisaoTempoMsBadge = document.getElementById('precisaoTempoMsBadge');
 		var precisaoIrLiveVal = document.getElementById('precisaoIrLiveVal');
 		var descricaoEstadoCondutor = document.getElementById('descricaoEstadoCondutor');
-		var cardCameraLinklemo = document.getElementById('cardCameraLinklemo');
 		var irNivelLogico = document.getElementById('irNivelLogico');
 		var irNivelSub = document.getElementById('irNivelSub');
 		var irTempoMs = document.getElementById('irTempoMs');
+		var irLimiteLabel = document.getElementById('irLimiteLabel');
 		var accPitchVal = document.getElementById('accPitchVal');
 		var accRollVal = document.getElementById('accRollVal');
 		var accPescadaVal = document.getElementById('accPescadaVal');
+		var accInclinacaoVal = document.getElementById('accInclinacaoVal');
+		var accStatusChip = document.getElementById('accStatusChip');
 		var buzzerStatusBadge = document.getElementById('buzzerStatusBadge');
 		var releStatusBadge = document.getElementById('releStatusBadge');
+		var rele2StatusBadge = document.getElementById('rele2StatusBadge');
 		var esp32StatusLabel = document.getElementById('esp32StatusLabel');
 		var esp32StatusChip = document.getElementById('esp32StatusChip');
 		var esp32PulseDot = document.getElementById('esp32PulseDot');
@@ -1168,56 +1126,67 @@
 		var contadorTotalAlarmes = document.getElementById('contadorTotalAlarmes');
 		var terminalLogBox = document.getElementById('terminalLogBox');
 		var inputBackendUrl = document.getElementById('inputBackendUrl');
+		var bannerAlertaAcidente = document.getElementById('bannerAlertaAcidente');
 
 		// Elementos do Mapa Satelital e GPS em Tempo Real
 		var centralMapIframe = document.getElementById('centralMapIframe');
+		var centralGpsLiveMap = document.getElementById('centralGpsLiveMap');
 		var centralMapBadgeAlvo = document.getElementById('centralMapBadgeAlvo');
 		var centralGpsCoordsDisplay = document.getElementById('centralGpsCoordsDisplay');
 		var centralGpsTrechoDisplay = document.getElementById('centralGpsTrechoDisplay');
 		var centralGpsSubTrechoDisplay = document.getElementById('centralGpsSubTrechoDisplay');
 		var centralGpsPrecisaoDisplay = document.getElementById('centralGpsPrecisaoDisplay');
+		var gpsLiveCoordsLabel = document.getElementById('gpsLiveCoordsLabel');
+		var gpsLiveSpeedLabel = document.getElementById('gpsLiveSpeedLabel');
+		var gpsPrecisaoBadge = document.getElementById('gpsPrecisaoBadge');
+		var ultimoGpsMapa = '';
+
+		function formatarSegundos(ms, casas) {
+			return (Math.max(0, ms) / 1000).toFixed(casas === undefined ? 2 : casas);
+		}
+
+		function atualizarTextosLimiar(limiarMs) {
+			var txt = formatarSegundos(limiarMs).replace('.', ',') + 's';
+			document.querySelectorAll('.limiar-txt').forEach(function (el) { el.textContent = txt; });
+			if (irLimiteLabel) irLimiteLabel.textContent = 'Limite: ' + limiarMs + ' ms';
+		}
 
 		function atualizarLocalizacaoGpsUI(gps) {
 			if (!gps || gps.lat === undefined || gps.lon === undefined) return;
 			var lat = Number(gps.lat);
 			var lon = Number(gps.lon);
 			var prec = gps.precisao || 5;
+			var real = gps.origem && gps.origem !== 'PADRAO_BR116';
 
-			if (centralGpsCoordsDisplay) {
-				centralGpsCoordsDisplay.innerHTML = 'LAT: ' + lat.toFixed(6) + '°<br>LON: ' + lon.toFixed(6) + '°';
-			}
+			if (centralGpsCoordsDisplay) centralGpsCoordsDisplay.innerHTML = 'LAT: ' + lat.toFixed(6) + '°<br>LON: ' + lon.toFixed(6) + '°';
+			if (gpsLiveCoordsLabel) gpsLiveCoordsLabel.textContent = 'LAT: ' + lat.toFixed(6) + '° | LON: ' + lon.toFixed(6) + '°';
+			if (gpsLiveSpeedLabel) gpsLiveSpeedLabel.textContent = 'VELOCIDADE: ' + (gps.velocidade || 0) + ' km/h';
+			if (gpsPrecisaoBadge) gpsPrecisaoBadge.textContent = 'GPS ATIVO · ' + prec + 'm PRECISÃO';
+			if (!real) return;
+
 			if (centralGpsPrecisaoDisplay) {
 				centralGpsPrecisaoDisplay.textContent = 'PRECISÃO: ±' + prec + ' METROS (GPS REAL DO CELULAR)';
 				centralGpsPrecisaoDisplay.style.color = '#55ee77';
 			}
-			if (centralGpsTrechoDisplay) {
-				centralGpsTrechoDisplay.textContent = 'POSIÇÃO AO VIVO DO MOTORISTA (TRANSMISSÃO REAL)';
-			}
+			if (centralGpsTrechoDisplay) centralGpsTrechoDisplay.textContent = 'POSIÇÃO AO VIVO DO MOTORISTA (TRANSMISSÃO REAL)';
 			if (centralGpsSubTrechoDisplay) {
-				var velTxt = (gps.velocidade !== undefined && gps.velocidade > 0) ? (' · Vel: ' + gps.velocidade + ' km/h') : ' · Em Pouso / Estacionado';
-				centralGpsSubTrechoDisplay.textContent = 'Sinal capturado do Smartphone ' + velTxt;
+				var velTxt = (gps.velocidade > 0) ? (' · Vel: ' + gps.velocidade + ' km/h') : ' · Estacionado';
+				centralGpsSubTrechoDisplay.textContent = 'Sinal capturado do Smartphone' + velTxt;
 			}
 			if (centralMapBadgeAlvo) {
 				centralMapBadgeAlvo.innerHTML = '<span class="material-symbols-outlined g-icon" style="font-size:12px;margin-right:3px">my_location</span> CONDUTOR AO VIVO (GPS REAL)';
 				centralMapBadgeAlvo.style.borderColor = '#55ee77';
 				centralMapBadgeAlvo.style.color = '#55ee77';
 			}
-			if (centralMapIframe) {
+			// Só recarrega os mapas quando o veículo anda ~10 m (evita piscar o iframe)
+			var chave = lat.toFixed(4) + ',' + lon.toFixed(4);
+			if (chave !== ultimoGpsMapa) {
+				ultimoGpsMapa = chave;
 				var bbox = (lon - 0.005) + '%2C' + (lat - 0.0035) + '%2C' + (lon + 0.005) + '%2C' + (lat + 0.0035);
 				var novoSrc = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + '%2C' + lon;
-				if (centralMapIframe.src.indexOf(lat.toFixed(4)) === -1) {
-					centralMapIframe.src = novoSrc;
-				}
+				if (centralMapIframe) centralMapIframe.src = novoSrc;
+				if (centralGpsLiveMap) centralGpsLiveMap.src = novoSrc;
 			}
-		}
-
-		// Checa se já havia GPS salvo no navegador
-		var gpsSalvo = localStorage.getItem('inovatech_gps_real_motorista');
-		if (gpsSalvo) {
-			try {
-				var gObj = JSON.parse(gpsSalvo);
-				if (gObj && gObj.lat) atualizarLocalizacaoGpsUI(gObj);
-			} catch (e) { }
 		}
 
 		// Escalonamento da Central
@@ -1236,20 +1205,11 @@
 		var vozCritico10sAudio = new Audio('alerta-critico-10s.mp3');
 		var vozAcidente20sAudio = new Audio('alerta-acidente-20s.mp3');
 		var ultimoNivelEscalonamento = 0;
-		var alertaTravadoLocal = false;
-		var inicioSemRespostaLocalMs = 0;
-		var timerEscalonamentoLocal = null;
-		var inicioRecuperacaoLocalMs = 0;
-		var cooldownAntiRepiqueLocalUntil = 0;
 
 		// Relógio ao vivo
 		function atualizarRelogioCentral() {
-			var now = new Date();
-			var str = 'AO VIVO · ' + now.toLocaleTimeString('pt-BR');
 			var el = document.getElementById('centralClockDisplay');
-			if (el) el.textContent = str;
-			var hud = document.getElementById('hudTimestampCam');
-			if (hud) hud.textContent = now.toLocaleTimeString('pt-BR');
+			if (el) el.textContent = 'AO VIVO · ' + new Date().toLocaleTimeString('pt-BR');
 		}
 		setInterval(atualizarRelogioCentral, 1000);
 		atualizarRelogioCentral();
@@ -1258,20 +1218,32 @@
 			return String(str || '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').trim();
 		}
 
+		function escaparHtml(str) {
+			return String(str).replace(/[&<>"]/g, function (c) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+			});
+		}
+
 		function obterIconeLogGoogle(tipo) {
 			if (tipo === 'ALARME_ATIVADO') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#ff2a55">warning</span>';
 			if (tipo === 'PRE_ALERTA') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#ffaa00">bolt</span>';
 			if (tipo === 'COMANDO_CENTRAL') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:var(--cyan)">settings_remote</span>';
+			if (tipo === 'DESCONEXAO') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#ffaa00">wifi_off</span>';
+			if (tipo === 'CONEXAO') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:var(--cyan)">wifi</span>';
+			if (tipo === 'TURNO_MOTORISTA') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:var(--cyan)">local_shipping</span>';
 			return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#55ee77">check_circle</span>';
 		}
 
-		function adicionarLogLocal(tipo, msg, horaCustom) {
+		var idsEventosExibidos = {};
+		function adicionarLogLocal(tipo, msg, horaCustom, idEvento) {
 			if (!terminalLogBox) return;
-			var msgLimpa = limparEmojisTexto(msg);
-			var now = horaCustom || new Date().toLocaleTimeString('pt-BR');
+			if (idEvento) {
+				if (idsEventosExibidos[idEvento]) return;
+				idsEventosExibidos[idEvento] = true;
+			}
 			var entry = document.createElement('div');
 			entry.className = 'log-entry ' + tipo;
-			entry.innerHTML = '<span class="log-time">[' + now + ']</span><span class="log-msg">' + obterIconeLogGoogle(tipo) + msgLimpa + '</span>';
+			entry.innerHTML = '<span class="log-time">[' + escaparHtml(horaCustom || new Date().toLocaleTimeString('pt-BR')) + ']</span><span class="log-msg">' + obterIconeLogGoogle(tipo) + escaparHtml(limparEmojisTexto(msg)) + '</span>';
 			terminalLogBox.insertBefore(entry, terminalLogBox.firstChild);
 			if (terminalLogBox.children.length > 80) terminalLogBox.removeChild(terminalLogBox.lastChild);
 		}
@@ -1286,112 +1258,345 @@
 			} catch (e) { }
 		}
 
-		function atualizarPainelEscalonamentoUI(decorridoMs) {
-			// Sanitização: Impede timestamp epoch, valores negativos ou clock jump
-			if (isNaN(decorridoMs) || decorridoMs < 0 || decorridoMs > 350000) {
-				decorridoMs = 0;
+		// ------------------------------------------------------------------------------
+		// INTERPOLAÇÃO A 60 FPS: o servidor manda o tempo exato e o navegador anima entre pacotes
+		// ------------------------------------------------------------------------------
+		var anim = {
+			status: 'NORMAL',
+			limiarMs: LIMIAR_PADRAO_MS,
+			baseCabecaMs: 0,       // performance.now() - tempo_cabeca_baixa_ms
+			baseSemRespostaMs: 0,  // performance.now() - tempo_sem_resposta_ms
+			baseRecuperacaoMs: 0,  // performance.now() - tempo_recuperacao_ms
+			escalonamento: { critico_ms: 9000, acidente_ms: 15000 },
+			recuperacaoLimiteMs: 3000,
+			travado: false
+		};
+
+		function renderizarCronometro(msExato) {
+			var lim = anim.limiarMs;
+			var ms = Math.max(0, Math.min(lim, Math.round(msExato)));
+			var perc = Math.min(100, (ms / lim) * 100);
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = formatarSegundos(ms) + 's / ' + formatarSegundos(lim) + 's';
+			if (barraProgressoTempo) barraProgressoTempo.style.width = perc.toFixed(1) + '%';
+			if (irTempoMs) irTempoMs.textContent = ms + ' ms';
+			if (precisaoTempoMsBadge) precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + ms + ' ms (' + perc.toFixed(1) + '%)';
+		}
+
+		function renderizarRecuperacao(ms) {
+			var lim = anim.recuperacaoLimiteMs;
+			var seg = formatarSegundos(Math.min(ms, lim), 1);
+			if (statusMotoristaTexto) statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + seg + 's / ' + formatarSegundos(lim, 1) + 's';
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = seg + 's / ' + formatarSegundos(lim, 1) + 's (NORMALIZANDO)';
+			if (barraProgressoTempo) barraProgressoTempo.style.width = Math.min(100, (ms / lim) * 100).toFixed(1) + '%';
+		}
+
+		function quadroAnimacao() {
+			var agora = performance.now();
+			if (anim.status === 'PRE_ALERTA' && anim.baseCabecaMs) {
+				renderizarCronometro(agora - anim.baseCabecaMs);
 			}
-			var segTotal = (decorridoMs / 1000).toFixed(1);
-			var nivel = 1;
-			if (decorridoMs >= 15000) nivel = 3;
-			else if (decorridoMs >= 9000) nivel = 2;
+			if (anim.status === 'RECUPERANDO' && anim.baseRecuperacaoMs) {
+				renderizarRecuperacao(agora - anim.baseRecuperacaoMs);
+			}
+			if (anim.travado && anim.baseSemRespostaMs) {
+				atualizarPainelEscalonamentoUI(agora - anim.baseSemRespostaMs);
+			}
+			requestAnimationFrame(quadroAnimacao);
+		}
+		requestAnimationFrame(quadroAnimacao);
 
-			if (centralEscalationPanel) {
-				centralEscalationPanel.classList.add('visible');
-				if (nivel === 1) {
-					centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO CELULAR';
-					if (centralEscTimer) centralEscTimer.textContent = 'RESPOSTA MOTORISTA: ' + segTotal + 's / 9.0s (AGUARDANDO DESATIVAR)';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
-					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico e a chamada no celular foram disparados (tolerância de 4,00s). Se o condutor não reagir ou não mantiver a cabeça erguida por 3s, a Central entrará em Suspeita de Acidente aos 20 segundos!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / 9000) * 100).toFixed(1) + '%';
-					if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
-					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
-					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
-				} else if (nivel === 2) {
-					var segFase2 = ((decorridoMs - 9000) / 1000).toFixed(1);
-					centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA)';
-					if (centralEscTimer) centralEscTimer.textContent = 'ALERTA CRÍTICO: ' + segTotal + 's / 15.0s (POSSÍVEL ACIDENTE EM ' + (15 - Number(segTotal)).toFixed(1) + 's)';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> SUSPEITA DE ACIDENTE: LOCALIZAÇÃO SATELITAL TRANSMITIDA!';
-					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: O motorista não respondeu após 20 segundos! Localização satelital da Scania R-450 na BR-116 KM 284 confirmada. Se persistir até 35s, o protocolo Safe-Stop será executado!';
-					if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - 20000) / 15000) * 100).toFixed(1) + '%';
-					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
-					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';
-					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
-				} else if (nivel === 3) {
-					centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE CONFIRMADO (15s)';
-					if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA HÁ: ' + segTotal + 's / 15.0s · POSSÍVEL ACIDENTE CONFIRMADO';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
-					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: Condutor sem resposta por 15 segundos ininterruptos! A Central ativou desaceleração assistida (Relé GPIO 18), Pisca-Alerta e envio das coordenadas ao Resgate SAMU 192 / PRF!';
-					if (centralEscBarFill) centralEscBarFill.style.width = '100%';
-					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
-					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';
-					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
+		function atualizarPainelEscalonamentoUI(decorridoMs) {
+			if (!centralEscalationPanel) return;
+			var critico = anim.escalonamento.critico_ms;
+			var acidente = anim.escalonamento.acidente_ms;
+			var seg = formatarSegundos(decorridoMs, 1);
+			var nivel = decorridoMs >= acidente ? 3 : (decorridoMs >= critico ? 2 : 1);
 
-					if (sosVelocidadeVal) {
-						var segApos35 = Math.max(0, (decorridoMs - 35000) / 1000);
-						var velAtual = Math.max(0, Math.round(64 - segApos35 * 8));
-						sosVelocidadeVal.textContent = 'Corte gradual de tração ativo · Velocidade: ' + velAtual + ' km/h ' + (velAtual === 0 ? '(VEÍCULO IMOBILIZADO COM SEGURANÇA)' : '(REDUZINDO...)') + ' · Pisca-Alerta LIGADO';
-					}
+			if (nivel === 1) {
+				centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
+				if (centralEscTimer) centralEscTimer.textContent = 'RESPOSTA DO MOTORISTA: ' + seg + 's / ' + formatarSegundos(critico, 1) + 's';
+				if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / critico) * 100).toFixed(1) + '%';
+			} else if (nivel === 2) {
+				centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
+				if (centralEscTimer) centralEscTimer.textContent = 'ALERTA CRÍTICO: ' + seg + 's · POSSÍVEL ACIDENTE EM ' + formatarSegundos(acidente - decorridoMs, 1) + 's';
+				if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - critico) / (acidente - critico)) * 100).toFixed(1) + '%';
+			} else {
+				centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
+				if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA HÁ: ' + seg + 's · POSSÍVEL ACIDENTE CONFIRMADO';
+				if (centralEscBarFill) centralEscBarFill.style.width = '100%';
+				if (sosVelocidadeVal) {
+					// Safe-Stop: desaceleração de 64 km/h até 0 em 8 segundos
+					var velAtual = Math.max(0, Math.round(64 - ((decorridoMs - acidente) / 1000) * 8));
+					sosVelocidadeVal.textContent = 'Corte gradual de tração ativo · Velocidade: ' + velAtual + ' km/h ' + (velAtual === 0 ? '(VEÍCULO IMOBILIZADO COM SEGURANÇA)' : '(REDUZINDO...)') + ' · Pisca-Alerta LIGADO';
 				}
 			}
 
 			if (nivel !== ultimoNivelEscalonamento) {
-				if (nivel === 2 && ultimoNivelEscalonamento < 2) {
-					tocarAudioVoz(vozCritico10sAudio);
-					adicionarLogLocal('ALARME_ATIVADO', 'SUSPEITA DE ACIDENTE (20s): Localização satelital transmitida na BR-116 KM 284!');
-				} else if (nivel === 3 && ultimoNivelEscalonamento < 3) {
-					tocarAudioVoz(vozAcidente20sAudio);
-					adicionarLogLocal('ALARME_ATIVADO', 'EMERGÊNCIA MÁXIMA SOS (35s): Protocolo Safe-Stop e socorro médico acionados!');
-				}
 				ultimoNivelEscalonamento = nivel;
+				var sCritico = formatarSegundos(critico, 0);
+				var sAcidente = formatarSegundos(acidente, 0);
+				if (nivel === 1) {
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO CELULAR';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
+					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico (Buzzer/Relés) e a chamada no celular foram disparados. Se o condutor não confirmar nem mantiver a cabeça erguida por 3s, a Central entra em ALERTA CRÍTICO aos ' + sCritico + 's e em POSSÍVEL ACIDENTE aos ' + sAcidente + 's.';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
+					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
+					if (bannerAlertaAcidente) bannerAlertaAcidente.style.display = 'none';
+				} else if (nivel === 2) {
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (' + sCritico + 's SEM RESPOSTA)';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> MOTORISTA NÃO RESPONDE: LOCALIZAÇÃO SATELITAL TRANSMITIDA!';
+					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: o motorista não respondeu em ' + sCritico + ' segundos! Localização do Scania R-450 em destaque. Sem resposta até ' + sAcidente + 's, o protocolo Safe-Stop & Resgate SOS será executado.';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
+					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
+					tocarAudioVoz(vozCritico10sAudio);
+				} else {
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE (' + sAcidente + 's)';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
+					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: condutor sem resposta por ' + sAcidente + ' segundos! Desaceleração assistida (Relé 1 · GPIO 18), Pisca-Alerta (Relé 2 · GPIO 19) e coordenadas enviadas ao Resgate SAMU 192 / PRF.';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';
+					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
+					if (bannerAlertaAcidente) bannerAlertaAcidente.style.display = 'block';
+					tocarAudioVoz(vozAcidente20sAudio);
+				}
 			}
 		}
 
-		function iniciarMonitorEscalonamento(tempoMs) {
-			var agora = Date.now();
-			var offset = (typeof tempoMs === 'number' && tempoMs > 0 && tempoMs < 350000) ? tempoMs : 0;
-			if (!alertaTravadoLocal || !inicioSemRespostaLocalMs || (agora - inicioSemRespostaLocalMs > 350000)) {
-				alertaTravadoLocal = true;
-				inicioSemRespostaLocalMs = agora - offset;
-				ultimoNivelEscalonamento = 1;
-			}
-			if (!timerEscalonamentoLocal) {
-				timerEscalonamentoLocal = setInterval(function () {
-					if (!alertaTravadoLocal) {
-						clearInterval(timerEscalonamentoLocal);
-						timerEscalonamentoLocal = null;
-						return;
-					}
-					var decorrido = Date.now() - inicioSemRespostaLocalMs;
-					if (isNaN(decorrido) || decorrido < 0 || decorrido > 350000) {
-						inicioSemRespostaLocalMs = Date.now();
-						decorrido = 0;
-					}
-					atualizarPainelEscalonamentoUI(decorrido);
-				}, 100);
-			}
-		}
-
-		function encerrarMonitorEscalonamento() {
-			alertaTravadoLocal = false;
-			inicioSemRespostaLocalMs = 0;
+		function esconderPainelEscalonamento() {
+			anim.travado = false;
+			anim.baseSemRespostaMs = 0;
+			if (ultimoNivelEscalonamento === 0) return;
 			ultimoNivelEscalonamento = 0;
-			if (timerEscalonamentoLocal) { clearInterval(timerEscalonamentoLocal); timerEscalonamentoLocal = null; }
-			if (centralEscalationPanel) centralEscalationPanel.classList.remove('visible', 'nivel-1-celular', 'nivel-2-critico', 'nivel-3-acidente');
+			if (centralEscalationPanel) centralEscalationPanel.className = 'central-escalation-panel';
 			if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
 			if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
+			if (bannerAlertaAcidente) bannerAlertaAcidente.style.display = 'none';
+			if (btnCentralConfirmarResgate) {
+				btnCentralConfirmarResgate.style.display = 'none';
+				btnCentralConfirmarResgate.style.background = '';
+				btnCentralConfirmarResgate.style.borderColor = '';
+				btnCentralConfirmarResgate.innerHTML = '<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency</span> Confirmar Despacho de Resgate & Contato na Cabine</span>';
+			}
 			[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) { try { a.pause(); a.currentTime = 0; } catch (e) { } });
 		}
 
-		if (btnCentralDesativarEscalonamento) {
-			btnCentralDesativarEscalonamento.addEventListener('click', function () {
-				encerrarMonitorEscalonamento();
-				enviarComandoParaBackend('SILENCIAR_ALARME');
-			});
+		// ------------------------------------------------------------------------------
+		// ATUALIZAÇÃO DO PAINEL A PARTIR DO ESTADO DO SERVIDOR (fonte única da verdade)
+		// ------------------------------------------------------------------------------
+		function atualizarPainelComEstado(estado) {
+			if (!estado) return;
+			ultimoEstado = estado;
+			var agora = performance.now();
+
+			if (esp32StatusLabel && esp32StatusChip && esp32PulseDot) {
+				if (estado.online) {
+					var wifi = estado.wifi || {};
+					esp32StatusLabel.textContent = 'ESP32: ONLINE · ' + (estado.fonte_conexao || 'REDE') + (wifi.rssi ? ' · ' + wifi.rssi + ' dBm' : '');
+					esp32StatusChip.title = wifi.ssid ? 'Rede: ' + wifi.ssid + ' · IP da ESP32: ' + wifi.ip : '';
+					esp32StatusChip.className = 'painel-chip online';
+					esp32PulseDot.className = 'pulse-dot';
+				} else {
+					esp32StatusLabel.textContent = estado.servidor === 'SIMULADOR_LOCAL' ? 'ESP32: SIMULAÇÃO LOCAL' : 'ESP32: OFFLINE / AGUARDANDO';
+					esp32StatusChip.className = 'painel-chip offline';
+					esp32PulseDot.className = 'pulse-dot danger';
+				}
+			}
+
+			// Card da frota acompanha o turno informado pelo App do Motorista
+			var mg = estado.motoristas && estado.motoristas.matheus_garcia;
+			if (mg) {
+				var emViagem = mg.status === 'EM_VIAGEM' || !!estado.online;
+				var mudou = garciaViagemAtiva !== null && garciaViagemAtiva !== emViagem;
+				atualizarEstadoGarciaUI(emViagem, mudou && emViagem);
+				try { localStorage.setItem('inovatech_turno_matheus_garcia', mg.status === 'EM_VIAGEM' ? 'ATIVO' : 'INATIVO'); } catch (e) { }
+			}
+			if (estado.gps) atualizarLocalizacaoGpsUI(estado.gps);
+
+			anim.limiarMs = estado.limiar_seguranca_ms || LIMIAR_PADRAO_MS;
+			if (estado.escalonamento) anim.escalonamento = estado.escalonamento;
+			if (estado.recuperacao_limite_ms) anim.recuperacaoLimiteMs = estado.recuperacao_limite_ms;
+			atualizarTextosLimiar(anim.limiarMs);
+
+			var status = estado.estado || 'NORMAL';
+			var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
+			var recuperando = status === 'ALARME_ATIVADO' && estado.alerta_travado && estado.tempo_recuperacao_ms > 0;
+
+			anim.status = recuperando ? 'RECUPERANDO' : status;
+			anim.baseCabecaMs = status === 'PRE_ALERTA' ? agora - (estado.tempo_cabeca_baixa_ms || 0) : 0;
+			anim.baseRecuperacaoMs = recuperando ? agora - estado.tempo_recuperacao_ms : 0;
+
+			if (recuperando) {
+				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-recuperando';
+				if (statusMotoristaTexto) statusMotoristaTexto.style.color = '#55ee77';
+				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill';
+				renderizarRecuperacao(estado.tempo_recuperacao_ms);
+			} else if (status === 'NORMAL') {
+				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-normal';
+				if (statusMotoristaTexto) {
+					statusMotoristaTexto.style.color = '#08deeb';
+					statusMotoristaTexto.textContent = 'NORMAL: CABEÇA ERGUIDA';
+				}
+				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill';
+				renderizarCronometro(0);
+			} else if (status === 'PRE_ALERTA') {
+				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-pre-alerta';
+				if (statusMotoristaTexto) {
+					statusMotoristaTexto.style.color = '#ffaa00';
+					statusMotoristaTexto.textContent = estado.simulacao_ativa ? 'PRÉ-ALERTA: CABEÇA BAIXA (SIMULAÇÃO)' : 'PRÉ-ALERTA: CABEÇA BAIXA DETECTADA';
+				}
+				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill warning';
+				renderizarCronometro(estado.tempo_cabeca_baixa_ms || 0);
+			} else if (status === 'ALARME_ATIVADO') {
+				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-alarme';
+				if (statusMotoristaTexto) {
+					statusMotoristaTexto.style.color = '#ff2a55';
+					var origem = estado.origem_alerta === 'TESTE_REMOTO' ? ' (TESTE REMOTO)' : (estado.origem_alerta === 'SIMULACAO' ? ' (SIMULAÇÃO)' : '');
+					statusMotoristaTexto.textContent = 'PERIGO: CABEÇA BAIXA · ALERTA ATIVADO' + origem;
+				}
+				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill danger';
+				renderizarCronometro(anim.limiarMs);
+			}
+
+			if (descricaoEstadoCondutor) {
+				if (recuperando) descricaoEstadoCondutor.textContent = 'Cabeça erguida detectada. Mantendo por ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + 's o alerta é encerrado automaticamente.';
+				else if (status === 'ALARME_ATIVADO') descricaoEstadoCondutor.textContent = 'Alarme ativo: buzzer contínuo nos óculos, relés acionados e chamada de descanso no celular do motorista.';
+				else if (status === 'PRE_ALERTA') descricaoEstadoCondutor.textContent = 'Cabeça baixa detectada: contagem de segurança em andamento com 3 bips de aviso nos óculos.';
+				else descricaoEstadoCondutor.textContent = 'Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de ' + formatarSegundos(anim.limiarMs).replace('.', ',') + 's para evitar alarmes falsos ao checar painel e espelhos.';
+			}
+
+			// Painel de escalonamento (Fase 1 -> 2 -> 3) com o tempo exato do servidor
+			if (estado.alerta_travado) {
+				anim.travado = true;
+				anim.baseSemRespostaMs = agora - (estado.tempo_sem_resposta_ms || 0);
+				atualizarPainelEscalonamentoUI(estado.tempo_sem_resposta_ms || 0);
+			} else {
+				esconderPainelEscalonamento();
+			}
+
+			// Sensor IR
+			if (irNivelLogico && irNivelSub) {
+				irNivelLogico.textContent = ir === 1 ? 'HIGH (1)' : 'LOW (0)';
+				irNivelLogico.style.color = ir === 1 ? '#08deeb' : '#ffaa00';
+				irNivelSub.textContent = ir === 1 ? 'Postura Erguida' : 'Obstáculo / Queixo Próximo';
+			}
+			if (precisaoIrLiveVal) {
+				precisaoIrLiveVal.textContent = ir === 1 ? 'CABEÇA ERGUIDA (' + (estado.tempo_cabeca_baixa_ms || 0) + ' ms)' : 'CABEÇA BAIXA (' + (estado.tempo_cabeca_baixa_ms || 0) + ' ms)';
+				precisaoIrLiveVal.style.color = ir === 1 ? '#55ee77' : '#ffaa00';
+			}
+
+			// Acelerômetro
+			var acc = estado.acelerometro;
+			if (acc) {
+				if (accPitchVal) accPitchVal.textContent = Number(acc.pitch || 0).toFixed(1) + '°';
+				if (accRollVal) accRollVal.textContent = Number(acc.roll || 0).toFixed(1) + '°';
+				if (accInclinacaoVal) {
+					var incl = Number(acc.inclinacao || 0);
+					accInclinacaoVal.textContent = incl.toFixed(1) + '° / 32°';
+					accInclinacaoVal.style.color = incl > 32 ? '#ff2a55' : (incl > 20 ? '#ffaa00' : 'var(--cyan)');
+				}
+				if (accPescadaVal) {
+					accPescadaVal.textContent = acc.pescada_detectada ? 'SIM (ALERTA)' : 'NÃO';
+					accPescadaVal.style.color = acc.pescada_detectada ? '#ff2a55' : '#55ee77';
+				}
+				if (accStatusChip) {
+					var mpuOk = acc.online && estado.online;
+					accStatusChip.textContent = mpuOk ? (acc.calibrado ? 'MPU-6050: ONLINE' : 'MPU-6050: SEM CALIBRAÇÃO') : (estado.online ? 'MPU-6050: DESCONECTADO' : 'MPU-6050: AGUARDANDO');
+					accStatusChip.className = 'painel-chip ' + (mpuOk && acc.calibrado ? 'online' : 'offline');
+				}
+			}
+
+			// Atuadores (estado físico real dos pinos da ESP32)
+			function pintarAtuador(el, ligado, txtLigado, txtDesligado) {
+				if (!el) return;
+				el.textContent = ligado ? txtLigado : txtDesligado;
+				el.style.color = ligado ? '#ff2a55' : '#55ee77';
+			}
+			pintarAtuador(buzzerStatusBadge, estado.buzzer === 1, 'LIGADO', 'DESLIGADO');
+			pintarAtuador(releStatusBadge, estado.rele === 1, 'ACIONADO', 'EM ESPERA');
+			pintarAtuador(rele2StatusBadge, estado.rele_2 === 1, 'ACIONADO', 'EM ESPERA');
+
+			if (contadorTotalAlarmes && estado.contadores) {
+				contadorTotalAlarmes.textContent = estado.contadores.totalAlarmesSessao || 0;
+			}
 		}
+
+		// ------------------------------------------------------------------------------
+		// CONEXÃO COM O SERVIDOR (WebSocket + REST automático, ver conexao-backend.js)
+		// ------------------------------------------------------------------------------
+		var simuladorLocal = SmartDriverLink.criarSimuladorLocal(atualizarPainelComEstado);
+
+		var link = SmartDriverLink.criarLink({
+			origem: 'CENTRAL_TECH',
+			aoReceber: function (msg) {
+				if (msg.estado) atualizarPainelComEstado(msg.estado);
+				if (msg.tipo === 'ESTADO_INICIAL' && Array.isArray(msg.eventos)) {
+					msg.eventos.slice().reverse().forEach(function (ev) {
+						adicionarLogLocal(ev.tipo, ev.mensagem, ev.horaFormatada, ev.id);
+					});
+				}
+				if (msg.tipo === 'NOVO_EVENTO' && msg.evento) {
+					adicionarLogLocal(msg.evento.tipo, msg.evento.mensagem, msg.evento.horaFormatada, msg.evento.id);
+				}
+				if (msg.tipo === 'GPS_UPDATE' && msg.gps) atualizarLocalizacaoGpsUI(msg.gps);
+				if (msg.tipo === 'ERRO_COMANDO' && msg.mensagem) exibirToastCentral(msg.mensagem);
+			},
+			aoMudarStatus: function (status, base) {
+				var rotulos = {
+					PROCURANDO: 'BACKEND: PROCURANDO SERVIDOR...',
+					WS: 'BACKEND: AO VIVO',
+					REST: 'BACKEND: CONECTADO (REST)',
+					OFFLINE: 'BACKEND: OFFLINE · MODO SIMULAÇÃO LOCAL'
+				};
+				var ehNuvem = base && base.indexOf('onrender.com') !== -1;
+				if (backendStatusLabel) backendStatusLabel.textContent = rotulos[status] + (base && status !== 'OFFLINE' ? (ehNuvem ? ' · NUVEM' : ' · LOCAL') : '');
+				if (backendStatusChip) backendStatusChip.className = 'painel-chip ' + (status === 'WS' || status === 'REST' ? 'online' : 'offline');
+				if (backendStatusChip && base) backendStatusChip.title = base;
+				if (inputBackendUrl && base && document.activeElement !== inputBackendUrl) inputBackendUrl.placeholder = 'Automático: ' + base;
+				if (status === 'WS') adicionarLogLocal('CONEXAO', 'Link em tempo real estabelecido com ' + base);
+				if (status === 'OFFLINE') adicionarLogLocal('DESCONEXAO', 'Nenhum servidor encontrado. Tentando novamente... (simulação local disponível)');
+			}
+		});
+
+		function enviarComandoParaBackend(cmd, extras) {
+			if (link.conectado()) {
+				link.comando(cmd, extras);
+				return true;
+			}
+			return false;
+		}
+
+		// Botões de comando da Central
+		function simularAlerta(duracaoMs) {
+			if (!enviarComandoParaBackend('SIMULAR_ALERTA', { duracao_ms: duracaoMs })) {
+				simuladorLocal.iniciar(duracaoMs);
+			}
+		}
+
+		function normalizar() {
+			simuladorLocal.parar();
+			enviarComandoParaBackend('NORMALIZAR');
+		}
+
+		function ligarBotao(id, acao) {
+			var el = document.getElementById(id);
+			if (el) el.addEventListener('click', acao);
+		}
+
+		ligarBotao('btnSimularAlertaCentral', function () { simularAlerta(LIMIAR_SIMULACAO_RAPIDA_MS); });
+		ligarBotao('btnSimularCabecaBaixa', function () { simularAlerta(LIMIAR_PADRAO_MS); });
+		ligarBotao('btnNormalizarCentral', normalizar);
+		ligarBotao('btnSimularCabecaErguida', normalizar);
+		ligarBotao('btnSilenciarRemoto', normalizar);
+		ligarBotao('btnCentralDesativarEscalonamento', normalizar);
+		ligarBotao('btnDispararTesteRemoto', function () {
+			if (!enviarComandoParaBackend('DISPARAR_TESTE')) exibirToastCentral('Sem conexão com o servidor: o teste remoto precisa da ESP32 conectada.');
+		});
+		ligarBotao('btnCalibrarMpu', function () {
+			if (enviarComandoParaBackend('CALIBRAR_MPU')) exibirToastCentral('Recalibrando o acelerômetro: o motorista deve manter a cabeça erguida por 1 segundo.');
+			else exibirToastCentral('Sem conexão com o servidor para enviar a calibração.');
+		});
 
 		if (btnCentralConfirmarResgate) {
 			btnCentralConfirmarResgate.addEventListener('click', function () {
@@ -1402,598 +1607,54 @@
 			});
 		}
 
-		// Interpolação de 40 FPS com limite de 4,00s
-		
-		// Motor de Interpolação a 60 FPS no Navegador (Garante fluidez visual absoluta)
-		var inicioAnimacaoCabecaBaixa = 0;
-		var statusAtualAnimacao = 'NORMAL';
-		var tempoMsRecebido = 0;
-
-		function animarCronometroFrame() {
-			if (statusAtualAnimacao === 'PRE_ALERTA' || (ultimoEstadoRecebido && ultimoEstadoRecebido.sensor_ir === 0 && statusAtualAnimacao !== 'ALARME_ATIVADO')) {
-				if (!inicioAnimacaoCabecaBaixa) {
-					inicioAnimacaoCabecaBaixa = performance.now() - tempoMsRecebido;
-				}
-				var decorridoMs = Math.max(0, performance.now() - inicioAnimacaoCabecaBaixa);
-				renderizarCronometroAltaPrecisao(decorridoMs, 'PRE_ALERTA');
-			} else if (statusAtualAnimacao === 'NORMAL') {
-				inicioAnimacaoCabecaBaixa = 0;
-			}
-			requestAnimationFrame(animarCronometroFrame);
-		}
-		requestAnimationFrame(animarCronometroFrame);
-
-function renderizarCronometroAltaPrecisao(msExato, statusAtual) {
-			var msLimitado = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(msExato)));
-			var segCent = (msLimitado / 1000).toFixed(2);
-			var percExato = Math.min(100, (msLimitado / LIMIAR_TOLERANCIA_MS) * 100);
-
-			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segCent + 's / 1.50s';
-			if (barraProgressoTempo) barraProgressoTempo.style.width = percExato.toFixed(1) + '%';
-			if (irTempoMs) irTempoMs.textContent = msLimitado + ' ms';
-			if (precisaoTempoMsBadge) precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + msLimitado + ' ms (' + percExato.toFixed(1) + '%)';
-		}
-
-		// Atualizar todo o estado na Central Tech
-		function atualizarPainelComEstado(estado) {
-			if (!estado) return;
-
-			if (esp32StatusLabel && esp32StatusChip && esp32PulseDot) {
-				if (estado.online) {
-					esp32StatusLabel.textContent = 'ESP32: CONECTADO (ONLINE)';
-					esp32StatusChip.className = 'painel-chip online';
-					esp32PulseDot.className = 'pulse-dot';
-				} else {
-					esp32StatusLabel.textContent = 'ESP32: OFFLINE / AGUARDANDO';
-					esp32StatusChip.className = 'painel-chip offline';
-					esp32PulseDot.className = 'pulse-dot danger';
-				}
-			}
-
-			var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
-			var status = estado.estado || 'NORMAL';
-			var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
-			tempoMsRecebido = tempoMs;
-			statusAtualAnimacao = status;
-			if (status !== "PRE_ALERTA" && status !== "ALARME_ATIVADO") inicioAnimacaoCabecaBaixa = 0;
-			var decorridoRecupMs = 0;
-
-			// Recuperação Automática de 3 segundos quando ergue a cabeça (ir === 1)
-			if (ir === 1) {
-				if (alertaTravadoLocal || status === 'ALARME_ATIVADO' || status === 'RECUPERANDO') {
-					if (!inicioRecuperacaoLocalMs) inicioRecuperacaoLocalMs = Date.now();
-					decorridoRecupMs = (estado.tempo_recuperacao_ms !== undefined && estado.tempo_recuperacao_ms > 0)
-						? estado.tempo_recuperacao_ms : (Date.now() - inicioRecuperacaoLocalMs);
-
-					if (decorridoRecupMs >= 3500) {
-						alertaTravadoLocal = false;
-						inicioRecuperacaoLocalMs = 0;
-						cooldownAntiRepiqueLocalUntil = Date.now() + 3500;
-						status = 'NORMAL';
-						encerrarMonitorEscalonamento();
-						enviarComandoParaBackend('SILENCIAR_ALARME');
-						adicionarLogLocal('NORMAL', 'Recuperação Automática: Condutor ergueu a cabeça por 3 segundos. Alerta cancelado.');
-					} else {
-						status = 'RECUPERANDO';
-					}
-				} else {
-					inicioRecuperacaoLocalMs = 0;
-					if (status !== 'ALARME_ATIVADO') status = 'NORMAL';
-				}
-			} else {
-				inicioRecuperacaoLocalMs = 0;
-				if (Date.now() < cooldownAntiRepiqueLocalUntil && !alertaTravadoLocal) {
-					status = 'NORMAL';
-					tempoMs = 0;
-				} else if (alertaTravadoLocal || estado.alerta_travado) {
-					status = 'ALARME_ATIVADO';
-				}
-			}
-
-			renderizarCronometroAltaPrecisao(status === 'ALARME_ATIVADO' ? 3500 : tempoMs, status);
-
-			if (status === 'RECUPERANDO') {
-				var segR = (decorridoRecupMs / 1000).toFixed(1);
-				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-recuperando';
-				if (statusMotoristaTexto) {
-					statusMotoristaTexto.style.color = '#55ee77';
-					statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + segR + 's / 1.5s';
-				}
-				if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = segR + 's / 1.5s (NORMALIZANDO)';
-				if (barraProgressoTempo) {
-					barraProgressoTempo.className = 'progresso-bar-fill';
-					barraProgressoTempo.style.width = Math.min(100, (decorridoRecupMs / 3500) * 100) + '%';
-				}
-				if (cardCameraLinklemo) cardCameraLinklemo.classList.remove('camera-alerta-critico');
-			} else if (status === 'NORMAL') {
-				encerrarMonitorEscalonamento();
-				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-normal';
-				if (statusMotoristaTexto) {
-					statusMotoristaTexto.style.color = '#08deeb';
-					statusMotoristaTexto.textContent = 'NORMAL: CABEÇA ERGUIDA';
-				}
-				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill';
-				if (cardCameraLinklemo) cardCameraLinklemo.classList.remove('camera-alerta-critico');
-			} else if (status === 'PRE_ALERTA') {
-				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-pre-alerta';
-				if (statusMotoristaTexto) {
-					statusMotoristaTexto.style.color = '#ffaa00';
-					statusMotoristaTexto.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA DETECTADA';
-				}
-				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill warning';
-				if (cardCameraLinklemo) cardCameraLinklemo.classList.remove('camera-alerta-critico');
-			} else if (status === 'ALARME_ATIVADO') {
-				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-alarme';
-				if (statusMotoristaTexto) {
-					statusMotoristaTexto.style.color = '#ff2a55';
-					statusMotoristaTexto.textContent = 'PERIGO: CABEÇA BAIXA (ALERTA ATIVADO)';
-				}
-				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill danger';
-				if (cardCameraLinklemo) cardCameraLinklemo.classList.add('camera-alerta-critico');
-				iniciarMonitorEscalonamento(estado.tempo_sem_resposta_ms || 0);
-			}
-
-			// Sensor IR
-			if (irNivelLogico && irNivelSub) {
-				if (ir === 1) {
-					irNivelLogico.textContent = 'HIGH (1)';
-					irNivelLogico.style.color = '#08deeb';
-					irNivelSub.textContent = 'Postura Erguida';
-				} else {
-					irNivelLogico.textContent = 'LOW (0)';
-					irNivelLogico.style.color = '#ffaa00';
-					irNivelSub.textContent = 'Obstáculo / Queixo Próximo';
-				}
-			}
-
-			// Acelerômetro
-			if (estado.acelerometro) {
-				if (accPitchVal) accPitchVal.textContent = (estado.acelerometro.pitch || 0).toFixed(1) + '°';
-				if (accRollVal) accRollVal.textContent = (estado.acelerometro.roll || 0).toFixed(1) + '°';
-				if (accPescadaVal) {
-					accPescadaVal.textContent = estado.acelerometro.pescada_detectada ? 'SIM (ALERTA)' : 'NÃO';
-					accPescadaVal.style.color = estado.acelerometro.pescada_detectada ? '#ff2a55' : '#55ee77';
-				}
-			}
-
-			// Atuadores
-			if (buzzerStatusBadge) {
-				buzzerStatusBadge.textContent = (estado.buzzer === 1) ? 'LIGADO (3.3V)' : 'DESLIGADO';
-				buzzerStatusBadge.style.color = (estado.buzzer === 1) ? '#ff2a55' : '#55ee77';
-			}
-			if (releStatusBadge) {
-				releStatusBadge.textContent = (estado.rele === 1) ? 'ACIONADO' : 'EM ESPERA';
-				releStatusBadge.style.color = (estado.rele === 1) ? '#ff2a55' : '#55ee77';
-			}
-
-			if (contadorTotalAlarmes && estado.contadores) {
-				contadorTotalAlarmes.textContent = estado.contadores.totalAlarmesSessao || 0;
-			}
-		}
-
-		// Conexão WebSocket e REST
-		// Sincronização Local Instantânea via BroadcastChannel (Zero Latência)
-		var liveBroadcast = null;
-		try {
-			liveBroadcast = new BroadcastChannel('inovatech_telemetry_live');
-			liveBroadcast.onmessage = function(ev) {
-				if (ev.data && ev.data.estado) {
-					atualizarPainelComEstado(ev.data.estado);
-				}
-			};
-		} catch(e) {}
-
-		function conectarBackend() {
-			var isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:');
-			var hostPadrao = isLocal ? 'http://localhost:3001' : 'http://172.20.10.2:3001';
-			if (inputBackendUrl) {
-				if (!inputBackendUrl.value || inputBackendUrl.value.indexOf('onrender.com') !== -1) {
-					inputBackendUrl.value = hostPadrao;
-				}
-				backendBaseUrl = inputBackendUrl.value.trim().replace(/\/$/, '') || hostPadrao;
-			} else {
-				backendBaseUrl = hostPadrao;
-			}
-			var wsUrl = backendBaseUrl.replace(/^http/, 'ws') + '/ws';
-			if (backendStatusLabel) backendStatusLabel.textContent = 'CONECTANDO...';
-
-			if (wsClient) { try { wsClient.close(); } catch (e) { } }
-
-			try {
-				wsClient = new WebSocket(wsUrl);
-				wsClient.onopen = function () {
-					if (backendStatusLabel) backendStatusLabel.textContent = 'BACKEND: CONECTADO';
-					if (backendStatusChip) backendStatusChip.className = 'painel-chip online';
-					adicionarLogLocal('NORMAL', 'Link WebSocket estabelecido com ' + wsUrl);
-				};
-				wsClient.onmessage = function (ev) {
-					try {
-						var msg = JSON.parse(ev.data);
-						if (msg.estado) {
-							atualizarPainelComEstado(msg.estado);
-							if (msg.estado.gps) atualizarLocalizacaoGpsUI(msg.estado.gps);
-						}
-						if (msg.tipo === 'GPS_UPDATE' && msg.gps) {
-							atualizarLocalizacaoGpsUI(msg.gps);
-						}
-						if (msg.tipo === 'NOVO_EVENTO' && msg.evento) {
-							adicionarLogLocal(msg.evento.tipo, msg.evento.mensagem, msg.evento.horaFormatada);
-						}
-						if (msg.tipo === 'STATUS_MOTORISTA') {
-							var emViagem = (msg.status_viagem === 'EM_VIAGEM');
-							atualizarEstadoGarciaUI(emViagem, emViagem);
-						}
-					} catch (e) { }
-				};
-				wsClient.onerror = function () {
-					if (backendStatusLabel && (!wsLocalBridgeClient || wsLocalBridgeClient.readyState !== WebSocket.OPEN)) {
-						backendStatusLabel.textContent = 'BACKEND: CONECTANDO (REST)...';
-					}
-					iniciarPolling();
-				};
-				wsClient.onclose = function () {
-					iniciarPolling();
-					setTimeout(function () {
-						if (!wsClient || wsClient.readyState === WebSocket.CLOSED) {
-							conectarBackend();
-						}
-					}, 4000);
-				};
-			} catch (e) { iniciarPolling(); }
-
-			// Abre também conexão local direta se o principal for nuvem
-			if (backendBaseUrl.indexOf('onrender.com') !== -1) {
-				try {
-					if (wsLocalBridgeClient) { try { wsLocalBridgeClient.close(); } catch (e) { } }
-					wsLocalBridgeClient = new WebSocket('ws://localhost:3001/ws');
-					wsLocalBridgeClient.onmessage = function (ev) {
-						try {
-							var m = JSON.parse(ev.data);
-							if (m.estado) {
-								atualizarPainelComEstado(m.estado);
-								if (m.estado.gps) atualizarLocalizacaoGpsUI(m.estado.gps);
-							}
-							if (m.tipo === 'GPS_UPDATE' && m.gps) {
-								atualizarLocalizacaoGpsUI(m.gps);
-							}
-							if (m.tipo === 'NOVO_EVENTO' && m.evento) {
-								adicionarLogLocal(m.evento.tipo, m.evento.mensagem, m.evento.horaFormatada);
-							}
-							if (m.tipo === 'STATUS_MOTORISTA') {
-								var emViagem = (m.status_viagem === 'EM_VIAGEM');
-								atualizarEstadoGarciaUI(emViagem, emViagem);
-							}
-						} catch (e) { }
-					};
-				} catch (e) { }
-			}
-		}
-
-		function iniciarPolling() {
-			if (pollingTimer) clearInterval(pollingTimer);
-			pollingTimer = setInterval(function () {
-				var url = (backendBaseUrl.indexOf('http') === 0 ? backendBaseUrl : 'http://localhost:3001') + '/api/telemetry';
-				fetch(url)
-					.then(function (r) { return r.json(); })
-					.then(function (d) {
-						if (d && d.estado) {
-							if (backendStatusLabel && (!wsClient || wsClient.readyState !== WebSocket.OPEN)) {
-								backendStatusLabel.textContent = 'BACKEND: CONECTADO (REST)';
-							}
-							if (backendStatusChip) backendStatusChip.className = 'painel-chip online';
-							atualizarPainelComEstado(d.estado);
-							if (d.estado.gps) atualizarLocalizacaoGpsUI(d.estado.gps);
-							if (d.estado.motoristas && d.estado.motoristas.matheus_garcia) {
-								var statusDrv = d.estado.motoristas.matheus_garcia.status;
-								var ativo = (statusDrv === 'EM_VIAGEM');
-								if (ativo !== garciaViagemAtiva) {
-									atualizarEstadoGarciaUI(ativo, ativo);
-								}
-							} else if (d.estado.online && !garciaViagemAtiva) {
-								atualizarEstadoGarciaUI(true, false);
-							}
-						}
-					})
-					.catch(function () {
-						if ((!wsClient || wsClient.readyState !== WebSocket.OPEN) &&
-							(!wsLocalBridgeClient || wsLocalBridgeClient.readyState !== WebSocket.OPEN)) {
-							if (backendStatusLabel) backendStatusLabel.textContent = 'BACKEND: RECONECTANDO...';
-							if (backendStatusChip) backendStatusChip.className = 'painel-chip offline';
-						}
-					});
-			}, 600);
-		}
-
-		function enviarComandoParaBackend(cmd) {
-			if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-				wsClient.send(JSON.stringify({ tipo: 'COMANDO', comando: cmd }));
-			}
-			if (wsLocalBridgeClient && wsLocalBridgeClient.readyState === WebSocket.OPEN) {
-				wsLocalBridgeClient.send(JSON.stringify({ tipo: 'COMANDO', comando: cmd }));
-			}
-			var urls = ['http://localhost:3001/api/command', 'https://inovatech-tcc.onrender.com/api/command'];
-			urls.forEach(function (u) {
-				fetch(u, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ comando: cmd, origem: 'CENTRAL_TECH' })
-				}).catch(function () { });
-			});
-		}
-
-		// Botões de comando da Central
-		var btnDispararTesteRemoto = document.getElementById('btnDispararTesteRemoto');
-		if (btnDispararTesteRemoto) {
-			btnDispararTesteRemoto.addEventListener('click', function () {
-				enviarComandoParaBackend('DISPARAR_TESTE');
-			});
-		}
-
-		var btnSilenciarRemoto = document.getElementById('btnSilenciarRemoto');
-		if (btnSilenciarRemoto) {
-			btnSilenciarRemoto.addEventListener('click', function () {
-				encerrarMonitorEscalonamento();
-				enviarComandoParaBackend('SILENCIAR_ALARME');
-			});
-		}
-
-		// Simulação Local com 1.50s
-		// Simulação Local de Alta Precisão (1.50s de Fadiga) com Sincronização Total
-		var simTimer = null;
-
-		function iniciarSimulacaoAlertaCentral() {
-			if (simTimer) clearInterval(simTimer);
-			cooldownAntiRepiqueLocalUntil = 0;
-			inicioRecuperacaoLocalMs = 0;
-			var ms = 0;
-			var inicioSim = performance.now();
-			simTimer = setInterval(function () {
-				ms = Math.min(1500, Math.round(performance.now() - inicioSim));
-				var est = (ms >= 1500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
-				var pac = {
-					online: true,
-					estado: est,
-					sensor_ir: 0,
-					tempo_cabeca_baixa_ms: ms,
-					buzzer: ms >= 1500 ? 1 : ((ms >= 600 && ms < 950) ? 1 : 0),
-					rele: ms >= 1500 ? 1 : 0,
-					chamada_celular_ativa: ms >= 1500,
-					alerta_travado: ms >= 1500,
-					acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 1500 },
-					contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes ? contadorTotalAlarmes.textContent : '0') || 0) + (ms === 1500 ? 1 : 0) }
-				};
-				atualizarPainelComEstado(pac);
-
-				// Transmite via REST se atingiu o limiar
-				if (ms === 1500 || ms === 600) {
-					fetch('http://localhost:3001/api/telemetry', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify(pac)
-					}).catch(function () { });
-				}
-
-				// Sincroniza via BroadcastChannel e localStorage para o App do Motorista
-				try {
-					if (window.BroadcastChannel) {
-						var bc = new BroadcastChannel('inovatech_telemetry_live');
-						bc.postMessage({ tipo: 'TELEMETRIA', estado: pac });
-					}
-					localStorage.setItem('inovatech_telemetry_bridge', JSON.stringify(pac));
-				} catch (e) { }
-
-				if (ms >= 1500) {
-					clearInterval(simTimer);
-					simTimer = null;
-				}
-			}, 50);
-		}
-
-		function pararSimulacaoNormalizarCentral() {
-			if (simTimer) {
-				clearInterval(simTimer);
-				simTimer = null;
-			}
-			alertaTravadoLocal = false;
-			inicioRecuperacaoLocalMs = 0;
-			cooldownAntiRepiqueLocalUntil = Date.now() + 3500;
-			encerrarMonitorEscalonamento();
-			var pacNorm = {
-				online: true,
-				estado: 'NORMAL',
-				sensor_ir: 1,
-				tempo_cabeca_baixa_ms: 0,
-				buzzer: 0,
-				rele: 0,
-				chamada_celular_ativa: false,
-				alerta_travado: false,
-				_forceReset: true,
-				acelerometro: { pitch: 2, roll: 0, pescada_detectada: false },
-				contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes ? contadorTotalAlarmes.textContent : '0') || 0 }
-			};
-			atualizarPainelComEstado(pacNorm);
-			
-			// Notifica backend e comandos
-			fetch('http://localhost:3001/api/telemetry', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(pacNorm)
-			}).catch(function () { });
-			enviarComandoParaBackend('SILENCIAR_ALARME');
-
-			// Sincroniza via BroadcastChannel e localStorage
-			try {
-				if (window.BroadcastChannel) {
-					var bc = new BroadcastChannel('inovatech_telemetry_live');
-					bc.postMessage({ tipo: 'TELEMETRIA', estado: pacNorm });
-				}
-				localStorage.setItem('inovatech_telemetry_bridge', JSON.stringify(pacNorm));
-			} catch (e) { }
-		}
-
-		var btnSimularAlertaCentral = document.getElementById('btnSimularAlertaCentral');
-		if (btnSimularAlertaCentral) {
-			btnSimularAlertaCentral.addEventListener('click', iniciarSimulacaoAlertaCentral);
-		}
-
-		var btnNormalizarCentral = document.getElementById('btnNormalizarCentral');
-		if (btnNormalizarCentral) {
-			btnNormalizarCentral.addEventListener('click', pararSimulacaoNormalizarCentral);
-		}
-
-		var btnSimularCabecaBaixa = document.getElementById('btnSimularCabecaBaixa');
-		if (btnSimularCabecaBaixa) {
-			btnSimularCabecaBaixa.addEventListener('click', function () {
-				if (simTimer) clearInterval(simTimer);
-				cooldownAntiRepiqueLocalUntil = 0;
-				inicioRecuperacaoLocalMs = 0;
-				var ms = 0;
-				simTimer = setInterval(function () {
-					ms += 250;
-					var est = (ms >= 3500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
-					var pac = {
-						online: true,
-						estado: est,
-						sensor_ir: 0,
-						tempo_cabeca_baixa_ms: ms,
-						buzzer: ms >= 3500 ? 1 : ((ms >= 850 && ms < 1050) || (ms >= 1850 && ms < 2050) || (ms >= 2850) ? 1 : 0),
-						rele: ms >= 3500 ? 1 : 0,
-						chamada_celular_ativa: ms >= 3500,
-						alerta_travado: ms >= 3500,
-						acelerometro: { pitch: -25, roll: -2, pescada_detectada: ms >= 3500 },
-						contadores: { totalAlarmesSessao: (parseInt(contadorTotalAlarmes.textContent) || 0) + (ms === 3500 ? 1 : 0) }
-					};
-					atualizarPainelComEstado(pac);
-					if (ms >= 3500) clearInterval(simTimer);
-				}, 250);
-			});
-			btnSimularCabecaBaixa.addEventListener('click', iniciarSimulacaoAlertaCentral);
-		}
-
-		var btnSimularCabecaErguida = document.getElementById('btnSimularCabecaErguida');
-		if (btnSimularCabecaErguida) {
-			btnSimularCabecaErguida.addEventListener('click', function () {
-				if (simTimer) clearInterval(simTimer);
-				alertaTravadoLocal = false;
-				inicioRecuperacaoLocalMs = 0;
-				cooldownAntiRepiqueLocalUntil = Date.now() + 3500;
-				encerrarMonitorEscalonamento();
-				var pacNorm = {
-					online: true,
-					estado: 'NORMAL',
-					sensor_ir: 1,
-					tempo_cabeca_baixa_ms: 0,
-					buzzer: 0,
-					rele: 0,
-					chamada_celular_ativa: false,
-					alerta_travado: false,
-					_forceReset: true,
-					acelerometro: { pitch: 2, roll: 0, pescada_detectada: false },
-					contadores: { totalAlarmesSessao: parseInt(contadorTotalAlarmes.textContent) || 0 }
-				};
-				atualizarPainelComEstado(pacNorm);
-				enviarComandoParaBackend('SILENCIAR_ALARME');
-			});
-			btnSimularCabecaErguida.addEventListener('click', pararSimulacaoNormalizarCentral);
-		}
-
-		// Câmera e Canvas de Simulação
-		var cameraSimCanvas = document.getElementById('cameraSimCanvas');
-		var liveCabineVideo = document.getElementById('liveCabineVideo');
-		var btnCapturarLinklemo = document.getElementById('btnCapturarLinklemo');
-		var btnAlternarCameraSim = document.getElementById('btnAlternarCameraSim');
-		var btnTelaCheiaCam = document.getElementById('btnTelaCheiaCam');
-
-		function desenharSimulacaoCabine() {
-			if (!cameraSimCanvas) return;
-			cameraSimCanvas.style.display = 'block';
-			if (liveCabineVideo) liveCabineVideo.style.display = 'none';
-			var ctx = cameraSimCanvas.getContext('2d');
-			cameraSimCanvas.width = 640; cameraSimCanvas.height = 360;
-			var f = 0;
-			function loop() {
-				f++;
-				ctx.fillStyle = '#05141e';
-				ctx.fillRect(0, 0, 640, 360);
-				// Volante
-				ctx.strokeStyle = 'rgba(8, 222, 235, 0.25)'; ctx.lineWidth = 2;
-				ctx.beginPath(); ctx.arc(320, 280, 110, 0, Math.PI * 2); ctx.stroke();
-				// Cabeça
-				var headY = 140 + (cardCameraLinklemo && cardCameraLinklemo.classList.contains('camera-alerta-critico') ? 45 : Math.sin(f * 0.05) * 4);
-				ctx.fillStyle = 'rgba(8, 222, 235, 0.15)';
-				ctx.strokeStyle = (cardCameraLinklemo && cardCameraLinklemo.classList.contains('camera-alerta-critico')) ? '#ff2a55' : 'rgba(8, 222, 235, 0.6)';
-				ctx.beginPath(); ctx.arc(320, headY, 52, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-				// Óculos
-				ctx.fillStyle = (cardCameraLinklemo && cardCameraLinklemo.classList.contains('camera-alerta-critico')) ? '#ff2a55' : '#08deeb';
-				ctx.fillRect(290, headY - 8, 24, 12); ctx.fillRect(326, headY - 8, 24, 12); ctx.fillRect(314, headY - 4, 12, 4);
-				requestAnimationFrame(loop);
-			}
-			loop();
-		}
-		desenharSimulacaoCabine();
-
-		if (btnCapturarLinklemo) {
-			btnCapturarLinklemo.addEventListener('click', function () {
-				if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-					navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
-						.then(function (stream) {
-							if (liveCabineVideo) {
-								liveCabineVideo.style.display = 'block';
-								if (cameraSimCanvas) cameraSimCanvas.style.display = 'none';
-								liveCabineVideo.srcObject = stream;
-								liveCabineVideo.play();
-							}
-						}).catch(function () { });
-				} else {
-					alert('Seu navegador não suporta compartilhamento de janela.');
-				}
-			});
-		}
-
-		if (btnAlternarCameraSim) btnAlternarCameraSim.addEventListener('click', desenharSimulacaoCabine);
-
-		if (btnTelaCheiaCam) {
-			btnTelaCheiaCam.addEventListener('click', function () {
-				var vp = document.getElementById('cameraViewport');
-				if (vp) {
-					if (!document.fullscreenElement) vp.requestFullscreen().catch(function () { });
-					else document.exitFullscreen().catch(function () { });
-				}
-			});
-		}
-
 		// Exportar e Limpar Logs
-		var btnExportarLogs = document.getElementById('btnExportarLogs');
-		if (btnExportarLogs) {
-			btnExportarLogs.addEventListener('click', function () {
-				var relatorio = {
-					sistema: "CENTRAL TECH — RELATÓRIO OFICIAL DE TELEMETRIA",
-					data_exportacao: new Date().toLocaleString('pt-BR'),
-					veiculo: "SCANIA R-450 (INO-2026)",
-					condutor: "Matheus Garcia",
-					total_alarmes_sessao: parseInt(contadorTotalAlarmes ? contadorTotalAlarmes.textContent : '0') || 0
-				};
+		ligarBotao('btnExportarLogs', function () {
+			var relatorio = {
+				sistema: 'CENTRAL TECH — RELATÓRIO OFICIAL DE TELEMETRIA',
+				data_exportacao: new Date().toLocaleString('pt-BR'),
+				veiculo: 'SCANIA R-450 (INO-2026)',
+				condutor: 'Matheus Garcia',
+				servidor: link.base(),
+				total_alarmes_sessao: parseInt(contadorTotalAlarmes ? contadorTotalAlarmes.textContent : '0', 10) || 0,
+				ultimo_estado: ultimoEstado,
+				eventos: []
+			};
+			function baixar() {
 				var blob = new Blob([JSON.stringify(relatorio, null, 2)], { type: 'application/json' });
 				var url = URL.createObjectURL(blob);
-				var a = document.createElement('a'); a.href = url; a.download = 'relatorio_central_tech_' + Date.now() + '.json';
-				document.body.appendChild(a); a.click(); document.body.removeChild(a);
-			});
-		}
+				var a = document.createElement('a');
+				a.href = url;
+				a.download = 'relatorio_central_tech_' + Date.now() + '.json';
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+			}
+			if (!link.base()) return baixar();
+			fetch(link.base() + '/api/events', { cache: 'no-store' })
+				.then(function (r) { return r.json(); })
+				.then(function (d) { relatorio.eventos = d.eventos || []; })
+				.catch(function () { })
+				.then(baixar);
+		});
 
-		var btnLimparLogs = document.getElementById('btnLimparLogs');
-		if (btnLimparLogs) {
-			btnLimparLogs.addEventListener('click', function () {
-				if (confirm('Deseja limpar os registros da Central?')) {
-					if (terminalLogBox) terminalLogBox.innerHTML = '<div class="log-entry NORMAL"><span class="log-time">[' + new Date().toLocaleTimeString('pt-BR') + ']</span><span class="log-msg"><span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#55ee77">check_circle</span> Registros reinicializados pelo operador.</span></div>';
-				}
-			});
-		}
+		ligarBotao('btnLimparLogs', function () {
+			if (confirm('Deseja limpar os registros exibidos na Central?')) {
+				if (terminalLogBox) terminalLogBox.innerHTML = '';
+				adicionarLogLocal('NORMAL', 'Registros reinicializados pelo operador.');
+			}
+		});
 
-		var btnReconectarBackend = document.getElementById('btnReconectarBackend');
-		if (btnReconectarBackend) btnReconectarBackend.addEventListener('click', conectarBackend);
+		ligarBotao('btnReconectarBackend', function () {
+			link.trocarServidor(inputBackendUrl ? inputBackendUrl.value : '');
+		});
 
 		// Inicializa conexão
-		conectarBackend();
+		try {
+			var urlSalva = localStorage.getItem('inovatech_backend_url');
+			if (inputBackendUrl && urlSalva) inputBackendUrl.value = urlSalva;
+		} catch (e) { }
+		link.iniciar();
 	</script>
 </body>
 

@@ -2,117 +2,110 @@
  * ==============================================================================
  * SIMULADOR DE ESP32 — INOVA TECH SMART DRIVER
  * ==============================================================================
- * Executa um ciclo automatizado simulando a placa ESP32 enviando telemetria
- * realística para o Backend (Sensor IR, Acelerômetro, Buzzer e Relé).
- * 
- * Uso: node test-esp32-sim.js
+ * Imita o firmware real (Smart Driver/src/main.cpp) sem precisar da placa:
+ * - Envia o mesmo JSON de telemetria por UDP na porta 3002 (5 pacotes/s).
+ * - Recebe a resposta {"srv":"INOVATECH","cmds":[...]} e executa os comandos
+ *   da Central (TEST_ALARM, SILENCIAR, CALIBRAR, TOGGLE_RELE1/2).
+ * - Repete um ciclo: 6s dirigindo normal -> cabeça baixa por 5s (alarme aos 3,5s)
+ *   -> cabeça erguida (recuperação automática de 3s no servidor).
+ *
+ * Uso: npm run simulate   (com o servidor já rodando em outra janela)
  * ==============================================================================
  */
 
-const http = require('http');
+const dgram = require('dgram');
 
-const BACKEND_HOST = process.env.BACKEND_HOST || 'localhost';
-const BACKEND_PORT = process.env.BACKEND_PORT || 3001;
+const SERVIDOR_HOST = process.env.BACKEND_HOST || '127.0.0.1';
+const SERVIDOR_PORTA_UDP = Number(process.env.BACKEND_UDP_PORT || 3002);
+const LIMIAR_MS = 3500;
+const CICLO_MS = 16000;
 
-console.log(`\nIniciando Simulador ESP32 InovaTech conectando em http://${BACKEND_HOST}:${BACKEND_PORT}/api/telemetry ...\n`);
+const socket = dgram.createSocket('udp4');
+const inicioSimulador = Date.now();
+let seq = 0;
+let inicioCabecaBaixa = 0;
+let testeAtivoAte = 0;
+let rele1Manual = false;
+let rele2Manual = false;
 
-let estadoSimulado = {
-  dispositivo: 'ESP32_SMART_DRIVER_01',
-  sensor_ir: 1, // 1 = HIGH (normal), 0 = LOW (cabeça baixa)
-  tempo_cabeca_baixa_ms: 0,
-  buzzer: 0,
-  rele: 0,
-  acelerometro: {
-    pitch: 2.1,
-    roll: -0.8,
-    yaw: 0.0,
-    pescada_detectada: false,
-    status: 'Simulado em Tempo Real'
-  }
-};
-
-let tempoInicioInclinacao = 0;
-let modoSimulacao = 'NORMAL'; // 'NORMAL', 'SONO_INICIADO', 'ACORDOU'
-let cicloSegundos = 0;
-
-function enviarTelemetria() {
-  cicloSegundos++;
-
-  // Simula ciclos reais de comportamento:
-  // 0s a 10s: Normal (dirigindo focado)
-  // 11s a 16s: Motorista começa a ter sono e tomba a cabeça (ativa contagem e estoura alarme aos 2.5s)
-  // 17s em diante: Acorda com o buzzer, ergue a cabeça e normaliza
-  const cicloModulo = cicloSegundos % 22;
-
-  if (cicloModulo < 8) {
-    // Normal
-    estadoSimulado.sensor_ir = 1;
-    estadoSimulado.tempo_cabeca_baixa_ms = 0;
-    estadoSimulado.buzzer = 0;
-    estadoSimulado.rele = 0;
-    estadoSimulado.acelerometro.pitch = Number((Math.sin(cicloSegundos) * 3 + 2).toFixed(1));
-    estadoSimulado.acelerometro.roll = Number((Math.cos(cicloSegundos) * 2).toFixed(1));
-    estadoSimulado.acelerometro.pescada_detectada = false;
-    tempoInicioInclinacao = 0;
-  } else if (cicloModulo >= 8 && cicloModulo <= 15) {
-    // Cabeça baixa por sono
-    estadoSimulado.sensor_ir = 0;
-    if (tempoInicioInclinacao === 0) {
-      tempoInicioInclinacao = Date.now();
-    }
-    const msDecorridos = Date.now() - tempoInicioInclinacao;
-    estadoSimulado.tempo_cabeca_baixa_ms = msDecorridos;
-
-    // Pitch cai para frente (-25 graus)
-    estadoSimulado.acelerometro.pitch = -26.5;
-    estadoSimulado.acelerometro.pescada_detectada = (msDecorridos >= 2500);
-
-    if (msDecorridos >= 2500) {
-      estadoSimulado.buzzer = 1;
-      estadoSimulado.rele = 1;
-    }
-  } else {
-    // Normalizado após alarme
-    estadoSimulado.sensor_ir = 1;
-    estadoSimulado.tempo_cabeca_baixa_ms = 0;
-    estadoSimulado.buzzer = 0;
-    estadoSimulado.rele = 0;
-    estadoSimulado.acelerometro.pitch = 5.0; // Sobressalto de cabeça erguida
-    estadoSimulado.acelerometro.pescada_detectada = false;
-    tempoInicioInclinacao = 0;
-  }
-
-  const payload = JSON.stringify(estadoSimulado);
-
-  const req = http.request({
-    hostname: BACKEND_HOST,
-    port: BACKEND_PORT,
-    path: '/api/telemetry',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(payload)
-    }
-  }, (res) => {
-    let data = '';
-    res.on('data', chunk => data += chunk);
-    res.on('end', () => {
-      try {
-        const resp = JSON.parse(data);
-        console.log(`[ESP32 SIM] Status: ${resp.estado_processado} | IR: ${estadoSimulado.sensor_ir === 1 ? 'ERTO(1)' : 'BAIXO(0)'} | Tempo: ${estadoSimulado.tempo_cabeca_baixa_ms}ms | Buzzer: ${estadoSimulado.buzzer}`);
-      } catch (e) {
-        console.log(`[ESP32 SIM] Pacote enviado com status HTTP ${res.statusCode}`);
-      }
-    });
-  });
-
-  req.on('error', (err) => {
-    console.error(`[ESP32 SIM ERRO]: Não foi possível conectar ao backend (${err.message}). Certifique-se de iniciar 'npm start' na pasta backend.`);
-  });
-
-  req.write(payload);
-  req.end();
+function cabecaBaixaNoCiclo(agora) {
+  const t = (agora - inicioSimulador) % CICLO_MS;
+  return t >= 6000 && t < 11000;
 }
 
-// Envia pacote a cada 400ms (taxa típica de telemetria IoT do ESP32)
-setInterval(enviarTelemetria, 400);
+function montarTelemetria() {
+  const agora = Date.now();
+  const cabecaBaixa = cabecaBaixaNoCiclo(agora);
+  if (cabecaBaixa && !inicioCabecaBaixa) inicioCabecaBaixa = agora;
+  if (!cabecaBaixa) inicioCabecaBaixa = 0;
+
+  const tempo = inicioCabecaBaixa ? agora - inicioCabecaBaixa : 0;
+  const teste = agora < testeAtivoAte;
+  const alarme = (cabecaBaixa && tempo >= LIMIAR_MS) || teste;
+  const bip = cabecaBaixa && !alarme && [700, 1700, 2700].some((i) => tempo >= i && tempo < i + 350);
+  const estado = alarme ? 'ALARME_ATIVADO' : (cabecaBaixa ? 'PRE_ALERTA' : 'NORMAL');
+  const inclinacao = cabecaBaixa ? 38 + Math.random() * 3 : 2 + Math.random() * 2;
+
+  return {
+    dispositivo: 'ESP32_SMART_DRIVER_01',
+    seq: seq++,
+    uptime_ms: agora - inicioSimulador,
+    sensor_ir: cabecaBaixa ? 0 : 1,
+    tempo_cabeca_baixa_ms: tempo,
+    limiar_ms: LIMIAR_MS,
+    buzzer: alarme || bip ? 1 : 0,
+    rele: alarme || rele1Manual ? 1 : 0,
+    rele_1: alarme || rele1Manual ? 1 : 0,
+    rele_2: alarme || rele2Manual ? 1 : 0,
+    alarme_teste: teste ? 1 : 0,
+    estado,
+    acelerometro: {
+      pitch: Number((cabecaBaixa ? -inclinacao : inclinacao / 2).toFixed(1)),
+      roll: Number((Math.random() * 2 - 1).toFixed(1)),
+      inclinacao: Number(inclinacao.toFixed(1)),
+      pescada_detectada: false,
+      online: true,
+      calibrado: true,
+      status: 'ONLINE (SIMULADOR)'
+    },
+    wifi: { ssid: 'SIMULADOR', rssi: -50, ip: '127.0.0.1' }
+  };
+}
+
+let ultimoEstado = '';
+function enviarTelemetria() {
+  const pacote = montarTelemetria();
+  socket.send(Buffer.from(JSON.stringify(pacote)), SERVIDOR_PORTA_UDP, SERVIDOR_HOST);
+  if (pacote.estado !== ultimoEstado) {
+    ultimoEstado = pacote.estado;
+    console.log(`[ESP32 SIM] ${pacote.estado.padEnd(14)} | IR: ${pacote.sensor_ir} | Tempo: ${pacote.tempo_cabeca_baixa_ms} ms | Buzzer: ${pacote.buzzer}`);
+  }
+  const emAlerta = pacote.estado !== 'NORMAL';
+  setTimeout(enviarTelemetria, emAlerta ? 100 : 200);
+}
+
+let servidorAvisado = false;
+socket.on('message', (msg) => {
+  let resposta;
+  try { resposta = JSON.parse(msg.toString('utf8')); } catch (e) { return; }
+  if (resposta.srv !== 'INOVATECH') return;
+  if (!servidorAvisado) {
+    servidorAvisado = true;
+    console.log('[ESP32 SIM] Servidor respondeu: comunicação UDP bidirecional OK.');
+  }
+  (resposta.cmds || []).forEach((cmd) => {
+    console.log(`[ESP32 SIM] Comando recebido da Central: ${cmd}`);
+    if (cmd === 'TEST_ALARM') testeAtivoAte = Date.now() + 30000;
+    if (cmd === 'SILENCIAR') { testeAtivoAte = 0; rele1Manual = false; rele2Manual = false; }
+    if (cmd === 'TOGGLE_RELE1') rele1Manual = !rele1Manual;
+    if (cmd === 'TOGGLE_RELE2') rele2Manual = !rele2Manual;
+  });
+});
+
+socket.on('error', (err) => console.error('[ESP32 SIM ERRO]:', err.message));
+
+socket.bind(0, () => {
+  console.log(`\nSimulador ESP32 InovaTech enviando UDP para ${SERVIDOR_HOST}:${SERVIDOR_PORTA_UDP}`);
+  console.log('Ciclo: 6s normal -> 5s cabeça baixa (alarme aos 3,5s) -> cabeça erguida.\n');
+  enviarTelemetria();
+});

@@ -292,6 +292,12 @@
 			display: flex;
 		}
 
+		.painel-chip.warning {
+			border-color: rgba(255, 170, 0, 0.6);
+			background: rgba(255, 170, 0, 0.12);
+			color: #ffaa00;
+		}
+
 		/* ==============================================================================
    BARRA DE ROLAGEM PERSONALIZADA (DARK TECH HUD SCROLLBAR)
    ============================================================================== */
@@ -369,13 +375,13 @@
 			<h2 class="driver-call-title" id="driverCallTitle"><span class="material-symbols-outlined g-icon"
 					style="font-size:1.05em;margin-right:6px">local_cafe</span> PARE PARA DESCANSAR!</h2>
 			<p class="driver-call-message">
-				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong>4,0 segundos</strong>
-				detectada!<br>
+				<strong>ATENÇÃO MOTORISTA:</strong> Queda de cabeça por mais de <strong><span class="limiar-txt">3,5</span>
+					segundos</strong> detectada!<br>
 				Encoste em local seguro para descansar e tomar um café.
 			</p>
 			<div class="driver-call-escalation-box">
 				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span>
-				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s / 17.0s</span><br>
+				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s</span><br>
 				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos ou
 					aperte abaixo para desativar o alerta!</span>
 			</div>
@@ -432,11 +438,11 @@
 			</button>
 		</section>
 
-		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DE 1.50s) -->
+		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DEFINIDA PELA ESP32) -->
 		<section class="driver-live-card estado-normal" id="driverLiveCard">
 			<div style="display:flex;justify-content:space-between;align-items:center">
 				<span class="card-label">◉ MONITORAMENTO BIOMÉTRICO AO VIVO</span>
-				<span style="font-size:10px;color:var(--cyan)" id="driverSampFreq">100 Hz · BLE</span>
+				<span style="font-size:10px;color:var(--cyan)" id="driverSampFreq">100 Hz · Wi-Fi</span>
 			</div>
 
 			<div>
@@ -448,7 +454,7 @@
 
 			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
 				<span style="font-size:11px;color:var(--muted)">CRONÔMETRO DE TOLERÂNCIA:</span>
-				<div class="driver-timer-large" id="driverTimerCount">0.00s / 1.50s</div>
+				<div class="driver-timer-large" id="driverTimerCount">0.00s / 3.50s</div>
 			</div>
 
 			<div class="progresso-bar-bg" style="height:12px">
@@ -472,19 +478,6 @@
 			</div>
 		</section>
 
-		<!-- PAINEL DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA DO MOTORISTA -->
-		<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:12px">
-			<button class="btn" id="btnSimularAlertaMotorista" type="button" style="padding:13px;background:linear-gradient(90deg, #ff2a55 0%, #b30026 100%);color:#fff;border:none;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 0 16px rgba(255,42,85,0.4)">
-				<span class="material-symbols-outlined g-icon">warning</span>
-				<span>SIMULAR ALERTA (1.5s)</span>
-			</button>
-			<button class="btn outline" id="btnNormalizarMotorista" type="button" style="padding:13px;display:flex;align-items:center;justify-content:center;gap:6px">
-				<span class="material-symbols-outlined g-icon">check_circle</span>
-				<span>NORMALIZAR</span>
-			</button>
-		</div>
-
-
 		<!-- MODO VIAGEM NOTURNA / TELA APAGADA (APENAS ÍCONE DE CELULAR) -->
 		<div style="text-align:center;margin-top:10px">
 			<button class="btn-standby-night" id="btnStandbyNight" title="Modo Viagem Noturna: Apagar Tela"
@@ -501,14 +494,14 @@
 	</div>
 
 	<!-- SCRIPTS EXCLUSIVOS DO APP DO MOTORISTA -->
+	<script src="conexao-backend.js"></script>
 	<script>
-		var LIMIAR_TOLERANCIA_MS = 1500;
-		var wsClient = null;
+		// O servidor (ou a própria ESP32) define o limiar; estes valores só valem até a 1ª mensagem
+		var LIMIAR_PADRAO_MS = 3500;
+		var LIMIAR_SIMULACAO_RAPIDA_MS = 1500;
 		var audioCtx = null;
 		var callRingtoneTimer = null;
 		var callVibrationTimer = null;
-		var driverEscalationInterval = null;
-		var callStartTimeMs = 0;
 		var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
 		vozCafeAudio.preload = 'auto';
 		var vozInicioAudio = new Audio('alerta-inicio-viagem.mp3');
@@ -526,31 +519,25 @@
 		var btnDriverDismissCall = document.getElementById('btnDriverDismissCall');
 		var driverWsLabel = document.getElementById('driverWsLabel');
 		var driverWsChip = document.getElementById('driverWsChip');
+		var driverCallEscalationTimer = document.getElementById('driverCallEscalationTimer');
 
-		var alertaAtivoMotorista = false;
-		var inicioRecuperacaoLocalMs = 0;
-		var cooldownAntiRepiqueUntil = 0;
 		var turnoAtivo = true;
+		var turnoSincronizadoComServidor = false;
 		var ultimoEstadoRecebido = null;
+		var chamadaSilenciadaAte = 0;
 
 		// Iniciar turno / Ativar Óculos
 		var btnToggleShift = document.getElementById('btnToggleShift');
 		var shiftStatusBadge = document.getElementById('shiftStatusBadge');
 		var shiftBtnText = document.getElementById('shiftBtnText');
 
-		function sincronizarEstadoTurnoUI(ativo, notificar) {
+		function formatarSegundos(ms, casas) {
+			return (Math.max(0, ms) / 1000).toFixed(casas === undefined ? 2 : casas);
+		}
+
+		function sincronizarEstadoTurnoUI(ativo) {
 			turnoAtivo = !!ativo;
-			try {
-				localStorage.setItem('inovatech_turno_matheus_garcia', turnoAtivo ? 'ATIVO' : 'INATIVO');
-				if (notificar) {
-					localStorage.setItem('inovatech_evento_viagem_' + Date.now(), JSON.stringify({
-						acao: turnoAtivo ? 'INICIOU_VIAGEM' : 'PAUSOU_VIAGEM',
-						motorista: 'Matheus Garcia',
-						veiculo: 'Scania R-450 (INO-2026)',
-						timestamp: Date.now()
-					}));
-				}
-			} catch (e) { }
+			try { localStorage.setItem('inovatech_turno_matheus_garcia', turnoAtivo ? 'ATIVO' : 'INATIVO'); } catch (e) { }
 
 			if (turnoAtivo) {
 				btnToggleShift.className = 'btn-toggle-shift active-shift';
@@ -570,23 +557,29 @@
 				shiftStatusBadge.innerHTML = '<span>STANDBY / INATIVO</span>';
 				shiftBtnText.innerHTML = '<span class="material-symbols-outlined g-icon">power_settings_new</span> ATIVAR MONITORAMENTO SEGURO / INICIAR VIAGEM';
 				fecharChamadaTelaCheia();
+				anim.status = 'STANDBY';
 				driverLiveCard.className = 'driver-live-card estado-normal';
 				driverStatusHeadline.style.color = '#8ca4ad';
 				driverStatusHeadline.textContent = 'STANDBY: MONITORAMENTO PAUSADO';
-				driverTimerCount.textContent = '0.00s / 1.50s';
+				driverTimerCount.textContent = '0.00s / ' + formatarSegundos(anim.limiarMs) + 's';
 				driverBarFill.style.width = '0%';
 				driverFeedbackMsg.textContent = 'Toque no botão acima para ativar o monitoramento da cabine e iniciar a viagem.';
 			}
 		}
 
+		function enviarTurnoAoServidor() {
+			link.enviar({
+				tipo: 'STATUS_MOTORISTA',
+				motorista: 'Matheus Garcia',
+				status_viagem: turnoAtivo ? 'EM_VIAGEM' : 'INATIVO',
+				origem: 'App do Motorista'
+			});
+		}
+
 		function alternarEstadoTurno() {
 			var novoEstado = !turnoAtivo;
-			sincronizarEstadoTurnoUI(novoEstado, true);
-
-			// Se ligou o monitoramento, toca a voz de conexão com a Central e orientações
-			if (novoEstado) {
-				tocarVozInicioViagem();
-			}
+			sincronizarEstadoTurnoUI(novoEstado);
+			if (novoEstado) tocarVozInicioViagem();
 
 			// Feedback sonoro tático de ativação
 			try {
@@ -604,28 +597,7 @@
 				osc.start(now); osc.stop(now + 0.25);
 			} catch (e) { }
 
-			// Envio via REST imediato para redundância
-			var bodyPayload = JSON.stringify({
-				tipo: "STATUS_MOTORISTA",
-				motorista: "Matheus Garcia",
-				status_viagem: novoEstado ? "EM_VIAGEM" : "INATIVO",
-				timestamp: Date.now()
-			});
-			['http://localhost:3001/api/telemetry', 'http://172.20.10.2:3001/api/telemetry',
-			'http://localhost:3001/api/driver/shift', 'https://inovatech-tcc.onrender.com/api/driver/shift'].forEach(function (u) {
-				fetch(u, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: bodyPayload
-				}).catch(function () { });
-			});
-
-			// Notifica backend caso WebSocket esteja aberto
-			if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-				try {
-					wsClient.send(bodyPayload);
-				} catch (e) { }
-			}
+			enviarTurnoAoServidor();
 		}
 
 		var ultimoCliqueShiftMs = 0;
@@ -642,14 +614,6 @@
 		if (btnToggleShift) {
 			btnToggleShift.addEventListener('click', dispararAlternanciaTurnoSegura);
 			btnToggleShift.addEventListener('touchend', dispararAlternanciaTurnoSegura, { passive: false });
-		}
-
-		// Checa se já havia status salvo previamente no navegador
-		var turnoSalvo = localStorage.getItem('inovatech_turno_matheus_garcia');
-		if (turnoSalvo === 'INATIVO') {
-			sincronizarEstadoTurnoUI(false, false);
-		} else {
-			sincronizarEstadoTurnoUI(true, false);
 		}
 
 		function tocarToqueChamada() {
@@ -706,36 +670,36 @@
 			} catch (e) { }
 		}
 
+		// Mantém a tela acesa durante a viagem (o Android libera o bloqueio ao trocar de aba)
 		var appWakeLock = null;
-
-		async function ativarWakeLockTela() {
+		function ativarWakeLockTela() {
 			try {
-				if ('wakeLock' in navigator) {
-					appWakeLock = await navigator.wakeLock.request('screen');
+				if ('wakeLock' in navigator && (!appWakeLock || appWakeLock.released)) {
+					navigator.wakeLock.request('screen').then(function (lock) { appWakeLock = lock; }).catch(function () { });
 				}
 			} catch (e) { }
 		}
+		document.addEventListener('visibilitychange', function () {
+			if (document.visibilityState === 'visible' && turnoAtivo) ativarWakeLockTela();
+		});
 
 		// Solicita permissão de notificação nativa para alertas em segundo plano
 		if ('Notification' in window && Notification.permission === 'default') {
-			Notification.requestPermission().catch(function () { });
+			try { Notification.requestPermission().catch(function () { }); } catch (e) { }
 		}
 
 		function dispararNotificacaoSegundoPlano() {
 			try {
-				if ('Notification' in window && Notification.permission === 'granted') {
-					var notif = new Notification('⚠️ INOVATECH SMART DRIVER: ALERTA DE FADIGA!', {
+				if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') {
+					var notif = new Notification('INOVATECH SMART DRIVER: ALERTA DE FADIGA!', {
 						body: 'Detectamos sonolência ao volante! Toque aqui imediatamente para abrir a cabine e confirmar seu estado de alerta.',
 						icon: 'favicon.svg',
-						badge: 'favicon.svg',
 						tag: 'alerta-fadiga-inovatech',
 						renotify: true,
-						requireInteraction: true,
-						vibrate: [600, 250, 600, 250, 800]
+						requireInteraction: true
 					});
 					notif.onclick = function () {
 						window.focus();
-						if (driverFullscreenCall) driverFullscreenCall.classList.add('active');
 						notif.close();
 					};
 				}
@@ -743,106 +707,66 @@
 		}
 
 		function abrirChamadaTelaCheia() {
+			if (driverFullscreenCall.classList.contains('active')) return;
+
 			// Acorda o celular se a tela estiver apagada (sai do modo tela preta imediatamente)
 			if (driverBlackScreen) driverBlackScreen.classList.remove('active');
-
-			// Garante que a tela permaneça acesa sem apagar
 			ativarWakeLockTela();
-
-			// Dispara notificação nativa para acordar o celular caso esteja em segundo plano ou bloqueado
 			dispararNotificacaoSegundoPlano();
 
-			if (!driverFullscreenCall.classList.contains('active')) {
-				driverFullscreenCall.classList.add('active');
-				callStartTimeMs = Date.now();
-				try {
-					if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-						document.documentElement.requestFullscreen().catch(function () { });
-					}
-				} catch (e) { }
-
-				tocarToqueChamada();
-				tocarVozFemininaCafe();
-				if (callRingtoneTimer) clearInterval(callRingtoneTimer);
-				callRingtoneTimer = setInterval(tocarToqueChamada, 1600);
-
-				if (navigator.vibrate) {
-					try { navigator.vibrate([600, 250, 600, 250, 800]); } catch (e) { }
-					if (callVibrationTimer) clearInterval(callVibrationTimer);
-					callVibrationTimer = setInterval(function () {
-						try { navigator.vibrate([600, 250, 600, 250, 800]); } catch (e) { }
-					}, 2400);
+			driverFullscreenCall.classList.add('active');
+			try {
+				if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+					document.documentElement.requestFullscreen().catch(function () { });
 				}
+			} catch (e) { }
 
-				// Cronômetro dinâmico de confirmação: 9.0s (Crítico) e 15.0s (Possível Acidente)
-				var timerEl = document.getElementById('driverCallEscalationTimer');
-				if (driverEscalationInterval) clearInterval(driverEscalationInterval);
-				driverEscalationInterval = setInterval(function () {
-					var decorrido = ((Date.now() - callStartTimeMs) / 1000).toFixed(1);
-					var numDecorrido = Number(decorrido);
-					if (timerEl) {
-						if (numDecorrido >= 15.0) {
-							timerEl.style.color = '#ff2a55';
-							timerEl.textContent = decorrido + 's / 15.0s (POSSÍVEL ACIDENTE NA CENTRAL)';
-						} else if (numDecorrido >= 9.0) {
-							timerEl.style.color = '#ffaa00';
-							timerEl.textContent = decorrido + 's / 15.0s (ALERTA CRÍTICO NA CENTRAL)';
-						} else {
-							timerEl.style.color = '#ffdd66';
-							timerEl.textContent = decorrido + 's / 9.0s (DESATIVE O ALERTA)';
-						}
-					}
-				}, 100);
+			tocarToqueChamada();
+			tocarVozFemininaCafe();
+			if (callRingtoneTimer) clearInterval(callRingtoneTimer);
+			callRingtoneTimer = setInterval(tocarToqueChamada, 1600);
+
+			if (navigator.vibrate) {
+				try { navigator.vibrate([600, 250, 600, 250, 800]); } catch (e) { }
+				if (callVibrationTimer) clearInterval(callVibrationTimer);
+				callVibrationTimer = setInterval(function () {
+					try { navigator.vibrate([600, 250, 600, 250, 800]); } catch (e) { }
+				}, 2400);
 			}
 		}
 
 		function fecharChamadaTelaCheia() {
-			if (!driverFullscreenCall) return;
+			// Só limpa se a chamada estiver aberta (evita cortar a voz de "boa viagem" a cada pacote)
+			if (!driverFullscreenCall || !driverFullscreenCall.classList.contains('active')) return;
 			driverFullscreenCall.classList.remove('active');
 			if (callRingtoneTimer) { clearInterval(callRingtoneTimer); callRingtoneTimer = null; }
 			if (callVibrationTimer) { clearInterval(callVibrationTimer); callVibrationTimer = null; }
-			if (driverEscalationInterval) { clearInterval(driverEscalationInterval); driverEscalationInterval = null; }
-			var timerEl = document.getElementById('driverCallEscalationTimer');
-			if (timerEl) {
-				timerEl.style.color = '#ffdd66';
-				timerEl.textContent = '0.0s / 17.0s';
+			if (driverCallEscalationTimer) {
+				driverCallEscalationTimer.style.color = '#ffdd66';
+				driverCallEscalationTimer.textContent = '0.0s';
 			}
 			if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
 			try { vozCafeAudio.pause(); vozCafeAudio.currentTime = 0; } catch (e) { }
 			if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch (e) { } }
 		}
 
-		if (btnDriverAcceptRest) {
-			btnDriverAcceptRest.addEventListener('click', function () {
-				fecharChamadaTelaCheia();
-				enviarSilenciarAoBackend();
-			});
+		// O motorista confirmou o alerta na tela (descansar ou "estou alerta")
+		function confirmarAlertaMotorista() {
+			chamadaSilenciadaAte = Date.now() + 2500;
+			fecharChamadaTelaCheia();
+			simuladorLocal.parar();
+			if (link.conectado()) link.comando('SILENCIAR_ALARME');
 		}
 
-		if (btnDriverDismissCall) {
-			btnDriverDismissCall.addEventListener('click', function () {
-				fecharChamadaTelaCheia();
-				enviarSilenciarAoBackend();
-			});
-		}
-
-		function enviarSilenciarAoBackend() {
-			var urls = ['http://localhost:3001/api/command', 'https://inovatech-tcc.onrender.com/api/command'];
-			urls.forEach(function (u) {
-				fetch(u, {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ comando: 'SILENCIAR_ALARME', origem: 'APP_MOTORISTA' })
-				}).catch(function () { });
-			});
-		}
+		if (btnDriverAcceptRest) btnDriverAcceptRest.addEventListener('click', confirmarAlertaMotorista);
+		if (btnDriverDismissCall) btnDriverDismissCall.addEventListener('click', confirmarAlertaMotorista);
 
 		// Modo Tela Apagada (Viagem Noturna)
 		if (btnStandbyNight) {
 			btnStandbyNight.addEventListener('click', function () {
 				if (driverBlackScreen) driverBlackScreen.classList.add('active');
+				ativarWakeLockTela();
 				try {
-					if ('wakeLock' in navigator) navigator.wakeLock.request('screen').catch(function () { });
 					if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
 						document.documentElement.requestFullscreen().catch(function () { });
 					}
@@ -856,316 +780,186 @@
 			});
 		}
 
-		// Atualização do Estado Postural com 4,00s e Recuperação de 1.5s
-		
-		// Motor de Interpolação a 60 FPS no Smartphone (Garante fluidez visual absoluta no cronômetro)
-		var inicioAnimacaoMotorista = 0;
-		var statusAtualMotorista = 'NORMAL';
-		var tempoMsMotorista = 0;
+		// ------------------------------------------------------------------------------
+		// INTERPOLAÇÃO A 60 FPS: o servidor manda o tempo exato e o celular anima entre pacotes
+		// ------------------------------------------------------------------------------
+		var anim = {
+			status: 'NORMAL',
+			limiarMs: LIMIAR_PADRAO_MS,
+			baseCabecaMs: 0,
+			baseSemRespostaMs: 0,
+			baseRecuperacaoMs: 0,
+			recuperacaoLimiteMs: 3000,
+			escalonamento: { critico_ms: 9000, acidente_ms: 15000 }
+		};
 
-		function animarMotoristaFrame() {
-			if (turnoAtivo && (statusAtualMotorista === 'PRE_ALERTA' || (ultimoEstadoRecebido && ultimoEstadoRecebido.sensor_ir === 0 && statusAtualMotorista !== 'ALARME_ATIVADO'))) {
-				if (!inicioAnimacaoMotorista) {
-					inicioAnimacaoMotorista = performance.now() - tempoMsMotorista;
-				}
-				var decorridoMs = Math.max(0, performance.now() - inicioAnimacaoMotorista);
-				var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(decorridoMs)));
-				var seg = (msLim / 1000).toFixed(2);
-				var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
-
-				if (driverTimerCount) driverTimerCount.textContent = seg + 's / 1.50s';
-				if (driverBarFill) {
-					driverBarFill.className = 'progresso-bar-fill warning';
-					driverBarFill.style.width = perc + '%';
-				}
-			} else if (statusAtualMotorista === 'NORMAL') {
-				inicioAnimacaoMotorista = 0;
-			}
-			requestAnimationFrame(animarMotoristaFrame);
+		function renderizarCronometro(ms) {
+			var lim = anim.limiarMs;
+			var msLim = Math.max(0, Math.min(lim, Math.round(ms)));
+			driverTimerCount.textContent = formatarSegundos(msLim) + 's / ' + formatarSegundos(lim) + 's';
+			driverBarFill.style.width = Math.min(100, (msLim / lim) * 100) + '%';
 		}
-		requestAnimationFrame(animarMotoristaFrame);
 
-function atualizarEstadoNoApp(estado) {
-			if (!estado) return;
-			// Ativação automática de segurança: se a ESP32 detectar cabeça baixa, força o turno e monitora imediatamente
-			if (!turnoAtivo && (estado.sensor_ir === 0 || estado.estado === 'PRE_ALERTA' || estado.estado === 'ALARME_ATIVADO')) {
-				sincronizarEstadoTurnoUI(true, false);
-			}
+		function renderizarRecuperacao(ms) {
+			var lim = anim.recuperacaoLimiteMs;
+			var seg = formatarSegundos(Math.min(ms, lim), 1);
+			driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + seg + 's / ' + formatarSegundos(lim, 1) + 's)';
+			driverTimerCount.textContent = seg + 's / ' + formatarSegundos(lim, 1) + 's';
+			driverBarFill.style.width = Math.min(100, (ms / lim) * 100) + '%';
+		}
 
-			var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
-			var status = estado.estado || 'NORMAL';
-			var tempoMs = estado.tempo_cabeca_baixa_ms || 0;
-			tempoMsMotorista = tempoMs;
-			statusAtualMotorista = status;
-			if (status !== "PRE_ALERTA" && status !== "ALARME_ATIVADO") inicioAnimacaoMotorista = 0;
-			var decorridoRecupMs = 0;
-
-			if (ir === 1) {
-				if (alertaAtivoMotorista || status === 'ALARME_ATIVADO' || status === 'RECUPERANDO') {
-					if (!inicioRecuperacaoLocalMs) inicioRecuperacaoLocalMs = Date.now();
-					decorridoRecupMs = (estado.tempo_recuperacao_ms !== undefined && estado.tempo_recuperacao_ms > 0)
-						? estado.tempo_recuperacao_ms : (Date.now() - inicioRecuperacaoLocalMs);
-
-					if (decorridoRecupMs >= 3500) {
-						alertaAtivoMotorista = false;
-						inicioRecuperacaoLocalMs = 0;
-						cooldownAntiRepiqueUntil = Date.now() + 3500;
-						status = 'NORMAL';
-						fecharChamadaTelaCheia();
-						enviarSilenciarAoBackend();
-					} else {
-						status = 'RECUPERANDO';
-					}
-				} else {
-					inicioRecuperacaoLocalMs = 0;
-					if (status !== 'ALARME_ATIVADO') status = 'NORMAL';
-				}
+		function renderizarTimerChamada(ms) {
+			if (!driverCallEscalationTimer) return;
+			var critico = anim.escalonamento.critico_ms;
+			var acidente = anim.escalonamento.acidente_ms;
+			var seg = formatarSegundos(ms, 1);
+			if (ms >= acidente) {
+				driverCallEscalationTimer.style.color = '#ff2a55';
+				driverCallEscalationTimer.textContent = seg + 's (POSSÍVEL ACIDENTE NA CENTRAL)';
+			} else if (ms >= critico) {
+				driverCallEscalationTimer.style.color = '#ffaa00';
+				driverCallEscalationTimer.textContent = seg + 's / ' + formatarSegundos(acidente, 1) + 's (ALERTA CRÍTICO NA CENTRAL)';
 			} else {
-				inicioRecuperacaoLocalMs = 0;
-				if (Date.now() < cooldownAntiRepiqueUntil && !alertaAtivoMotorista) {
-					status = 'NORMAL';
-					tempoMs = 0;
-				} else if (alertaAtivoMotorista || estado.alerta_travado) {
-					status = 'ALARME_ATIVADO';
-				}
+				driverCallEscalationTimer.style.color = '#ffdd66';
+				driverCallEscalationTimer.textContent = seg + 's / ' + formatarSegundos(critico, 1) + 's (DESATIVE O ALERTA)';
 			}
+		}
 
-			var msLim = Math.max(0, Math.min(LIMIAR_TOLERANCIA_MS, Math.round(status === 'ALARME_ATIVADO' ? 3500 : tempoMs)));
-			var seg = (msLim / 1000).toFixed(2);
-			var perc = Math.min(100, (msLim / LIMIAR_TOLERANCIA_MS) * 100);
+		function quadroAnimacao() {
+			var agora = performance.now();
+			if (turnoAtivo) {
+				if (anim.status === 'PRE_ALERTA' && anim.baseCabecaMs) renderizarCronometro(agora - anim.baseCabecaMs);
+				if (anim.status === 'RECUPERANDO' && anim.baseRecuperacaoMs) renderizarRecuperacao(agora - anim.baseRecuperacaoMs);
+				if (anim.baseSemRespostaMs) renderizarTimerChamada(agora - anim.baseSemRespostaMs);
+			}
+			requestAnimationFrame(quadroAnimacao);
+		}
+		requestAnimationFrame(quadroAnimacao);
 
-			if (status === 'RECUPERANDO') {
-				var segR = (decorridoRecupMs / 1000).toFixed(1);
+		// ------------------------------------------------------------------------------
+		// ATUALIZAÇÃO DO APP A PARTIR DO ESTADO DO SERVIDOR (fonte única da verdade)
+		// ------------------------------------------------------------------------------
+		function atualizarEstadoNoApp(estado) {
+			if (!estado) return;
+			ultimoEstadoRecebido = estado;
+			var agora = performance.now();
+			var status = estado.estado || 'NORMAL';
+
+			anim.limiarMs = estado.limiar_seguranca_ms || LIMIAR_PADRAO_MS;
+			if (estado.escalonamento) anim.escalonamento = estado.escalonamento;
+			if (estado.recuperacao_limite_ms) anim.recuperacaoLimiteMs = estado.recuperacao_limite_ms;
+			document.querySelectorAll('.limiar-txt').forEach(function (el) {
+				el.textContent = formatarSegundos(anim.limiarMs, 1).replace('.', ',');
+			});
+
+			// Ativação automática de segurança: alerta da ESP32 liga o turno mesmo se estava pausado
+			if (!turnoAtivo && status !== 'NORMAL') {
+				sincronizarEstadoTurnoUI(true);
+				enviarTurnoAoServidor();
+			}
+			if (!turnoAtivo) return;
+
+			var recuperando = status === 'ALARME_ATIVADO' && estado.alerta_travado && estado.tempo_recuperacao_ms > 0;
+			anim.status = recuperando ? 'RECUPERANDO' : status;
+			anim.baseCabecaMs = status === 'PRE_ALERTA' ? agora - (estado.tempo_cabeca_baixa_ms || 0) : 0;
+			anim.baseRecuperacaoMs = recuperando ? agora - estado.tempo_recuperacao_ms : 0;
+			anim.baseSemRespostaMs = estado.alerta_travado ? agora - (estado.tempo_sem_resposta_ms || 0) : 0;
+
+			if (recuperando) {
 				driverLiveCard.className = 'driver-live-card estado-recuperando';
 				driverStatusHeadline.style.color = '#55ee77';
-				driverStatusHeadline.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:4px">check_circle</span> RECUPERANDO: ERGUIDA (' + segR + 's / 1.5s)';
-				driverTimerCount.textContent = segR + 's / 1.5s';
 				driverBarFill.className = 'progresso-bar-fill';
-				driverBarFill.style.width = Math.min(100, (decorridoRecupMs / 3500) * 100) + '%';
-				driverFeedbackMsg.textContent = 'Cabeça erguida detectada! Mantenha a postura por 3 segundos para normalizar automaticamente.';
+				renderizarRecuperacao(estado.tempo_recuperacao_ms);
+				driverFeedbackMsg.textContent = 'Cabeça erguida detectada! Mantenha a postura por ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + ' segundos para normalizar automaticamente.';
 			} else if (status === 'NORMAL') {
 				fecharChamadaTelaCheia();
 				driverLiveCard.className = 'driver-live-card estado-normal';
 				driverStatusHeadline.style.color = '#08deeb';
 				driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
-				driverTimerCount.textContent = '0.00s / 1.50s';
 				driverBarFill.className = 'progresso-bar-fill';
-				driverBarFill.style.width = '0%';
+				renderizarCronometro(0);
 				driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
 			} else if (status === 'PRE_ALERTA') {
+				fecharChamadaTelaCheia();
 				driverLiveCard.className = 'driver-live-card estado-pre-alerta';
 				driverStatusHeadline.style.color = '#ffaa00';
-				driverStatusHeadline.textContent = 'PRÉ-ALERTA: CABEÇA BAIXA';
-				driverTimerCount.textContent = seg + 's / 1.50s';
+				driverStatusHeadline.textContent = estado.simulacao_ativa ? 'PRÉ-ALERTA: CABEÇA BAIXA (SIMULAÇÃO)' : 'PRÉ-ALERTA: CABEÇA BAIXA';
 				driverBarFill.className = 'progresso-bar-fill warning';
-				driverBarFill.style.width = perc + '%';
-				driverFeedbackMsg.textContent = 'Atenção: Queda de cabeça iniciada (' + tempoMs + ' ms). Erga a cabeça para evitar o alarme.';
+				renderizarCronometro(estado.tempo_cabeca_baixa_ms || 0);
+				driverFeedbackMsg.textContent = 'Atenção: queda de cabeça detectada. Erga a cabeça antes de ' + formatarSegundos(anim.limiarMs, 1) + 's para evitar o alarme.';
 			} else if (status === 'ALARME_ATIVADO') {
-				alertaAtivoMotorista = true;
 				driverLiveCard.className = 'driver-live-card estado-alarme';
 				driverStatusHeadline.style.color = '#ff2a55';
 				driverStatusHeadline.textContent = 'PERIGO: CABEÇA BAIXA!';
-				driverTimerCount.textContent = '1.50s / 1.50s (CRÍTICO)';
+				driverTimerCount.textContent = formatarSegundos(anim.limiarMs) + 's / ' + formatarSegundos(anim.limiarMs) + 's (CRÍTICO)';
 				driverBarFill.className = 'progresso-bar-fill danger';
 				driverBarFill.style.width = '100%';
-				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por 3 segundos para desligar automaticamente.';
+				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + ' segundos ou confirme na tela para desligar.';
+			}
+
+			// A chamada em tela cheia acompanha o alerta travado do servidor
+			if (estado.alerta_travado && !recuperando && Date.now() > chamadaSilenciadaAte) {
 				abrirChamadaTelaCheia();
+				renderizarTimerChamada(estado.tempo_sem_resposta_ms || 0);
+			} else if (!estado.alerta_travado) {
+				fecharChamadaTelaCheia();
 			}
 		}
 
 		// ------------------------------------------------------------------------------
-		// SIMULAÇÃO LOCAL DE ALTA PRECISÃO (1.50s DE FADIGA) NO APP DO MOTORISTA
+		// CONEXÃO COM O SERVIDOR (WebSocket + REST automático, ver conexao-backend.js)
 		// ------------------------------------------------------------------------------
-		var simMotoristaTimer = null;
+		var simuladorLocal = SmartDriverLink.criarSimuladorLocal(atualizarEstadoNoApp);
 
-		function iniciarSimulacaoMotorista() {
-			if (!turnoAtivo) sincronizarEstadoTurnoUI(true, true);
-			if (simMotoristaTimer) clearInterval(simMotoristaTimer);
-			var ms = 0;
-			var inicioSim = performance.now();
-			simMotoristaTimer = setInterval(function () {
-				ms = Math.min(1500, Math.round(performance.now() - inicioSim));
-				var est = (ms >= 1500) ? 'ALARME_ATIVADO' : 'PRE_ALERTA';
-				var pac = {
-					online: true,
-					estado: est,
-					sensor_ir: 0,
-					tempo_cabeca_baixa_ms: ms,
-					buzzer: ms >= 1500 ? 1 : ((ms >= 600 && ms < 950) ? 1 : 0),
-					rele: ms >= 1500 ? 1 : 0,
-					chamada_celular_ativa: ms >= 1500,
-					alerta_travado: ms >= 1500,
-					origem: 'SIMULACAO_MOTORISTA'
+		var link = SmartDriverLink.criarLink({
+			origem: 'APP_MOTORISTA',
+			aoReceber: function (msg) {
+				if (!msg.estado) return;
+				// Na primeira mensagem, o servidor passa a saber se a viagem está ativa no celular
+				var mg = msg.estado.motoristas && msg.estado.motoristas.matheus_garcia;
+				if (!turnoSincronizadoComServidor && mg) {
+					turnoSincronizadoComServidor = true;
+					if ((mg.status === 'EM_VIAGEM') !== turnoAtivo) enviarTurnoAoServidor();
+				}
+				atualizarEstadoNoApp(msg.estado);
+			},
+			aoMudarStatus: function (status, base) {
+				var ehNuvem = base && base.indexOf('onrender.com') !== -1;
+				var rotulos = {
+					PROCURANDO: 'CONECTANDO...',
+					WS: ehNuvem ? 'CONECTADO (NUVEM)' : 'CONECTADO (LOCAL)',
+					REST: 'MODO REST (HÍBRIDO)',
+					OFFLINE: 'SEM SERVIDOR'
 				};
-				atualizarEstadoNoApp(pac);
-
-				// Sincroniza via BroadcastChannel e localStorage para a Central Tech
-				try {
-					if (liveBroadcastMotorista) {
-						liveBroadcastMotorista.postMessage({ tipo: 'TELEMETRIA', estado: pac });
-					}
-					localStorage.setItem('inovatech_telemetry_bridge', JSON.stringify(pac));
-				} catch (e) { }
-
-				if (ms === 1500 || ms === 600) {
-					fetch('http://localhost:3001/api/telemetry', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify(pac)
-					}).catch(function () { });
-				}
-
-				if (ms >= 1500) {
-					clearInterval(simMotoristaTimer);
-					simMotoristaTimer = null;
-				}
-			}, 50);
-		}
-
-		function pararSimulacaoMotorista() {
-			if (simMotoristaTimer) {
-				clearInterval(simMotoristaTimer);
-				simMotoristaTimer = null;
+				if (driverWsLabel) driverWsLabel.textContent = rotulos[status];
+				if (driverWsChip) driverWsChip.className = 'painel-chip ' + (status === 'WS' ? 'online' : (status === 'REST' || status === 'PROCURANDO' ? 'warning' : 'offline'));
+				if (status === 'WS' || status === 'REST') turnoSincronizadoComServidor = false;
 			}
-			fecharChamadaTelaCheia();
-			var pacNorm = {
-				online: true,
-				estado: 'NORMAL',
-				sensor_ir: 1,
-				tempo_cabeca_baixa_ms: 0,
-				buzzer: 0,
-				rele: 0,
-				chamada_celular_ativa: false,
-				alerta_travado: false,
-				_forceReset: true,
-				origem: 'SIMULACAO_MOTORISTA'
-			};
-			atualizarEstadoNoApp(pacNorm);
+		});
 
-			try {
-				if (liveBroadcastMotorista) {
-					liveBroadcastMotorista.postMessage({ tipo: 'TELEMETRIA', estado: pacNorm });
-				}
-				localStorage.setItem('inovatech_telemetry_bridge', JSON.stringify(pacNorm));
-			} catch (e) { }
-
-			fetch('http://localhost:3001/api/telemetry', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(pacNorm)
-			}).catch(function () { });
-			enviarSilenciarAoBackend();
-		}
-
+		// ------------------------------------------------------------------------------
+		// SIMULAÇÃO DE FADIGA (centralizada no servidor; local se não houver servidor)
+		// ------------------------------------------------------------------------------
 		var btnSimularAlertaMotorista = document.getElementById('btnSimularAlertaMotorista');
 		if (btnSimularAlertaMotorista) {
-			btnSimularAlertaMotorista.addEventListener('click', iniciarSimulacaoMotorista);
+			btnSimularAlertaMotorista.addEventListener('click', function () {
+				if (!turnoAtivo) {
+					sincronizarEstadoTurnoUI(true);
+					enviarTurnoAoServidor();
+				}
+				chamadaSilenciadaAte = 0;
+				if (link.conectado()) link.comando('SIMULAR_ALERTA', { duracao_ms: LIMIAR_SIMULACAO_RAPIDA_MS });
+				else simuladorLocal.iniciar(LIMIAR_SIMULACAO_RAPIDA_MS);
+			});
 		}
 
 		var btnNormalizarMotorista = document.getElementById('btnNormalizarMotorista');
 		if (btnNormalizarMotorista) {
-			btnNormalizarMotorista.addEventListener('click', pararSimulacaoMotorista);
-		}
-
-		// Sincronização entre abas/janelas via localStorage
-		window.addEventListener('storage', function (e) {
-			if (e.key === 'inovatech_telemetry_bridge' && e.newValue) {
-				try {
-					var p = JSON.parse(e.newValue);
-					if (p) atualizarEstadoNoApp(p);
-				} catch (err) { }
-			}
-		});
-
-		// Conexão WebSocket com fallback para Polling REST
-		var pollingFallbackTimer = null;
-
-		// Sincronização Local Instantânea via BroadcastChannel (Zero Latência)
-		var liveBroadcastMotorista = null;
-		try {
-			liveBroadcastMotorista = new BroadcastChannel('inovatech_telemetry_live');
-			liveBroadcastMotorista.onmessage = function(ev) {
-				if (ev.data && ev.data.estado) {
-					ultimoEstadoRecebido = ev.data.estado;
-					atualizarEstadoNoApp(ev.data.estado);
-				}
-			};
-		} catch(e) {}
-
-		function conectarWebSocketMotorista() {
-			var isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-			var wsHost = isLocal ? 'ws://localhost:3001/ws' : 'ws://172.20.10.2:3001/ws';
-			var wsUrl = wsHost;
-			try {
-				wsClient = new WebSocket(wsUrl);
-				wsClient.onopen = function () {
-					if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO';
-					if (driverWsChip) driverWsChip.className = 'painel-chip online';
-					if (pollingFallbackTimer) { clearInterval(pollingFallbackTimer); pollingFallbackTimer = null; }
-				};
-				wsClient.onmessage = function (ev) {
-					try {
-						var msg = JSON.parse(ev.data);
-						if (msg.estado) {
-							ultimoEstadoRecebido = msg.estado;
-							atualizarEstadoNoApp(msg.estado);
-						}
-					} catch (e) { }
-				};
-				wsClient.onerror = function () { tentarConexaoAlternativa(); };
-				wsClient.onclose = function () { tentarConexaoAlternativa(); };
-			} catch (e) { tentarConexaoAlternativa(); }
-		}
-
-		function tentarConexaoAlternativa() {
-			try {
-				var altUrl = (window.location.protocol === 'https:') ? 'ws://localhost:3001/ws' : 'wss://inovatech-tcc.onrender.com/ws';
-				var cloudWs = new WebSocket(altUrl);
-				cloudWs.onopen = function () {
-					wsClient = cloudWs;
-					if (driverWsLabel) driverWsLabel.textContent = 'CONECTADO (NUVEM)';
-					if (driverWsChip) driverWsChip.className = 'painel-chip online';
-					if (pollingFallbackTimer) { clearInterval(pollingFallbackTimer); pollingFallbackTimer = null; }
-				};
-				cloudWs.onmessage = function (ev) {
-					try {
-						var msg = JSON.parse(ev.data);
-						if (msg.estado) {
-							ultimoEstadoRecebido = msg.estado;
-							atualizarEstadoNoApp(msg.estado);
-						}
-					} catch (e) { }
-				};
-				cloudWs.onerror = function () { ativarPollingREST(); };
-				cloudWs.onclose = function () { ativarPollingREST(); };
-			} catch (e) { ativarPollingREST(); }
-		}
-
-		function ativarPollingREST() {
-			if (pollingFallbackTimer) return;
-			if (driverWsLabel) driverWsLabel.textContent = 'MODO REST (HÍBRIDO)';
-			if (driverWsChip) driverWsChip.className = 'painel-chip warning';
-
-			pollingFallbackTimer = setInterval(function () {
-				var apiUrl = (window.location.protocol === 'https:')
-					? 'https://inovatech-tcc.onrender.com/api/telemetry'
-					: 'http://localhost:3001/api/telemetry';
-
-				fetch(apiUrl)
-					.then(function (r) { return r.json(); })
-					.then(function (data) {
-						if (data && data.estado) {
-							ultimoEstadoRecebido = data.estado;
-							atualizarEstadoNoApp(data.estado);
-							if (driverWsLabel) driverWsLabel.textContent = 'REST SINCRONIZADO';
-							if (driverWsChip) driverWsChip.className = 'painel-chip online';
-						}
-					})
-					.catch(function () {
-						if (driverWsLabel) driverWsLabel.textContent = 'RECONECTANDO...';
-						if (driverWsChip) driverWsChip.className = 'painel-chip offline';
-					});
-			}, 300);
+			btnNormalizarMotorista.addEventListener('click', function () {
+				fecharChamadaTelaCheia();
+				simuladorLocal.parar();
+				if (link.conectado()) link.comando('NORMALIZAR');
+			});
 		}
 
 		// ------------------------------------------------------------------------------
@@ -1176,47 +970,21 @@ function atualizarEstadoNoApp(estado) {
 		var ultimoGpsEnviadoTimestamp = 0;
 
 		function enviarGpsParaCentral(gpsData) {
-			// 1. Armazena no localStorage para compartilhamento imediato se as telas estiverem no mesmo navegador
-			try {
-				localStorage.setItem('inovatech_gps_real_motorista', JSON.stringify(gpsData));
-			} catch (e) { }
-
-			// 2. Envia via WebSocket se conectado
-			if (wsClient && wsClient.readyState === WebSocket.OPEN) {
-				try {
-					wsClient.send(JSON.stringify({
-						tipo: 'GPS_UPDATE',
-						gps: gpsData
-					}));
-				} catch (e) { }
-			}
-
-			// 3. Envia via REST para o servidor na Nuvem e Local (com controle de tráfego a cada 3s)
 			var agora = Date.now();
-			if (!ultimoGpsEnviadoTimestamp || (agora - ultimoGpsEnviadoTimestamp > 3500)) {
-				ultimoGpsEnviadoTimestamp = agora;
-				var urls = [
-					'https://inovatech-tcc.onrender.com/api/gps',
-					'http://localhost:3001/api/gps',
-					'https://inovatech-tcc.onrender.com/api/telemetry',
-					'http://localhost:3001/api/telemetry'
-				];
-				urls.forEach(function (u) {
-					fetch(u, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							dispositivo: 'CELULAR_MOTORISTA',
-							gps: gpsData
-						})
-					}).catch(function () { });
-				});
-			}
+			if (agora - ultimoGpsEnviadoTimestamp < 3000) return;
+			ultimoGpsEnviadoTimestamp = agora;
+			if (link.conectado()) link.enviar({ tipo: 'GPS_UPDATE', gps: gpsData });
 		}
 
 		function iniciarRastreamentoGpsMotorista() {
 			if (!navigator.geolocation) {
 				if (driverGpsLabel) driverGpsLabel.textContent = 'GPS INDISPONÍVEL';
+				return;
+			}
+			if (!window.isSecureContext) {
+				// Navegadores só liberam o GPS em HTTPS ou localhost
+				if (driverGpsLabel) driverGpsLabel.textContent = 'GPS SÓ EM HTTPS';
+				if (driverGpsChip) driverGpsChip.className = 'painel-chip warning';
 				return;
 			}
 
@@ -1238,35 +1006,28 @@ function atualizarEstadoNoApp(estado) {
 					driverGpsChip.className = 'painel-chip online';
 					driverGpsLabel.innerHTML = '<span class="material-symbols-outlined g-icon" style="font-size:12px;margin-right:2px">location_on</span> GPS (±' + gpsPayload.precisao + 'm)';
 				}
-
 				enviarGpsParaCentral(gpsPayload);
 			}
 
 			function tratarErroGps(err) {
 				console.warn('[GPS] Erro de geolocalização:', err.message);
-				if (driverGpsLabel) {
-					driverGpsLabel.textContent = 'GPS SEM PERMISSÃO';
-					if (driverGpsChip) driverGpsChip.className = 'painel-chip warning';
-				}
+				if (driverGpsLabel) driverGpsLabel.textContent = 'GPS SEM PERMISSÃO';
+				if (driverGpsChip) driverGpsChip.className = 'painel-chip warning';
 			}
 
-			// Solicita imediatamente a localização de alta precisão
-			navigator.geolocation.getCurrentPosition(tratarPosicao, tratarErroGps, {
-				enableHighAccuracy: true,
-				timeout: 10000,
-				maximumAge: 0
-			});
-
-			// Mantém atualização contínua em movimento
 			navigator.geolocation.watchPosition(tratarPosicao, tratarErroGps, {
 				enableHighAccuracy: true,
 				timeout: 20000,
-				maximumAge: 3500
+				maximumAge: 3000
 			});
 		}
 
-		conectarWebSocketMotorista();
-		ativarPollingREST();
+		// Checa se já havia status salvo previamente no navegador (padrão: viagem ativa)
+		var turnoSalvo = null;
+		try { turnoSalvo = localStorage.getItem('inovatech_turno_matheus_garcia'); } catch (e) { }
+		sincronizarEstadoTurnoUI(turnoSalvo !== 'INATIVO');
+
+		link.iniciar();
 		iniciarRastreamentoGpsMotorista();
 	</script>
 </body>

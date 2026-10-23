@@ -1,127 +1,95 @@
 # INOVA TECH SMART DRIVER — BACKEND & TELEMETRIA EM TEMPO REAL
 
-Backend oficial em Node.js (Express + WebSockets) para o projeto **InovaTech Smart Driver (TCC)**. Responsável por processar a telemetria do microcontrolador ESP32, aplicar o filtro de segurança temporal de 2,5 segundos e transmitir dados e alertas instantaneamente para o **Painel de Controle da Central** (seja na Vercel ou rodando localmente).
+Backend oficial em Node.js (Express + WebSocket + UDP) do projeto **InovaTech Smart Driver (TCC)**. Recebe a telemetria da ESP32 (óculos), controla o alerta travado com escalonamento (crítico aos 9 s, possível acidente aos 15 s) e sincroniza em tempo real a **Central Tech** (`central.html`) e o **App do Motorista** (`motorista.html`).
+
+> **Regra de ouro:** quem decide NORMAL / PRÉ-ALERTA / ALARME é a ESP32 (tolerância de 3,5 s). O servidor não cronometra a cabeça baixa por conta própria; ele só cuida do alerta travado, do escalonamento e da recuperação automática (cabeça erguida por 3 s).
 
 ---
 
-## 1. Como Executar Localmente
+## 1. Como Executar Localmente (dia da apresentação)
 
-### Pré-requisitos
-- Node.js instalado (v18 ou superior).
-- Todo o código e dependências estão armazenados **100% dentro desta pasta no OneDrive** (`INOVATECH TCC/backend`).
+- **Jeito mais fácil:** duplo clique em `iniciar-painel.bat` (raiz do projeto). Ele libera o firewall, instala as dependências na primeira vez, sobe o servidor e abre a Central.
+- **Pelo terminal**, na pasta `backend`:
+  ```bash
+  npm install   # só na primeira vez (fica tudo dentro de backend/node_modules)
+  npm start
+  ```
 
-### Passos de Inicialização:
-1. Abra um terminal na pasta `backend`:
-   ```bash
-   cd "backend"
-   ```
-2. Instale as dependências (já instaladas localmente no OneDrive):
-   ```bash
-   npm install
-   ```
-3. Inicie o servidor:
-   ```bash
-   npm start
-   ```
-   *Ou para desenvolvimento com auto-reload:*
-   ```bash
-   npm run dev
-   ```
-
-O servidor iniciará em:
-- **HTTP REST API:** `http://localhost:3001`
+Endereços:
+- **Central Tech (TV/PC):** `http://localhost:3001/central.html`
+- **App do Motorista (celular na mesma rede):** `http://IP-DO-PC:3001/motorista.html` (o servidor lista os IPs ao iniciar)
 - **WebSocket:** `ws://localhost:3001/ws`
+- **UDP da ESP32:** porta `3002`
+
+As páginas descobrem sozinhas o servidor (`conexao-backend.js`): o próprio endereço da página → `localhost:3001` → nuvem Render. Para forçar um servidor: `central.html?backend=http://192.168.0.10:3001` ou o campo "URL do Backend" no Card 6.
+
+### Variáveis opcionais (`backend/.env`)
+| Variável | Efeito |
+| :--- | :--- |
+| `PORT` | Porta HTTP/WebSocket (padrão `3001`) |
+| `PONTE_SERIAL=COM5` | Lê também a telemetria pela USB (deixe desligado na hora de gravar o firmware) |
+| `ESPELHAR_NUVEM=0` | Não espelha o estado no Render |
+| `DATA_DIR` | Pasta alternativa para `historico_eventos.json` / `ultimo_estado.json` |
 
 ---
 
-## 2. Como Testar Sem o ESP32 Físico (Simulador Integrado)
+## 2. Como a ESP32 conversa com o servidor (zero configuração de IP)
 
-Com o servidor rodando em um terminal, abra um segundo terminal na pasta `backend` e execute:
+1. A ESP32 envia o JSON de telemetria por **UDP broadcast** na porta `3002` (5 pacotes/s, 10/s durante alertas).
+2. O servidor responde por UDP com `{"srv":"INOVATECH","cmds":[...]}`.
+3. A ESP32 aprende o IP do PC pela resposta e passa a mandar direto para ele.
+4. Os comandos da Central chegam nessa resposta: `TEST_ALARM`, `SILENCIAR`, `CALIBRAR`, `TOGGLE_RELE1`, `TOGGLE_RELE2`.
+5. Se nenhum servidor local responder por 5 s, a ESP32 envia por **HTTPS para o Render** (a resposta do `POST /api/telemetry` também traz os comandos).
+
+Com o PC ligado, o servidor local **espelha o estado no Render**. Assim quem abre o site pela internet (ex.: celular pela Vercel) vê tudo ao vivo, e os comandos feitos por lá (ex.: "Estou alerta") voltam para o servidor local executar.
+
+---
+
+## 3. Como Testar Sem a ESP32 Física (Simulador)
+
+Com o servidor rodando, abra um segundo terminal na pasta `backend`:
 ```bash
 npm run simulate
 ```
-Isso iniciará um simulador inteligente que envia pacotes contínuos simulando o motorista focado, o adormecimento com queda de cabeça (atingindo os 2.500 ms) e o disparo do alarme com normalização subsequente.
+O simulador fala exatamente o protocolo do firmware (UDP + comandos): 6 s normal → 5 s de cabeça baixa (alarme aos 3,5 s) → cabeça erguida (recuperação automática em 3 s). Os botões "Disparar Alerta / Teste" e "Silenciar" da Central aparecem no terminal do simulador.
 
 ---
 
-## 3. Como Disponibilizar Online Gratuitamente (Deploy Remoto)
+## 4. Deploy na Nuvem (Render)
 
-Para que o ESP32 possa enviar dados pela internet de qualquer lugar (mesmo usando o 4G do celular ou Wi-Fi externo) e o site na Vercel receba tudo:
-
-### Opção A: Render.com (Recomendada - Grátis)
-1. Crie uma conta gratuita em [render.com](https://render.com).
-2. Clique em **New +** -> **Web Service**.
-3. Conecte seu repositório GitHub (`Matheuseas23/inovatech_tcc`).
-4. Configure os campos:
-   - **Root Directory:** `backend`
-   - **Environment:** `Node`
-   - **Build Command:** `npm install`
-   - **Start Command:** `node server.js`
-   - **Instance Type:** `Free`
-5. Clique em **Create Web Service**.
-6. O Render fornecerá uma URL HTTPS (ex: `https://inovatech-backend.onrender.com`).
-   - Sua API REST será: `https://inovatech-backend.onrender.com/api/telemetry`
-   - Seu WebSocket será: `wss://inovatech-backend.onrender.com/ws`
-
-### Opção B: Túnel Rápido para Bancas (ngrok / localtunnel)
-Para demonstrações imediatas com o backend rodando no seu computador:
-```bash
-npx localtunnel --port 3001
-```
-Gera uma URL pública imediata na internet para usar no ESP32 e na Vercel.
+1. **New +** → **Web Service** → repositório `Matheuseas23/inovatech_tcc`.
+2. **Root Directory:** `backend` · **Environment:** `Node` · **Build:** `npm install` · **Start:** `npm start` · **Instance:** `Free`.
+3. No plano grátis o Render "dorme": abra `https://inovatech-tcc.onrender.com/health` uns 2 minutos antes da banca.
 
 ---
 
-## 4. Documentação de Endpoints da API
+## 5. Endpoints da API
 
-| Método | Endpoint | Descrição | Exemplo de Payload / Resposta |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/health` | Verifica integridade do backend | `{ "status": "ONLINE", "uptime_segundos": 120 }` |
-| `GET` | `/api/telemetry`| Retorna estado atual consolidado | `{ "estado": "NORMAL", "buzzer": 0, ... }` |
-| `POST`| `/api/telemetry`| ESP32 envia leituras de telemetria | `{"sensor_ir": 0, "tempo_cabeca_baixa_ms": 1200}` |
-| `POST`| `/api/command`  | Central envia comando para ESP32 | `{"comando": "DISPARAR_TESTE"}` |
-| `GET` | `/api/commands` | ESP32 consome comandos pendentes | `{"comandos": [...]}` |
-| `GET` | `/api/events`   | Histórico cronológico de eventos | `[{"id": "...", "tipo": "ALARME_ATIVADO"}]` |
-| `WS`  | `/ws`           | Conexão WebSocket bidirecional | Mensagens JSON em tempo real (< 20ms) |
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/api/health` | Integridade do servidor (`status`, `servidor`, `esp32_conectado`) |
+| `GET` | `/api/telemetry` | Estado consolidado + 10 eventos recentes |
+| `POST` | `/api/telemetry` | Telemetria da ESP32 (resposta: `{"srv":"INOVATECH","cmds":[...]}`) |
+| `POST` | `/api/command` | `{"comando": "DISPARAR_TESTE" \| "SIMULAR_ALERTA" \| "SILENCIAR_ALARME" \| "NORMALIZAR" \| "CALIBRAR_MPU" \| "TOGGLE_RELE1" \| "TOGGLE_RELE2"}` (`SIMULAR_ALERTA` aceita `duracao_ms`) |
+| `POST` | `/api/driver/shift` | `{"status_viagem": "EM_VIAGEM" \| "INATIVO"}` |
+| `POST` | `/api/gps` | `{"gps": {"lat": -23.5, "lon": -46.6, "precisao": 5}}` |
+| `GET` | `/api/events` | Histórico (máx. 100 eventos) |
+| `POST` | `/api/events/clear` | Limpa o histórico |
+| `WS` | `/ws` | Mensagens: `ESTADO_INICIAL`, `TELEMETRIA_UPDATE`, `ALERTA_FISICO_E_VIRTUAL_CELULAR`, `ESCALONAMENTO_EMERGENCIA`, `ALERTA_ENCERRADO`, `NOVO_EVENTO`, `STATUS_MOTORISTA`, `GPS_UPDATE` |
 
----
+Pelo WebSocket, os clientes enviam `{"tipo":"COMANDO","comando":"..."}`, `{"tipo":"STATUS_MOTORISTA",...}` e `{"tipo":"GPS_UPDATE","gps":{...}}`.
 
-## 5. Código de Exemplo para o ESP32 (`src/main.cpp`)
-
-No microcontrolador ESP32, basta incluir a biblioteca de Wi-Fi e HTTP para enviar a telemetria ao backend:
-
-```cpp
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
-
-const char* WIFI_SSID     = "SUA_REDE_WIFI";
-const char* WIFI_PASSWORD = "SUA_SENHA_WIFI";
-
-// URL do Backend (local na mesma rede ou online no Render):
-// Exemplo Local: "http://192.168.1.15:3001/api/telemetry"
-// Exemplo Remoto: "https://inovatech-backend.onrender.com/api/telemetry"
-const char* BACKEND_URL   = "http://192.168.1.15:3001/api/telemetry";
-
-void enviarTelemetriaWeb(int ir, unsigned long tempoMs, const char* status, int buzzer, int rele) {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    http.begin(BACKEND_URL);
-    http.addHeader("Content-Type", "application/json");
-
-    StaticJsonDocument<256> doc;
-    doc["dispositivo"] = "ESP32_SMART_DRIVER_01";
-    doc["sensor_ir"] = ir;
-    doc["tempo_cabeca_baixa_ms"] = tempoMs;
-    doc["estado"] = status;
-    doc["buzzer"] = buzzer;
-    doc["rele"] = rele;
-
-    String jsonStr;
-    serializeJson(doc, jsonStr);
-
-    int httpResponseCode = http.POST(jsonStr);
-    http.end();
-  }
+### Exemplo de telemetria enviada pela ESP32
+```json
+{
+  "dispositivo": "ESP32_SMART_DRIVER_01", "seq": 812, "uptime_ms": 163200,
+  "sensor_ir": 0, "tempo_cabeca_baixa_ms": 2140, "limiar_ms": 3500,
+  "buzzer": 1, "rele": 0, "rele_1": 0, "rele_2": 0, "alarme_teste": 0,
+  "estado": "PRE_ALERTA",
+  "acelerometro": { "pitch": -24.1, "roll": 1.3, "inclinacao": 24.4, "pescada_detectada": false,
+                    "online": true, "calibrado": true, "status": "ONLINE (MPU-6050 ATIVO)" },
+  "wifi": { "ssid": "REDMI Note 15 5G", "rssi": -51, "ip": "192.168.43.20" }
 }
 ```
+
+> Por segurança, o servidor não entrega pela web as pastas `backend/`, `Smart Driver/` (o firmware tem as senhas de Wi-Fi), `.git/` nem arquivos `.md` e `.bat`.

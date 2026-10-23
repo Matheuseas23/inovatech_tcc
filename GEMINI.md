@@ -252,5 +252,23 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 - **Energia Portátil**:
   - Bateria 9V Elgin Recarregável (250 mAh): Positivo no pino VIN e Negativo no GND (duração estimada de 30–45 min com Wi-Fi). Conectar apenas durante a apresentação perante a banca. Power Bank USB mantido de prontidão como plano de contingência.
 
+---
+
+## 11. Estabilização da Comunicação (23 de Outubro de 2026) — SUBSTITUI os tempos das seções anteriores
+- **Fonte única da verdade**: a ESP32 decide `NORMAL` / `PRE_ALERTA` / `ALARME_ATIVADO`. O `server.js` **não** cronometra a cabeça baixa sozinho (antes ele disparava em 1,5 s enquanto o óculos disparava em 3,5 s).
+- **Tempos oficiais** (todos lidos do servidor pelas páginas; não escrever números fixos no HTML):
+  - Tolerância real da ESP32: **3,5 s** com 3 bips (700–1050, 1700–2050, 2700–3050 ms).
+  - Botão "Simular Alerta": **1,5 s** (modo rápido); "Simular Cabeça Baixa Real": 3,5 s.
+  - Alerta Crítico na Central: **9 s** sem resposta · Possível Acidente / SOS: **15 s** (constante `ESCALONAMENTO` no `server.js`).
+  - Recuperação automática: cabeça erguida por **3 s** encerra o alerta (feita no servidor; só para alertas reais do sensor — teste e simulação exigem confirmação).
+- **Protocolo ESP32 ⇄ Servidor (zero configuração de IP)**: telemetria por UDP broadcast na porta 3002 → o servidor responde `{"srv":"INOVATECH","cmds":[...]}` → a ESP32 aprende o IP do PC e recebe os comandos (`TEST_ALARM`, `SILENCIAR`, `CALIBRAR`, `TOGGLE_RELE1/2`). Sem servidor local por 5 s, a ESP32 envia por HTTPS para o Render.
+- **Espelho PC → Render**: o servidor local espelha o estado na nuvem; comandos feitos por quem está na nuvem (celular pela Vercel) voltam para o servidor local executar.
+- **Conexão das páginas** (`conexao-backend.js`, compartilhado por `central.html` e `motorista.html`): tenta `?backend=` / URL salva → endereço da própria página → `localhost:3001` → Render. WebSocket com fallback REST e reconexão automática. Sem servidor, usa simulação local sincronizada entre abas.
+- **Acelerômetro GY-521**: calibrado ao ligar a ESP32 (cabeça erguida = 0°) e pelo botão "Recalibrar" do Card 4. Mede a inclinação total em relação à postura calibrada (funciona em qualquer orientação de montagem). Inclinação > 32° conta como cabeça baixa; queda > 15° em 100 ms terminando acima de 25° = "pescada" (alarme imediato, mínimo 2 s).
+- **Atuadores na Central** mostram o estado FÍSICO real dos pinos (Buzzer GPIO 25, Relé 1 GPIO 18, Relé 2 GPIO 19).
+- **Segurança**: o servidor não serve `backend/`, `Smart Driver/`, `.git/`, `*.md`, `*.bat` (o firmware e este arquivo contêm senhas de Wi-Fi).
+- **Dia da apresentação**: rodar `iniciar-painel.bat` (libera o firewall UDP 3002/TCP 3001). No celular, abrir `http://IP-DO-PC:3001/motorista.html` (latência mínima; GPS não funciona em HTTP) ou o link da Vercel (GPS funciona; passa pela nuvem).
+- **Testes**: `npm run simulate` (na pasta `backend`) imita o firmware completo, inclusive os comandos.
+
 
 
