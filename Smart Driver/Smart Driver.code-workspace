@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "Smart Driver",
+			"path": "I:/INOVATECH TCC/Smart Driver"
+		}
+	],
+	"settings": {
+		"markdown.updateLinksOnFileMove.enabled": "never"
+	}
+}

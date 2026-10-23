@@ -4,7 +4,7 @@
   "ultimoVisto": null,
   "sensor_ir": 1,
   "tempo_cabeca_baixa_ms": 0,
-  "limiar_seguranca_ms": 3500,
+  "limiar_seguranca_ms": 1500,
   "estado": "NORMAL",
   "buzzer": 0,
   "rele": 0,
@@ -16,8 +16,8 @@
     "status": "Aguardando módulo / Simulação"
   },
   "contadores": {
-    "totalAlarmesSessao": 106,
-    "inicioSessao": "2026-10-21T12:20:49.528Z"
+    "totalAlarmesSessao": 109,
+    "inicioSessao": "2026-10-21T15:59:56.056Z"
   },
   "motoristas": {
     "matheus_garcia": {
@@ -25,7 +25,7 @@
       "status": "EM_VIAGEM",
       "veiculo": "Scania R-450 (Placa INO-2026)",
       "rota": "Rodovia BR-116 KM 284 · Régis Bittencourt",
-      "atualizadoEm": "2026-10-21T12:20:49.563Z"
+      "atualizadoEm": "2026-10-21T15:59:56.074Z"
     }
   },
   "gps": {
@@ -36,5 +36,9 @@
     "heading": 0,
     "origem": "PADRAO_BR116",
     "atualizadoEm": null
-  }
+  },
+  "chamada_celular_ativa": false,
+  "alerta_travado": false,
+  "tempo_sem_resposta_ms": 0,
+  "nivel_escalonamento": 0
 }
