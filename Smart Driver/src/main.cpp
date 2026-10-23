@@ -41,6 +41,9 @@ const char* WIFI_REDMI_PASS = "Garcia2026";
 const char* WIFI_IPHONE_SSID = "iPhone de Matheus";
 const char* WIFI_IPHONE_PASS = "12345678910";
 
+// Apresentação: conectar SOMENTE no ponto de acesso do Redmi. Para voltar a usar as 3 redes, troque para false.
+const bool SOMENTE_WIFI_REDMI = true;
+
 // Servidor na nuvem (usado somente quando nenhum servidor local responde):
 const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
 const bool  ENVIAR_NUVEM_SEM_SERVIDOR_LOCAL = true;
@@ -286,10 +289,13 @@ void setup() {
   // impede que o power bank se desligue sozinho por "carga baixa"
   WiFi.setSleep(false);
 
-  // Registra as redes conhecidas (o WiFiMulti escolhe a de melhor sinal)
-  wifiMulti.addAP(WIFI_CASA_SSID, WIFI_CASA_PASS);
+  // Registra as redes conhecidas (o WiFiMulti escolhe a de melhor sinal).
+  // SOMENTE_WIFI_REDMI = true: conecta só no ponto de acesso do Redmi (apresentação).
   wifiMulti.addAP(WIFI_REDMI_SSID, WIFI_REDMI_PASS);
-  wifiMulti.addAP(WIFI_IPHONE_SSID, WIFI_IPHONE_PASS);
+  if (!SOMENTE_WIFI_REDMI) {
+    wifiMulti.addAP(WIFI_CASA_SSID, WIFI_CASA_PASS);
+    wifiMulti.addAP(WIFI_IPHONE_SSID, WIFI_IPHONE_PASS);
+  }
 
   // Inicializa a Tarefa de Telemetria no Core 0 (Background)
   xTaskCreatePinnedToCore(
