@@ -188,7 +188,7 @@ unsigned long ultimaTentativaMpu = 0;
 unsigned long calibracaoAgendadaMs = 0;    // 0 = nenhuma calibração guiada pendente
 float gFiltX = 0, gFiltY = 0, gFiltZ = 1;  // Vetor gravidade filtrado (em g)
 float gRefX = 0, gRefY = 0, gRefZ = 1;     // Vetor de referência (cabeça erguida)
-float pitchRef = 0, rollRef = 0;
+float rotRef[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}; // Leva a postura calibrada para o eixo Z
 float historicoInclinacao[10] = {0};       // 10 amostras x 10 ms = janela de 100 ms
 uint8_t indiceHistorico = 0;
 
@@ -366,8 +366,21 @@ bool calibrarMPU6050() {
 
   gRefX = mx / modulo; gRefY = my / modulo; gRefZ = mz / modulo;
   gFiltX = gRefX; gFiltY = gRefY; gFiltZ = gRefZ;
-  pitchRef = atan2(-gRefX, sqrt(gRefY * gRefY + gRefZ * gRefZ)) * RAD_TO_DEG;
-  rollRef  = atan2(gRefY, gRefZ) * RAD_TO_DEG;
+  // Rotação mínima que leva a gravidade da postura calibrada até o eixo Z (Rodrigues).
+  // Assim pitch e roll partem de 0° com a cabeça erguida, em qualquer montagem do sensor
+  // (preso de pé na haste, o cálculo direto do roll ficava instável e pulava até 280°).
+  float vx = gRefY, vy = -gRefX, c = gRefZ;  // v = gRef x Z ; c = gRef . Z
+  if (c < -0.999f) {
+    // Sensor de cabeça para baixo: giro de 180° em torno de X
+    rotRef[0][0] = 1; rotRef[0][1] = 0;  rotRef[0][2] = 0;
+    rotRef[1][0] = 0; rotRef[1][1] = -1; rotRef[1][2] = 0;
+    rotRef[2][0] = 0; rotRef[2][1] = 0;  rotRef[2][2] = -1;
+  } else {
+    float k = 1.0f / (1.0f + c);
+    rotRef[0][0] = 1 - vy * vy * k; rotRef[0][1] = vx * vy * k;     rotRef[0][2] = vy;
+    rotRef[1][0] = vx * vy * k;     rotRef[1][1] = 1 - vx * vx * k; rotRef[1][2] = -vx;
+    rotRef[2][0] = -vy;             rotRef[2][1] = vx;              rotRef[2][2] = 1 - (vx * vx + vy * vy) * k;
+  }
   for (uint8_t i = 0; i < 10; i++) historicoInclinacao[i] = 0;
   mpuCalibrado = true;
   Serial.println(F("[MPU-6050] Calibrado: postura atual registrada como cabeca erguida."));
@@ -453,8 +466,11 @@ LeituraMPU lerMPU6050(unsigned long agora) {
   r.inclinacao = acos(cosAng) * RAD_TO_DEG;
 
   // Pitch e Roll relativos à postura calibrada (somente para exibição na Central)
-  r.pitch = atan2(-nx, sqrt(ny * ny + nz * nz)) * RAD_TO_DEG - pitchRef;
-  r.roll  = atan2(ny, nz) * RAD_TO_DEG - rollRef;
+  float px = rotRef[0][0] * nx + rotRef[0][1] * ny + rotRef[0][2] * nz;
+  float py = rotRef[1][0] * nx + rotRef[1][1] * ny + rotRef[1][2] * nz;
+  float pz = rotRef[2][0] * nx + rotRef[2][1] * ny + rotRef[2][2] * nz;
+  r.pitch = atan2(-px, sqrt(py * py + pz * pz)) * RAD_TO_DEG;
+  r.roll  = atan2(py, pz) * RAD_TO_DEG;
 
   // Detecção de "Pescada" de Sono: queda angular brusca dentro de 100 ms
   float inclinacao100msAtras = historicoInclinacao[indiceHistorico];
