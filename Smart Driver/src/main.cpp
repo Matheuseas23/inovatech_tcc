@@ -56,6 +56,7 @@ const uint8_t PINO_BUZZER    = 25; // GPIO 25 - Buzzer sonoro ativo
 const uint8_t PINO_RELE_1    = 18; // GPIO 18 - Relé Safe-Stop (Tração)
 const uint8_t PINO_RELE_2    = 19; // GPIO 19 - Relé Pisca-Alerta Veicular
 const uint8_t PINO_RELE_GND  = 13; // GPIO 13 (D13) - GND Virtual Relé
+const uint8_t PINO_LED_REDE  = 2;  // GPIO 2 - LED azul da placa (status da conexão sem cabo)
 
 // Acelerômetro GY-521 (I2C + Alimentação Virtual)
 const uint8_t PINO_MPU_SDA   = 21; // GPIO 21 - Linha SDA I2C
@@ -125,6 +126,13 @@ const uint8_t CMD_CALIBRAR     = 0x10;
 volatile uint8_t comandosRemotos = 0;
 portMUX_TYPE mutexComandos = portMUX_INITIALIZER_UNLOCKED;
 
+// Status da rede (escrito pelo Core 0, exibido no LED pelo Core 1):
+// pisca rápido = sem comunicação · pisca devagar = via nuvem (Render) · aceso = servidor do PC
+const uint8_t REDE_SEM_COMUNICACAO = 0;
+const uint8_t REDE_NUVEM           = 1;
+const uint8_t REDE_SERVIDOR_LOCAL  = 2;
+volatile uint8_t statusRede = REDE_SEM_COMUNICACAO;
+
 // Variáveis de Estado no Core 1
 unsigned long tempoInicioCabecaBaixa = 0;
 bool cabecaEstavaBaixa               = false;
@@ -177,6 +185,7 @@ void setup() {
   pinMode(PINO_BUZZER, OUTPUT);
   pinMode(PINO_RELE_1, OUTPUT);
   pinMode(PINO_RELE_2, OUTPUT);
+  pinMode(PINO_LED_REDE, OUTPUT);
 
   // GND Virtual (0V) no Pino D13 para o terra do Módulo Relé
   pinMode(PINO_RELE_GND, OUTPUT);
@@ -220,6 +229,9 @@ void setup() {
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
   WiFi.persistent(false); // Evita gravar na flash a cada reconexão
+  // Sem economia de energia no rádio: comandos chegam sem atraso e o consumo constante
+  // impede que o power bank se desligue sozinho por "carga baixa"
+  WiFi.setSleep(false);
 
   // Registra as redes conhecidas (o WiFiMulti escolhe a de melhor sinal)
   wifiMulti.addAP(WIFI_CASA_SSID, WIFI_CASA_PASS);
@@ -465,6 +477,12 @@ void loop() {
   strncpy(dadosGlobais.estado, estadoAtualTexto, sizeof(dadosGlobais.estado) - 1);
   portEXIT_CRITICAL(&mutexDados);
 
+  // LED azul: mostra a conexão mesmo sem o cabo USB (power bank)
+  bool ledAceso = statusRede == REDE_SERVIDOR_LOCAL ? true
+                : statusRede == REDE_NUVEM ? (agora % 1000 < 500)
+                : (agora % 200 < 100);
+  digitalWrite(PINO_LED_REDE, ledAceso ? HIGH : LOW);
+
   delay(10);
 }
 
@@ -587,6 +605,7 @@ void taskTelemetria(void *pvParameters) {
   unsigned long ultimoContatoServidor = 0;
   unsigned long ultimoCheckWifi = 0;
   unsigned long ultimoEnvioNuvem = 0;
+  unsigned long ultimoSucessoNuvem = 0;
   uint32_t seq = 0;
   char payload[700];
   char resposta[256];
@@ -673,6 +692,7 @@ void taskTelemetria(void *pvParameters) {
           httpNuvem.addHeader("Content-Type", "application/json");
           int codigo = httpNuvem.POST((uint8_t*)payload, tamanho);
           if (codigo == 200) {
+            ultimoSucessoNuvem = millis();
             String corpo = httpNuvem.getString();
             interpretarComandosTexto(corpo.c_str());
           }
@@ -680,6 +700,11 @@ void taskTelemetria(void *pvParameters) {
         }
       }
     }
+
+    bool nuvemRespondendo = ultimoSucessoNuvem && millis() - ultimoSucessoNuvem < TIMEOUT_SERVIDOR_LOCAL_MS;
+    statusRede = !conectado ? REDE_SEM_COMUNICACAO
+               : servidorConhecido ? REDE_SERVIDOR_LOCAL
+               : nuvemRespondendo ? REDE_NUVEM : REDE_SEM_COMUNICACAO;
 
     bool emAlerta = strcmp(snap.estado, "NORMAL") != 0;
     vTaskDelay(pdMS_TO_TICKS(emAlerta ? INTERVALO_TELEMETRIA_ALERTA_MS : INTERVALO_TELEMETRIA_MS));
