@@ -88,6 +88,10 @@ const float PESCADA_INCLINACAO_MIN  = 25.0;  // ...desde que termine a pelo meno
 const bool  PESCADA_DISPARA_ALARME  = true;  // Pescada dispara o alarme na hora
 const unsigned long ALARME_MINIMO_PESCADA_MS = 2000; // Alarme de pescada dura no mínimo 2s
 
+// Sensor IR = reserva do acelerômetro. Só é confiável se leu "cabeça erguida" no último
+// minuto: sem alimentação ele lê LOW direto e seguraria o alarme ligado para sempre.
+const unsigned long IR_SINAL_VALIDO_MS = 60000;
+
 const unsigned long DURACAO_MAX_TESTE_MS     = 30000; // Teste remoto se desliga sozinho em 30s
 const unsigned long INTERVALO_TELEMETRIA_MS  = 200;   // 5 pacotes/s em operação normal
 const unsigned long INTERVALO_TELEMETRIA_ALERTA_MS = 100; // 10 pacotes/s durante alertas
@@ -112,9 +116,10 @@ struct DadosTelemetria {
   bool testeAtivo;
   char estado[24];
   bool alarmeAtivo;
+  bool irConfiavel;
 };
 
-DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, false, "NORMAL", false};
+DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, false, "NORMAL", false, false};
 portMUX_TYPE mutexDados = portMUX_INITIALIZER_UNLOCKED;
 
 // Comandos recebidos pela rede (Core 0) e executados no Core 1
@@ -142,6 +147,7 @@ bool testeAlarmeAtivo                = false;
 unsigned long inicioTesteAlarme      = 0;
 bool testeManualRele1                = false;
 bool testeManualRele2                = false;
+unsigned long ultimoIrLivreMs        = 0; // Última vez que o IR leu "cabeça erguida"
 
 // Acelerômetro
 struct LeituraMPU {
@@ -399,8 +405,13 @@ void loop() {
   bool inclinadoDemais = mpu.valida && (mpu.inclinacao > LIMIAR_INCLINACAO_GRAUS);
   bool pescadaSono = mpu.valida && mpu.pescada;
 
-  // Condição de Cabeça Baixa: Sensor IR detecta OU acelerômetro passa do ângulo OU pescada
-  bool condicaoCabecaBaixa = (estadoLeitura == NIVEL_CABECA_BAIXA) || inclinadoDemais || pescadaSono;
+  // Sensor IR só conta na falta do acelerômetro, e se estiver vivo
+  if (estadoLeitura != NIVEL_CABECA_BAIXA) ultimoIrLivreMs = agora;
+  bool irConfiavel = ultimoIrLivreMs != 0 && agora - ultimoIrLivreMs < IR_SINAL_VALIDO_MS;
+  bool irCabecaBaixa = !mpu.valida && irConfiavel && estadoLeitura == NIVEL_CABECA_BAIXA;
+
+  // Condição de Cabeça Baixa: acelerômetro passa do ângulo OU pescada (OU IR, como reserva)
+  bool condicaoCabecaBaixa = inclinadoDemais || pescadaSono || irCabecaBaixa;
 
   // Teste remoto da Central expira sozinho por segurança
   if (testeAlarmeAtivo && (agora - inicioTesteAlarme >= DURACAO_MAX_TESTE_MS)) {
@@ -474,6 +485,7 @@ void loop() {
   dadosGlobais.mpuCalibrado = mpuCalibrado;
   dadosGlobais.testeAtivo = testeAlarmeAtivo;
   dadosGlobais.alarmeAtivo = alarmeGeral;
+  dadosGlobais.irConfiavel = irConfiavel;
   strncpy(dadosGlobais.estado, estadoAtualTexto, sizeof(dadosGlobais.estado) - 1);
   portEXIT_CRITICAL(&mutexDados);
 
@@ -577,14 +589,14 @@ int montarPayload(const DadosTelemetria &d, uint32_t seq, char *buf, size_t cap)
 
   return snprintf(buf, cap,
     "{\"dispositivo\":\"ESP32_SMART_DRIVER_01\",\"seq\":%lu,\"uptime_ms\":%lu,"
-    "\"sensor_ir\":%d,\"tempo_cabeca_baixa_ms\":%lu,\"limiar_ms\":%lu,"
+    "\"sensor_ir\":%d,\"ir_confiavel\":%s,\"tempo_cabeca_baixa_ms\":%lu,\"limiar_ms\":%lu,"
     "\"buzzer\":%d,\"rele\":%d,\"rele_1\":%d,\"rele_2\":%d,\"alarme_teste\":%d,"
     "\"estado\":\"%s\","
     "\"acelerometro\":{\"pitch\":%.1f,\"roll\":%.1f,\"inclinacao\":%.1f,"
     "\"pescada_detectada\":%s,\"online\":%s,\"calibrado\":%s,\"status\":\"%s\"},"
     "\"wifi\":{\"ssid\":\"%s\",\"rssi\":%d,\"ip\":\"%s\"}}",
     (unsigned long)seq, millis(),
-    d.sensorIr, d.tempoCabecaBaixaMs, LIMIAR_CABECA_BAIXA_MS,
+    d.sensorIr, d.irConfiavel ? "true" : "false", d.tempoCabecaBaixaMs, LIMIAR_CABECA_BAIXA_MS,
     d.buzzer, d.rele1, d.rele1, d.rele2, d.testeAtivo ? 1 : 0,
     d.estado,
     d.pitch, d.roll, d.inclinacao,

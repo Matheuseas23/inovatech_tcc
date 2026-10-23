@@ -1475,15 +1475,16 @@
 				esconderPainelEscalonamento();
 			}
 
-			// Sensor IR
+			// Sensor IR (reserva do acelerômetro; sem sinal = ignorado pela ESP32)
+			var irSemSinal = estado.ir_confiavel === false;
 			if (irNivelLogico && irNivelSub) {
-				irNivelLogico.textContent = ir === 1 ? 'HIGH (1)' : 'LOW (0)';
-				irNivelLogico.style.color = ir === 1 ? '#08deeb' : '#ffaa00';
-				irNivelSub.textContent = ir === 1 ? 'Postura Erguida' : 'Obstáculo / Queixo Próximo';
+				irNivelLogico.textContent = irSemSinal ? 'SEM SINAL' : (ir === 1 ? 'HIGH (1)' : 'LOW (0)');
+				irNivelLogico.style.color = irSemSinal ? '#8ca4ad' : (ir === 1 ? '#08deeb' : '#ffaa00');
+				irNivelSub.textContent = irSemSinal ? 'Reserva inativa · acelerômetro no comando' : (ir === 1 ? 'Postura Erguida' : 'Obstáculo / Queixo Próximo');
 			}
 			if (precisaoIrLiveVal) {
-				precisaoIrLiveVal.textContent = ir === 1 ? 'CABEÇA ERGUIDA (' + (estado.tempo_cabeca_baixa_ms || 0) + ' ms)' : 'CABEÇA BAIXA (' + (estado.tempo_cabeca_baixa_ms || 0) + ' ms)';
-				precisaoIrLiveVal.style.color = ir === 1 ? '#55ee77' : '#ffaa00';
+				precisaoIrLiveVal.textContent = irSemSinal ? 'IR SEM SINAL (IGNORADO)' : (ir === 1 ? 'CABEÇA ERGUIDA (' + (estado.tempo_cabeca_baixa_ms || 0) + ' ms)' : 'CABEÇA BAIXA (' + (estado.tempo_cabeca_baixa_ms || 0) + ' ms)');
+				precisaoIrLiveVal.style.color = irSemSinal ? '#8ca4ad' : (ir === 1 ? '#55ee77' : '#ffaa00');
 			}
 
 			// Acelerômetro

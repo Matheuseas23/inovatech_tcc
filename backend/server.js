@@ -84,6 +84,7 @@ const estado = {
   fonte_conexao: null, // 'UDP' | 'HTTP' | 'SERIAL' | 'WS' | 'NUVEM' (repassada pelo Render ao PC)
   servidor: IS_RENDER_CLOUD ? 'NUVEM' : 'LOCAL',
   sensor_ir: 1, // 1 = HIGH (Cabeça erguida), 0 = LOW (Cabeça baixa)
+  ir_confiavel: true, // false = IR sem sinal (ex.: sem alimentação); a ESP32 o ignora
   tempo_cabeca_baixa_ms: 0,
   limiar_seguranca_ms: LIMIAR_PADRAO_MS,
   estado: 'NORMAL', // 'NORMAL', 'PRE_ALERTA', 'ALARME_ATIVADO'
@@ -475,6 +476,7 @@ function processarTelemetriaESP32(p, fonte) {
   if (p.rele_1 !== undefined || p.rele !== undefined) estado.rele = Number(p.rele_1 ?? p.rele) ? 1 : 0;
   if (p.rele_2 !== undefined) estado.rele_2 = Number(p.rele_2) ? 1 : 0;
   estado.alarme_teste = Number(p.alarme_teste) ? 1 : 0;
+  estado.ir_confiavel = p.ir_confiavel !== false; // Firmwares antigos não mandam o campo
 
   // Durante uma simulação, a postura exibida é a simulada
   const controladoPorSimulacao = simulacao.ativa || (estado.alerta_travado && estado.origem_alerta === 'SIMULACAO');
@@ -627,7 +629,7 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
 }
 
 // Nuvem: aplica o estado espelhado pelo servidor local do PC
-const CAMPOS_ESPELHO = ['dispositivo', 'online', 'ultimoVisto', 'fonte_conexao', 'sensor_ir', 'tempo_cabeca_baixa_ms',
+const CAMPOS_ESPELHO = ['dispositivo', 'online', 'ultimoVisto', 'fonte_conexao', 'sensor_ir', 'ir_confiavel', 'tempo_cabeca_baixa_ms',
   'limiar_seguranca_ms', 'estado', 'buzzer', 'rele', 'rele_2', 'alarme_teste', 'acelerometro', 'wifi', 'alerta_travado',
   'chamada_celular_ativa', 'origem_alerta', 'tempo_sem_resposta_ms', 'nivel_escalonamento', 'tempo_recuperacao_ms',
   'recuperacao_limite_ms', 'escalonamento', 'simulacao_ativa', 'contadores', 'motoristas', 'gps'];
