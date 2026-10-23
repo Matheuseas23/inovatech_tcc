@@ -78,12 +78,12 @@ const int NIVEL_RELE_DESLIGADO   = HIGH;
 // 3. CALIBRAÇÃO TEMPORAL E ANGULAR
 // ------------------------------------------------------------------------------
 // Filtro Temporal de Segurança: 1,5 s de tolerância. Linha do tempo da cabeça baixa:
-//   1,0 s -> 1 bip de aviso + "tec" do Relé 2 (pisca-alerta arma)
+//   1,0 s -> 1 bip rápido de aviso + "tec" do Relé 2 (pisca-alerta arma)
 //   1,5 s -> bip contínuo + "tec" do Relé 1 (safe-stop)
 //   cabeça erguida -> buzzer para e os dois relés soltam juntos ("tec")
 const unsigned long LIMIAR_CABECA_BAIXA_MS = 1500;
 const unsigned long BIP_AVISO_INICIO_MS    = 1000;
-const unsigned long BIP_AVISO_FIM_MS       = 1300; // 200 ms de silêncio antes do contínuo
+const unsigned long BIP_AVISO_FIM_MS       = 1150; // Bip rápido (150 ms) + 350 ms de silêncio antes do contínuo
 
 // Acelerômetro: ângulo medido em relação à postura calibrada (cabeça erguida).
 // Funciona em qualquer orientação de montagem do GY-521 na haste dos óculos.
@@ -560,7 +560,7 @@ void loop() {
           Serial.println(F(">>> ALERTA CRITICO: Fadiga confirmada! Buzzer continuo e Reles ativados!"));
         }
       } else {
-        // 1 BIP DE AVISO (1,0 a 1,3 s); aos 1,5 s vem o alarme contínuo + relés
+        // 1 BIP RÁPIDO DE AVISO (1,0 a 1,15 s); aos 1,5 s vem o alarme contínuo + relés
         bipPreAlertaAtivo = tempoDecorridoMs >= BIP_AVISO_INICIO_MS && tempoDecorridoMs < BIP_AVISO_FIM_MS;
       }
     }
