@@ -105,6 +105,8 @@ const float AGITACAO_MAX_CALIBRACAO_G        = 0.08; // Cabeça parada fica bem 
 // Ao ativar, o buzzer toca "pan, pan-ran-ran-pan... pan, pan" e os sensores entram em ação.
 // Para tirar a função (sensores sempre ligados), troque para false.
 const bool SENSORES_SO_COM_MONITORAMENTO = true;
+// À prova de falha: 15 s sem falar com nenhum servidor (PC ou nuvem) = sensores ligam sozinhos
+const unsigned long FAILSAFE_SEM_CONTATO_MS = 15000;
 
 // Sensor IR = reserva do acelerômetro. Só é confiável se leu "cabeça erguida" no último
 // minuto: sem alimentação ele lê LOW direto e seguraria o alarme ligado para sempre.
@@ -159,6 +161,7 @@ volatile uint8_t statusRede = REDE_SEM_COMUNICACAO;
 
 // Monitoramento ligado no app: chega como "mon":1 / "mon":0 nas respostas do servidor (-1 = sem resposta ainda)
 volatile int8_t monitoramentoServidor = -1;
+volatile bool semContatoServidor = false; // Escrito pelo Core 0 (à prova de falha)
 
 // Variáveis de Estado no Core 1
 unsigned long tempoInicioCabecaBaixa = 0;
@@ -518,8 +521,9 @@ void loop() {
   // Calibração guiada pendente (do boot, de nova tentativa ou de módulo reconectado)
   if (calibracaoAgendadaMs && millis() >= calibracaoAgendadaMs) calibrarComAviso();
 
-  // Monitoramento ativado/desativado no app do motorista (via servidor)
-  bool deveMonitorar = monitoramentoServidor == 1;
+  // Monitoramento ativado/desativado no app do motorista (via servidor).
+  // Sem contato com nenhum servidor, liga sozinho: os óculos nunca ficam "mudos" por falha de rede.
+  bool deveMonitorar = monitoramentoServidor == 1 || semContatoServidor;
   if (deveMonitorar != monitoramentoAtivo) {
     monitoramentoAtivo = deveMonitorar;
     melodiaPendente = monitoramentoAtivo;
@@ -527,8 +531,9 @@ void loop() {
     alarmeAtivo = false;
     alarmeMinimoAte = 0;
     tempoInicioCabecaBaixa = 0;
-    Serial.println(monitoramentoAtivo ? F("[MONITORAMENTO] Ativado no app: sensores em acao.")
-                                      : F("[MONITORAMENTO] Desativado no app: sensores pausados."));
+    if (!monitoramentoAtivo) Serial.println(F("[MONITORAMENTO] Desativado no app: sensores pausados."));
+    else if (semContatoServidor) Serial.println(F("[MONITORAMENTO] Sem contato com o servidor: sensores ligados por seguranca."));
+    else Serial.println(F("[MONITORAMENTO] Ativado no app: sensores em acao."));
     if (!monitoramentoAtivo) {
       aplicarAtuadores(false, false, false); // Encerra qualquer alarme antes do aviso sonoro
       delay(150);
@@ -860,6 +865,9 @@ void taskTelemetria(void *pvParameters) {
         }
       }
     }
+
+    // À prova de falha: tempo desde o último contato com qualquer servidor (desde o boot, se nunca houve)
+    semContatoServidor = millis() - max(ultimoContatoServidor, ultimoSucessoNuvem) > FAILSAFE_SEM_CONTATO_MS;
 
     bool nuvemRespondendo = ultimoSucessoNuvem && millis() - ultimoSucessoNuvem < TIMEOUT_SERVIDOR_LOCAL_MS;
     statusRede = !conectado ? REDE_SEM_COMUNICACAO
