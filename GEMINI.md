@@ -269,6 +269,12 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 - **Segurança**: o servidor não serve `backend/`, `Smart Driver/`, `.git/`, `*.md`, `*.bat` (o firmware e este arquivo contêm senhas de Wi-Fi).
 - **Dia da apresentação**: rodar `iniciar-painel.bat` (libera o firewall UDP 3002/TCP 3001). No celular, abrir `http://IP-DO-PC:3001/motorista.html` (latência mínima; GPS não funciona em HTTP) ou o link da Vercel (GPS funciona; passa pela nuvem).
 - **Testes**: `npm run simulate` (na pasta `backend`) imita o firmware completo, inclusive os comandos.
+- **Sem cabo (power bank)** — 23/10/2026:
+  - O cabo USB só alimenta; toda a comunicação é Wi-Fi. `WiFi.setSleep(false)` mantém o consumo constante (power bank não desliga por carga baixa) e os comandos chegam sem atraso.
+  - **LED azul da placa (GPIO 2)**: aceso fixo = falando com o servidor do PC (UDP) · pisca devagar = só pela nuvem (Render) · pisca rápido = sem comunicação.
+  - Se a ESP32 só alcança a nuvem (outra rede ou firewall) e o PC está espelhando, o Render **repassa a telemetria ao PC** (`TELEMETRIA_ESP32`) e os comandos da Central sobem no espelho (`cmds_esp32`). A Central mostra "ESP32: ONLINE · NUVEM". Exige o `server.js` atualizado no Render.
+  - `iniciar-painel.bat` pede administrador sozinho e troca as regras "Bloquear" do Node.js (criadas quando alguém clica em Cancelar no aviso do Windows) por "Permitir" — sem isso o UDP 3002 é barrado em rede pública/hotspot.
+  - ESP32 só conecta em **2,4 GHz**: no hotspot do celular, desligar 5 GHz / ativar "compatibilidade máxima".
 
 
 
