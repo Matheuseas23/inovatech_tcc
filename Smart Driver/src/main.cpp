@@ -299,7 +299,8 @@ void setup() {
   delay(150);
 
   // Inicializa I2C nos pinos dedicados D21 (SDA) e D22 (SCL)
-  Wire.begin(PINO_MPU_SDA, PINO_MPU_SCL, 400000);
+  // 100 kHz (padrão I2C): mais robusto com fios fêmea longos e os fios do LED passando junto
+  Wire.begin(PINO_MPU_SDA, PINO_MPU_SCL, 100000);
   Wire.setTimeOut(20); // Nunca deixa um fio solto travar o Core 1
   inicializarMPU6050();
 
