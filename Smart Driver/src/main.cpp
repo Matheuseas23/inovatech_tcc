@@ -62,6 +62,12 @@ const uint8_t PINO_RELE_2    = 19; // GPIO 19 - Relé Pisca-Alerta Veicular
 const uint8_t PINO_RELE_GND  = 13; // GPIO 13 (D13) - GND Virtual Relé
 const uint8_t PINO_LED_REDE  = 2;  // GPIO 2 - LED azul da placa (status da conexão sem cabo)
 
+// LEDs de status nos óculos (cada um com seu GND virtual, ligados com fios fêmea-fêmea)
+const uint8_t PINO_LED_VERMELHO     = 26; // GPIO 26 (+) - pisca no bip de aviso e rápido no alarme
+const uint8_t PINO_LED_VERMELHO_GND = 27; // GPIO 27 - GND virtual do LED vermelho
+const uint8_t PINO_LED_VERDE        = 33; // GPIO 33 (+) - aceso monitorando normal / pisca calibrando
+const uint8_t PINO_LED_VERDE_GND    = 14; // GPIO 14 - GND virtual do LED verde
+
 // Acelerômetro GY-521 (I2C + Alimentação Virtual)
 const uint8_t PINO_MPU_SDA   = 21; // GPIO 21 - Linha SDA I2C
 const uint8_t PINO_MPU_SCL   = 22; // GPIO 22 - Linha SCL I2C
@@ -252,6 +258,16 @@ void setup() {
   pinMode(PINO_RELE_2, OUTPUT);
   pinMode(PINO_LED_REDE, OUTPUT);
 
+  // LEDs de status: corrente limitada no pino (~10 mA), seguro mesmo se ligarem sem resistor
+  pinMode(PINO_LED_VERMELHO, OUTPUT);
+  pinMode(PINO_LED_VERDE, OUTPUT);
+  pinMode(PINO_LED_VERMELHO_GND, OUTPUT);
+  pinMode(PINO_LED_VERDE_GND, OUTPUT);
+  digitalWrite(PINO_LED_VERMELHO_GND, LOW);
+  digitalWrite(PINO_LED_VERDE_GND, LOW);
+  gpio_set_drive_capability((gpio_num_t)PINO_LED_VERMELHO, GPIO_DRIVE_CAP_1);
+  gpio_set_drive_capability((gpio_num_t)PINO_LED_VERDE, GPIO_DRIVE_CAP_1);
+
   // GND Virtual (0V) no Pino D13 para o terra do Módulo Relé
   pinMode(PINO_RELE_GND, OUTPUT);
   digitalWrite(PINO_RELE_GND, LOW);
@@ -285,6 +301,7 @@ void setup() {
   Serial.println(F("=================================================="));
   Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25"));
   Serial.println(F("[HARDWARE] Rele 1: GPIO 18 | Rele 2: GPIO 19 | GND Rele: GPIO 13"));
+  Serial.println(F("[HARDWARE] LED vermelho: GPIO 26 (GND 27) | LED verde: GPIO 33 (GND 14)"));
   Serial.printf("[HARDWARE] Acelerometro GY-521: SDA=%d, SCL=%d, VCC=%d, GND=%d (RX2)\n",
                 PINO_MPU_SDA, PINO_MPU_SCL, PINO_MPU_VCC, PINO_MPU_GND);
   Serial.printf("[HARDWARE] Status MPU-6050: %s\n", mpuDetectado ? "CONECTADO (calibracao guiada em 4 s)" : "AGUARDANDO CONEXAO");
@@ -708,6 +725,16 @@ void loop() {
   if (alarmeGeral) estadoAtualTexto = "ALARME_ATIVADO";
   else if (cabecaEstavaBaixa) estadoAtualTexto = "PRE_ALERTA";
   aplicarAtuadores(buzzerLigado, rele1Ligado, rele2Ligado);
+
+  // LEDs de status: verde = monitorando normal (pisca calibrando; no modo checagem, pisca com o
+  // "batimento"); vermelho = pisca junto com o bip de aviso e pisca rápido no alarme
+  bool calibrando = calibracaoAgendadaMs != 0;
+  bool verdeAceso = modoDiagnostico ? bipBatimento
+                  : calibrando ? (agora % 500 < 250)
+                  : (sensoresAtivos && !alarmeGeral && !avisoPiscaAlerta);
+  bool vermelhoAceso = alarmeGeral ? (agora % 200 < 100) : bipPreAlertaAtivo;
+  digitalWrite(PINO_LED_VERDE, verdeAceso ? HIGH : LOW);
+  digitalWrite(PINO_LED_VERMELHO, vermelhoAceso ? HIGH : LOW);
 
   // Atualiza os dados compartilhados com o Core 0 de forma atômica
   portENTER_CRITICAL(&mutexDados);
