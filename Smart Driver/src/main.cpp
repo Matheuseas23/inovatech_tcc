@@ -739,7 +739,8 @@ void loop() {
   else if (cabecaEstavaBaixa) estadoAtualTexto = "PRE_ALERTA";
   aplicarAtuadores(buzzerLigado, rele1Ligado, rele2Ligado);
 
-  // LED RGB: vermelho piscando = alarme; amarelo = aviso (1 s); azul piscando = calibrando;
+  // LED RGB: vermelho piscando = alarme; roxo piscando = acelerômetro desconectado;
+  // amarelo = aviso (1 s); azul piscando = calibrando;
   // verde = monitorando normal; azul "respirando" = monitoramento desligado (enfeite);
   // branco piscando com o "batimento" = modo checagem
   bool calibrando = calibracaoAgendadaMs != 0;
@@ -760,6 +761,10 @@ void loop() {
     corLed(b, b, b);
   } else if (alarmeGeral) {
     corLed(agora % 200 < 100 ? 255 : 0, 0, 0);
+  } else if (!mpuDetectado) {
+    // Roxo piscando = acelerômetro desconectado (confira os fios D21, D22, D23 e RX2)
+    uint8_t roxo = agora % 1000 < 500 ? 160 : 0;
+    corLed(roxo, 0, roxo);
   } else if (avisoPiscaAlerta) {
     corLed(255, 140, 0);
   } else if (calibrando) {
