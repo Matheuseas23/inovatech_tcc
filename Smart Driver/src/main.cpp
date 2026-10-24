@@ -62,11 +62,12 @@ const uint8_t PINO_RELE_2    = 19; // GPIO 19 - Relé Pisca-Alerta Veicular
 const uint8_t PINO_RELE_GND  = 13; // GPIO 13 (D13) - GND Virtual Relé
 const uint8_t PINO_LED_REDE  = 2;  // GPIO 2 - LED azul da placa (status da conexão sem cabo)
 
-// LEDs de status nos óculos (cada um com seu GND virtual, ligados com fios fêmea-fêmea)
-const uint8_t PINO_LED_VERMELHO     = 26; // GPIO 26 (+) - pisca no bip de aviso e rápido no alarme
-const uint8_t PINO_LED_VERMELHO_GND = 27; // GPIO 27 - GND virtual do LED vermelho
-const uint8_t PINO_LED_VERDE        = 33; // GPIO 33 (+) - aceso monitorando normal / pisca calibrando
-const uint8_t PINO_LED_VERDE_GND    = 14; // GPIO 14 - GND virtual do LED verde
+// LED RGB de status nos óculos (fios: R laranja, comum cinza, G verde, B roxo)
+const uint8_t PINO_LED_R      = 26; // GPIO 26 - vermelho (fio laranja, resistor 220 Ω)
+const uint8_t PINO_LED_G      = 4;  // GPIO 4  - verde (fio verde, resistor 100 Ω; o D33 está com o IR)
+const uint8_t PINO_LED_B      = 27; // GPIO 27 - azul (fio roxo, resistor 100 Ω)
+const uint8_t PINO_LED_COMUM  = 14; // GPIO 14 - perna comum, a mais comprida (fio cinza)
+const bool LED_RGB_ANODO_COMUM = false; // true se for ânodo comum (cores invertidas no autoteste)
 
 // Acelerômetro GY-521 (I2C + Alimentação Virtual)
 const uint8_t PINO_MPU_SDA   = 21; // GPIO 21 - Linha SDA I2C
@@ -240,6 +241,7 @@ void calibrarComAviso();
 void bipAviso(uint8_t vezes, unsigned int duracaoMs);
 void tocarMelodiaPronto();
 void tocarDespertador();
+void corLed(uint8_t r, uint8_t g, uint8_t b);
 void tecAspas();
 LeituraMPU lerMPU6050(unsigned long agora);
 
@@ -258,15 +260,19 @@ void setup() {
   pinMode(PINO_RELE_2, OUTPUT);
   pinMode(PINO_LED_REDE, OUTPUT);
 
-  // LEDs de status: corrente limitada no pino (~10 mA), seguro mesmo se ligarem sem resistor
-  pinMode(PINO_LED_VERMELHO, OUTPUT);
-  pinMode(PINO_LED_VERDE, OUTPUT);
-  pinMode(PINO_LED_VERMELHO_GND, OUTPUT);
-  pinMode(PINO_LED_VERDE_GND, OUTPUT);
-  digitalWrite(PINO_LED_VERMELHO_GND, LOW);
-  digitalWrite(PINO_LED_VERDE_GND, LOW);
-  gpio_set_drive_capability((gpio_num_t)PINO_LED_VERMELHO, GPIO_DRIVE_CAP_1);
-  gpio_set_drive_capability((gpio_num_t)PINO_LED_VERDE, GPIO_DRIVE_CAP_1);
+  // LED RGB: perna comum no GND virtual (ou no + se for ânodo comum); cores por PWM com a
+  // corrente limitada no pino (~10 mA), seguro mesmo se alguma cor ficar sem resistor
+  pinMode(PINO_LED_COMUM, OUTPUT);
+  digitalWrite(PINO_LED_COMUM, LED_RGB_ANODO_COMUM ? HIGH : LOW);
+  for (uint8_t pino : {PINO_LED_R, PINO_LED_G, PINO_LED_B}) {
+    ledcAttach(pino, 5000, 8);
+    gpio_set_drive_capability((gpio_num_t)pino, GPIO_DRIVE_CAP_1);
+  }
+  // Autoteste ao ligar: vermelho, verde, azul
+  corLed(255, 0, 0); delay(250);
+  corLed(0, 255, 0); delay(250);
+  corLed(0, 0, 255); delay(250);
+  corLed(0, 0, 0);
 
   // GND Virtual (0V) no Pino D13 para o terra do Módulo Relé
   pinMode(PINO_RELE_GND, OUTPUT);
@@ -301,7 +307,7 @@ void setup() {
   Serial.println(F("=================================================="));
   Serial.println(F("[HARDWARE] Sensor IR: GPIO 32 | Buzzer: GPIO 25"));
   Serial.println(F("[HARDWARE] Rele 1: GPIO 18 | Rele 2: GPIO 19 | GND Rele: GPIO 13"));
-  Serial.println(F("[HARDWARE] LED vermelho: GPIO 26 (GND 27) | LED verde: GPIO 33 (GND 14)"));
+  Serial.println(F("[HARDWARE] LED RGB: R=GPIO 26 | G=GPIO 4 | B=GPIO 27 | comum=GPIO 14"));
   Serial.printf("[HARDWARE] Acelerometro GY-521: SDA=%d, SCL=%d, VCC=%d, GND=%d (RX2)\n",
                 PINO_MPU_SDA, PINO_MPU_SCL, PINO_MPU_VCC, PINO_MPU_GND);
   Serial.printf("[HARDWARE] Status MPU-6050: %s\n", mpuDetectado ? "CONECTADO (calibracao guiada em 4 s)" : "AGUARDANDO CONEXAO");
@@ -726,15 +732,25 @@ void loop() {
   else if (cabecaEstavaBaixa) estadoAtualTexto = "PRE_ALERTA";
   aplicarAtuadores(buzzerLigado, rele1Ligado, rele2Ligado);
 
-  // LEDs de status: verde = monitorando normal (pisca calibrando; no modo checagem, pisca com o
-  // "batimento"); vermelho = pisca junto com o bip de aviso e pisca rápido no alarme
+  // LED RGB: vermelho piscando = alarme; amarelo = aviso (1 s); azul piscando = calibrando;
+  // verde = monitorando normal; azul "respirando" = monitoramento desligado (enfeite);
+  // branco piscando com o "batimento" = modo checagem
   bool calibrando = calibracaoAgendadaMs != 0;
-  bool verdeAceso = modoDiagnostico ? bipBatimento
-                  : calibrando ? (agora % 500 < 250)
-                  : (sensoresAtivos && !alarmeGeral && !avisoPiscaAlerta);
-  bool vermelhoAceso = alarmeGeral ? (agora % 200 < 100) : bipPreAlertaAtivo;
-  digitalWrite(PINO_LED_VERDE, verdeAceso ? HIGH : LOW);
-  digitalWrite(PINO_LED_VERMELHO, vermelhoAceso ? HIGH : LOW);
+  if (modoDiagnostico) {
+    uint8_t b = bipBatimento ? 180 : 0;
+    corLed(b, b, b);
+  } else if (alarmeGeral) {
+    corLed(agora % 200 < 100 ? 255 : 0, 0, 0);
+  } else if (avisoPiscaAlerta) {
+    corLed(255, 140, 0);
+  } else if (calibrando) {
+    corLed(0, 0, agora % 500 < 250 ? 255 : 0);
+  } else if (sensoresAtivos) {
+    corLed(0, 160, 0);
+  } else {
+    float fase = (agora % 3000) / 3000.0f; // Respira a cada 3 s
+    corLed(0, 0, (uint8_t)(10 + 90 * (0.5f - 0.5f * cosf(fase * 2 * PI))));
+  }
 
   // Atualiza os dados compartilhados com o Core 0 de forma atômica
   portENTER_CRITICAL(&mutexDados);
@@ -849,6 +865,13 @@ void aplicarComandosRemotos() {
 // ------------------------------------------------------------------------------
 // 9. ATUADORES DE SEGURANÇA
 // ------------------------------------------------------------------------------
+// Acende o LED RGB (0 a 255 em cada cor); inverte sozinho se o LED for de ânodo comum
+void corLed(uint8_t r, uint8_t g, uint8_t b) {
+  ledcWrite(PINO_LED_R, LED_RGB_ANODO_COMUM ? 255 - r : r);
+  ledcWrite(PINO_LED_G, LED_RGB_ANODO_COMUM ? 255 - g : g);
+  ledcWrite(PINO_LED_B, LED_RGB_ANODO_COMUM ? 255 - b : b);
+}
+
 // Escreve o estado de todos os atuadores de uma vez (sem pulsos intermediários nos relés)
 void aplicarAtuadores(bool buzzer, bool rele1, bool rele2) {
   digitalWrite(PINO_BUZZER, buzzer ? NIVEL_BUZZER_LIGADO : NIVEL_BUZZER_DESLIGADO);
