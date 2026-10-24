@@ -42,8 +42,13 @@ const char* WIFI_REDMI_PASS = "Garcia2026";
 const char* WIFI_IPHONE_SSID = "iPhone de Matheus";
 const char* WIFI_IPHONE_PASS = "12345678910";
 
-// Apresentação: conectar SOMENTE no ponto de acesso do Redmi. Para voltar a usar as 3 redes, troque para false.
-const bool SOMENTE_WIFI_REDMI = true;
+// 4. Wi-Fi de casa (TP-Link, a ESP usa a faixa de 2,4 GHz):
+const char* WIFI_TPLINK_SSID = "TP-Link_5E68";
+const char* WIFI_TPLINK_PASS = "GQW5Yt5N";
+
+// true = conecta SOMENTE no ponto de acesso do Redmi (usado na apresentação do CPIC).
+// false = qualquer rede conhecida; o WiFiMulti escolhe a de melhor sinal.
+const bool SOMENTE_WIFI_REDMI = false;
 
 // Servidor na nuvem (usado somente quando nenhum servidor local responde):
 const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
@@ -340,6 +345,7 @@ void setup() {
   // SOMENTE_WIFI_REDMI = true: conecta só no ponto de acesso do Redmi (apresentação).
   wifiMulti.addAP(WIFI_REDMI_SSID, WIFI_REDMI_PASS);
   if (!SOMENTE_WIFI_REDMI) {
+    wifiMulti.addAP(WIFI_TPLINK_SSID, WIFI_TPLINK_PASS);
     wifiMulti.addAP(WIFI_CASA_SSID, WIFI_CASA_PASS);
     wifiMulti.addAP(WIFI_IPHONE_SSID, WIFI_IPHONE_PASS);
   }
