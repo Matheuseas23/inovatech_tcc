@@ -740,7 +740,7 @@ void loop() {
   aplicarAtuadores(buzzerLigado, rele1Ligado, rele2Ligado);
 
   // LED RGB: vermelho piscando = alarme; roxo piscando = acelerômetro desconectado;
-  // amarelo = aviso (1 s); azul piscando = calibrando;
+  // amarelo = aviso (1 s); azul piscando = calibrando; azul fixo = aguardando o servidor;
   // verde = monitorando normal; azul "respirando" = monitoramento desligado (enfeite);
   // branco piscando com o "batimento" = modo checagem
   bool calibrando = calibracaoAgendadaMs != 0;
@@ -769,6 +769,8 @@ void loop() {
     corLed(255, 140, 0);
   } else if (calibrando) {
     corLed(0, 0, agora % 500 < 250 ? 255 : 0);
+  } else if (statusRede == REDE_SEM_COMUNICACAO) {
+    corLed(0, 0, 160); // Azul fixo = aguardando o servidor (sem conexão)
   } else if (sensoresAtivos) {
     corLed(0, 160, 0);
   } else {
