@@ -188,6 +188,7 @@ const unsigned long DURACAO_MAX_DIAGNOSTICO_MS = 15UL * 60UL * 1000UL;
 volatile bool modoDiagnostico = false;
 volatile unsigned long inicioDiagnosticoMs = 0;
 volatile bool pedidoScanWifi = false; // Comando serial SCAN: lista as redes que a ESP32 enxerga
+volatile unsigned long arcoIrisAteMs = 0; // Comando serial ARCOIRIS: teste do LED RGB por 10 s
 
 // Variáveis de Estado no Core 1
 unsigned long tempoInicioCabecaBaixa = 0;
@@ -736,7 +737,19 @@ void loop() {
   // verde = monitorando normal; azul "respirando" = monitoramento desligado (enfeite);
   // branco piscando com o "batimento" = modo checagem
   bool calibrando = calibracaoAgendadaMs != 0;
-  if (modoDiagnostico) {
+  if (arcoIrisAteMs && agora < arcoIrisAteMs) {
+    // Teste do LED (comando ARCOIRIS): passeia por todas as cores a cada 2 s
+    float h = (agora % 2000) / 2000.0f * 6.0f;
+    float x = 1 - fabsf(fmodf(h, 2.0f) - 1);
+    float r = 0, g = 0, b = 0;
+    if (h < 1)      { r = 1; g = x; }
+    else if (h < 2) { r = x; g = 1; }
+    else if (h < 3) { g = 1; b = x; }
+    else if (h < 4) { g = x; b = 1; }
+    else if (h < 5) { r = x; b = 1; }
+    else            { r = 1; b = x; }
+    corLed(r * 255, g * 255, b * 255);
+  } else if (modoDiagnostico) {
     uint8_t b = bipBatimento ? 180 : 0;
     corLed(b, b, b);
   } else if (alarmeGeral) {
@@ -814,6 +827,10 @@ void interpretarComandosTexto(const char* texto) {
     Serial.println(F("[DIAGNOSTICO] Checagem encerrada: sensores de volta ao normal."));
   }
   if (strstr(texto, "SCAN")) pedidoScanWifi = true;
+  if (strstr(texto, "ARCOIRIS")) {
+    arcoIrisAteMs = millis() + 10000;
+    Serial.println(F("[LED] Teste do LED RGB: arco-iris por 10 s."));
+  }
 }
 
 void processarComandosSerial() {
