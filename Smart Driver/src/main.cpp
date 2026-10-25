@@ -293,7 +293,8 @@ LeituraMPU lerMPU6050(unsigned long agora);
 void recuperarBarramentoMPU();
 void diagnosticarI2C();
 void iniciarOled();
-void atualizarOled(const DadosTelemetria &d, bool conectado);
+bool atualizarOled(const DadosTelemetria &d, bool conectado);
+void taskDisplay(void *pvParameters);
 
 // ------------------------------------------------------------------------------
 // 5. SETUP INICIAL
@@ -421,6 +422,9 @@ void setup() {
     NULL,
     0
   );
+
+  // Tarefa do display OLED (Core 0): animações da carinha, abertura, caminhão/ônibus e status
+  xTaskCreatePinnedToCore(taskDisplay, "TaskDisplay", 6144, NULL, 1, NULL, 0);
 }
 
 // ------------------------------------------------------------------------------
@@ -1243,24 +1247,132 @@ void iniciarOled() {
   if (!oledOk) { Serial.println(F("[OLED] Falha ao iniciar o display.")); return; }
   oled.cp437(true);
   oled.clearDisplay();
-  oled.setTextColor(SSD1306_WHITE);
-  oledCentro("INOVA TECH", 10, 2);
-  oledCentro("Smart Driver", 34, 1);
-  oledCentro("TCC 2026", 50, 1);
   oled.display();
   Serial.printf("[OLED] Display OK no endereco 0x%02X\n", endereco);
 }
 
-void atualizarOled(const DadosTelemetria &d, bool conectado) {
+// ---- Animações (desenhadas na tarefa do display, ~25 quadros por segundo) ----
+const unsigned long INTRO_CARINHA_MS  = 3300; // olhos abrem, sobem, sorriso e "OLÁ"
+const unsigned long INTRO_ABERTURA_MS = 2500; // "INOVA TECH · Smart Driver · TCC 2026"
+const unsigned long VEICULO_ENTRA_MS  = 900;  // caminhão/ônibus entra até o centro...
+const unsigned long VEICULO_PARADO_MS = 700;  // ...para um instante...
+const unsigned long VEICULO_SAI_MS    = 900;  // ...e sai pela direita
+const unsigned long VEICULO_TOTAL_MS  = VEICULO_ENTRA_MS + VEICULO_PARADO_MS + VEICULO_SAI_MS;
+
+float suave(float p) { p = constrain(p, 0.0f, 1.0f); return p * p * (3 - 2 * p); }
+
+// Olhos abrem -> sobem um pouco -> viram olhinhos fechados felizes (^ ^) + sorriso -> "OLÁ"
+void desenharCarinha(unsigned long t) {
+  const int16_t xOlhos[2] = {44, 84};
+  if (t < 1400) {
+    float abrir = suave(t / 600.0f);                     // 0 a 0,6 s: abrindo
+    float subir = suave((t - 900.0f) / 500.0f);          // 0,9 a 1,4 s: sobem e diminuem
+    if (t < 900) subir = 0;
+    int16_t cy = 30 - (int16_t)(12 * subir);
+    int16_t h = (int16_t)(2 + 18 * abrir - 6 * subir);
+    for (int16_t cx : xOlhos) oled.fillRoundRect(cx - 8, cy - h / 2, 16, h, h >= 8 ? 4 : h / 2, SSD1306_WHITE);
+    return;
+  }
+  // Olhinhos fechados de felicidade (arcos para cima)
+  for (int16_t cx : xOlhos) {
+    oled.drawCircleHelper(cx, 22, 7, 1 | 2, SSD1306_WHITE);
+    oled.drawCircleHelper(cx, 22, 6, 1 | 2, SSD1306_WHITE);
+  }
+  // Sorriso crescendo (meio círculo para baixo)
+  int16_t r = (int16_t)(14 * suave((t - 1400.0f) / 400.0f));
+  if (r > 1) {
+    oled.drawCircleHelper(64, 26, r, 4 | 8, SSD1306_WHITE);
+    oled.drawCircleHelper(64, 26, r - 1, 4 | 8, SSD1306_WHITE);
+  }
+  if (t >= 1900) {
+    oled.setTextSize(2);
+    oled.setCursor(46, 47);
+    oled.print(F("OLA"));
+    oled.drawLine(74, 45, 77, 42, SSD1306_WHITE); // acento do "Á"
+    oled.drawLine(75, 45, 78, 42, SSD1306_WHITE);
+  }
+}
+
+void desenharAbertura() {
+  oledCentro("INOVA TECH", 10, 2);
+  oledCentro("Smart Driver", 34, 1);
+  oledCentro("TCC 2026", 50, 1);
+}
+
+// Caminhão virado para a direita (46 px de comprimento), rodas apoiadas em yBase
+void desenharCaminhao(int16_t x, int16_t yBase) {
+  oled.fillRect(x, yBase - 21, 30, 15, SSD1306_WHITE);              // baú
+  oled.fillRect(x, yBase - 6, 46, 2, SSD1306_WHITE);                // chassi
+  oled.fillRoundRect(x + 31, yBase - 17, 15, 11, 2, SSD1306_WHITE); // cabine
+  oled.fillRect(x + 38, yBase - 15, 6, 5, SSD1306_BLACK);           // janela
+  for (int16_t rx : {7, 20, 39}) {
+    oled.fillCircle(x + rx, yBase - 3, 3, SSD1306_WHITE);
+    oled.drawPixel(x + rx, yBase - 3, SSD1306_BLACK);
+  }
+}
+
+// Ônibus de viagem virado para a direita (58 px de comprimento)
+void desenharOnibus(int16_t x, int16_t yBase) {
+  oled.fillRoundRect(x, yBase - 22, 58, 17, 3, SSD1306_WHITE);      // carroceria
+  for (int16_t i = 0; i < 6; i++) oled.fillRect(x + 3 + i * 8, yBase - 19, 6, 5, SSD1306_BLACK); // janelas
+  oled.fillRect(x + 52, yBase - 19, 4, 8, SSD1306_BLACK);           // para-brisa
+  oled.fillRect(x + 47, yBase - 13, 3, 7, SSD1306_BLACK);           // porta
+  for (int16_t rx : {12, 44}) {
+    oled.fillCircle(x + rx, yBase - 4, 5, SSD1306_BLACK);           // caixa de roda
+    oled.fillCircle(x + rx, yBase - 4, 3, SSD1306_WHITE);
+  }
+}
+
+// Posição x de um veículo: entra suave até o centro, para, e sai acelerando pela direita
+int16_t posicaoVeiculo(unsigned long t, int16_t largura) {
+  int16_t centro = (128 - largura) / 2;
+  if (t < VEICULO_ENTRA_MS) {
+    float p = 1 - powf(1 - t / (float)VEICULO_ENTRA_MS, 2);         // desacelera ao chegar
+    return (int16_t)(-largura + (centro + largura) * p);
+  }
+  if (t < VEICULO_ENTRA_MS + VEICULO_PARADO_MS) return centro;
+  float p = powf((t - VEICULO_ENTRA_MS - VEICULO_PARADO_MS) / (float)VEICULO_SAI_MS, 2); // acelera ao sair
+  return (int16_t)(centro + (128 - centro) * p);
+}
+
+void desenharVeiculos(unsigned long t) {
+  oledCentro("BOA VIAGEM!", 0, 1);
+  oled.drawFastHLine(0, 58, 128, SSD1306_WHITE);                    // pista
+  for (int16_t x = 2; x < 128; x += 14) oled.drawFastHLine(x, 62, 7, SSD1306_WHITE); // faixa
+  if (t < VEICULO_TOTAL_MS) desenharCaminhao(posicaoVeiculo(t, 46), 57);
+  else desenharOnibus(posicaoVeiculo(t - VEICULO_TOTAL_MS, 58), 57);
+}
+
+// Desenha um quadro do display. Retorna true enquanto uma animação está rodando (quadros rápidos).
+bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   static unsigned long ultimo = 0;
   static unsigned long ultimaReconfiguracao = 0;
+  static unsigned long inicioIntroMs = millis();
+  static unsigned long inicioVeiculosMs = 0;
+  static bool veiculosPendentes = false;
+  static bool monitorandoAntes = false;
   static bool invertido = false;
   bool alarme = d.alarmeAtivo;
+  bool preAlerta = strcmp(d.estado, "PRE_ALERTA") == 0;
+  unsigned long agora = millis();
+
+  // Abertura (carinha + "INOVA TECH") logo que a placa liga
+  bool naIntro = agora - inicioIntroMs < INTRO_CARINHA_MS + INTRO_ABERTURA_MS;
+
+  // Caminhão e ônibus quando o monitoramento é ativado (espera a abertura terminar)
+  if (d.monitorando && !monitorandoAntes) veiculosPendentes = true;
+  if (!d.monitorando) { veiculosPendentes = false; inicioVeiculosMs = 0; }
+  monitorandoAntes = d.monitorando;
+  if (veiculosPendentes && !naIntro) { veiculosPendentes = false; inicioVeiculosMs = agora; }
+  if (inicioVeiculosMs && agora - inicioVeiculosMs >= 2 * VEICULO_TOTAL_MS) inicioVeiculosMs = 0;
+  // Alerta interrompe qualquer animação na hora (segurança primeiro)
+  if (alarme || preAlerta || d.diagnostico) { inicioVeiculosMs = 0; veiculosPendentes = false; }
+  bool animando = oledOk && !alarme && !preAlerta && (naIntro || inicioVeiculosMs);
 
   // O display tem que ficar SEMPRE ligado. Um mau contato de um instante no VDD/GND faz o SSD1306
   // reiniciar apagado (ele perde a configuração); por isso, a cada 5 s, a configuração é reenviada.
   // Também religa sozinho se o display for desconectado e conectado de novo.
-  if (millis() > 3000 && millis() - ultimaReconfiguracao >= 5000) {
+  if (!animando && agora - ultimaReconfiguracao >= 5000) {
     ultimaReconfiguracao = millis();
     uint8_t endereco = detectarOled();
     if (!endereco) {
@@ -1275,8 +1387,27 @@ void atualizarOled(const DadosTelemetria &d, bool conectado) {
     }
   }
 
-  if (!oledOk || millis() < 3000 || millis() - ultimo < (alarme ? 250UL : 400UL)) return; // 3 s de tela de abertura
-  ultimo = millis();
+  if (!oledOk) return false;
+
+  if (animando) {
+    oled.clearDisplay();
+    oled.setTextColor(SSD1306_WHITE);
+    invertido = false;
+    oled.invertDisplay(false);
+    unsigned long t = agora - inicioIntroMs;
+    if (naIntro) {
+      if (t < INTRO_CARINHA_MS) desenharCarinha(t);
+      else desenharAbertura();
+    } else {
+      desenharVeiculos(agora - inicioVeiculosMs);
+    }
+    oled.display();
+    ultimo = 0; // Ao terminar, a tela de status aparece na hora
+    return true;
+  }
+
+  if (agora - ultimo < (alarme ? 250UL : 400UL)) return false;
+  ultimo = agora;
 
   oled.clearDisplay();
   oled.setTextColor(SSD1306_WHITE);
@@ -1291,7 +1422,6 @@ void atualizarOled(const DadosTelemetria &d, bool conectado) {
   oled.drawFastHLine(0, 10, 128, SSD1306_WHITE);
 
   // Estado principal em letra grande
-  bool preAlerta = strcmp(d.estado, "PRE_ALERTA") == 0;
   const char* titulo;
   const char* sub = nullptr;
   if (d.diagnostico)        { titulo = "CHECAGEM";   sub = "Sensores suspensos"; }
@@ -1339,6 +1469,19 @@ void atualizarOled(const DadosTelemetria &d, bool conectado) {
   invertido = alarme ? !invertido : false;
   oled.invertDisplay(invertido);
   oled.display();
+  return false;
+}
+
+// Tarefa própria do display (Core 0): animações suaves sem atrasar a rede nem a detecção de sono
+void taskDisplay(void *pvParameters) {
+  for (;;) {
+    DadosTelemetria snap;
+    portENTER_CRITICAL(&mutexDados);
+    snap = dadosGlobais;
+    portEXIT_CRITICAL(&mutexDados);
+    bool animando = atualizarOled(snap, WiFi.status() == WL_CONNECTED);
+    vTaskDelay(pdMS_TO_TICKS(animando ? 10 : 50));
+  }
 }
 
 void taskTelemetria(void *pvParameters) {
@@ -1481,7 +1624,6 @@ void taskTelemetria(void *pvParameters) {
                : servidorConhecido ? REDE_SERVIDOR_LOCAL
                : nuvemRespondendo ? REDE_NUVEM : REDE_SEM_COMUNICACAO;
 
-    atualizarOled(snap, conectado);
 
     bool emAlerta = strcmp(snap.estado, "NORMAL") != 0;
     vTaskDelay(pdMS_TO_TICKS(emAlerta ? INTERVALO_TELEMETRIA_ALERTA_MS : INTERVALO_TELEMETRIA_MS));
