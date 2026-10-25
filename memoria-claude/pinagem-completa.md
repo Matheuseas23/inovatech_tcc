@@ -19,9 +19,9 @@ Conferida com o firmware (`Smart Driver/src/main.cpp`). ESP32 vista de cima, com
 | | B — fio roxo | **D27** | resistor 100 Ω |
 | | comum (perna mais longa) — fio cinza | **D14** | GND virtual |
 | **Buzzer** | + | **D25** | |
-| | − | **GND** | |
+| | − | **D33** | GND virtual (desde 25/10) |
 | **Relé duplo HL-52S** | VCC | **VIN** (5 V) | jumper JD-VCC encaixado |
-| | GND | **D13** | GND virtual |
+| | GND | **GND físico** | as bobinas puxam ~70 mA cada: no D13 as "molas" paravam |
 | | IN1 (Safe-Stop) | **D18** | |
 | | IN2 (Pisca-alerta) | **D19** | |
 | Sensor IR | — | **removido** | se voltar: OUT no D32, VCC/GND em pinos virtuais |
@@ -36,12 +36,12 @@ Conferida com o firmware (`Smart Driver/src/main.cpp`). ESP32 vista de cima, com
 | D34 | livre (só entrada) | RX0 | USB (não usar) |
 | D35 | livre (só entrada) | D21 | acelerômetro SDA |
 | D32 | livre (era o IR) | D19 | relé IN2 |
-| D33 | livre | D18 | relé IN1 |
+| D33 | buzzer − (GND virtual) | D18 | relé IN1 |
 | D25 | buzzer + | D5 | OLED SCK |
 | D26 | LED R (laranja) | TX2 | OLED SDA |
 | D27 | LED B (roxo) | RX2 | acelerômetro GND |
 | D14 | LED comum (cinza) | D4 | LED G (verde) |
 | D12 | ⛔ não usar (placa não liga) | D2 | LED azul da placa |
-| D13 | relé GND | D15 | OLED GND |
-| GND | (buzzer −) | GND | ocupado |
+| D13 | livre (era o GND do relé) | D15 | OLED GND |
+| GND | relé GND | GND | ocupado |
 | VIN | relé VCC (5 V) | 3V3 | acelerômetro VCC |
