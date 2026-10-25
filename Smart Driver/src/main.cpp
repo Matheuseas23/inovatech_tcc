@@ -194,6 +194,14 @@ volatile bool modoDiagnostico = false;
 volatile unsigned long inicioDiagnosticoMs = 0;
 volatile bool pedidoScanWifi = false; // Comando serial SCAN: lista as redes que a ESP32 enxerga
 volatile unsigned long arcoIrisAteMs = 0; // Comando serial ARCOIRIS: teste do LED RGB por 10 s
+volatile bool pedidoDiagI2C = false;      // Comando serial I2C: diagnóstico + destravamento do acelerômetro
+volatile int8_t pedidoModoLed = -1;       // Comandos seriais LED:DIG (1) / LED:PWM (0)
+bool ledModoDigital = false;              // true = LED só liga/desliga, sem PWM (sem ruído no I2C)
+uint8_t tentativasMpu = 0;                // Tentativas seguidas de reconectar o acelerômetro sem sucesso
+bool wireIniciado = false;
+// Modo econômico: o GY-521 caía ao ligar o giroscópio (alimentação fraca pelo D23). Com o giroscópio
+// em standby a detecção de cabeça baixa e pescada segue igual; só o filtro "pegar objeto" fica sem efeito.
+bool giroDesligado = false;
 
 // Variáveis de Estado no Core 1
 unsigned long tempoInicioCabecaBaixa = 0;
@@ -250,6 +258,8 @@ void tocarDespertador();
 void corLed(uint8_t r, uint8_t g, uint8_t b);
 void tecAspas();
 LeituraMPU lerMPU6050(unsigned long agora);
+void recuperarBarramentoMPU();
+void diagnosticarI2C();
 
 // ------------------------------------------------------------------------------
 // 5. SETUP INICIAL
@@ -293,15 +303,19 @@ void setup() {
   pinMode(PINO_MPU_GND, OUTPUT);
   digitalWrite(PINO_MPU_GND, LOW);
 
+  // Força máxima nos pinos de energia do GY-521: ao acordar (giroscópio ligado) ele puxa mais
+  // corrente e, com pino fraco + mau contato, a tensão caía e o módulo reiniciava sozinho
+  gpio_set_drive_capability((gpio_num_t)PINO_MPU_VCC, GPIO_DRIVE_CAP_3);
+  gpio_set_drive_capability((gpio_num_t)PINO_MPU_GND, GPIO_DRIVE_CAP_3);
+
   aplicarAtuadores(false, false, false);
 
   // Aguarda 150ms para o sensor GY-521 estabilizar a alimentação
   delay(150);
 
-  // Inicializa I2C nos pinos dedicados D21 (SDA) e D22 (SCL)
-  // 100 kHz (padrão I2C): mais robusto com fios fêmea longos e os fios do LED passando junto
-  Wire.begin(PINO_MPU_SDA, PINO_MPU_SCL, 100000);
-  Wire.setTimeOut(20); // Nunca deixa um fio solto travar o Core 1
+  // Religa o acelerômetro do zero e inicia o I2C (D21 SDA / D22 SCL): um reset da ESP32 não
+  // corta a energia dele, que pode ter ficado travado no meio de uma leitura
+  recuperarBarramentoMPU();
   inicializarMPU6050();
 
   // Calibração guiada: 1 bip agora; a medição acontece no loop() depois da espera
@@ -366,6 +380,111 @@ void setup() {
 // ------------------------------------------------------------------------------
 // 6. INICIALIZAÇÃO, CALIBRAÇÃO E LEITURA DO ACELERÔMETRO MPU-6050 (I2C)
 // ------------------------------------------------------------------------------
+// Destrava o barramento I2C do acelerômetro: corta a energia dele pelo VCC virtual (D23), dá 9
+// pulsos de clock e um STOP. Resolve o "responde mas não lê": MPU-6050 preso segurando o SDA
+// depois de um reset ou de um fio mexido no meio de uma leitura. Bloqueia ~0,4 s.
+void recuperarBarramentoMPU() {
+  if (wireIniciado) Wire.end();
+  // Linhas em 0 V junto com o VCC: o módulo não fica meio-alimentado pelos pull-ups
+  pinMode(PINO_MPU_SDA, OUTPUT); digitalWrite(PINO_MPU_SDA, LOW);
+  pinMode(PINO_MPU_SCL, OUTPUT); digitalWrite(PINO_MPU_SCL, LOW);
+  digitalWrite(PINO_MPU_VCC, LOW);
+  delay(250);
+  digitalWrite(PINO_MPU_VCC, HIGH);
+  delay(100);
+  pinMode(PINO_MPU_SDA, INPUT_PULLUP);
+  for (uint8_t i = 0; i < 9; i++) {
+    digitalWrite(PINO_MPU_SCL, HIGH); delayMicroseconds(10);
+    digitalWrite(PINO_MPU_SCL, LOW);  delayMicroseconds(10);
+  }
+  pinMode(PINO_MPU_SDA, OUTPUT); digitalWrite(PINO_MPU_SDA, LOW); delayMicroseconds(10);
+  digitalWrite(PINO_MPU_SCL, HIGH); delayMicroseconds(10);
+  digitalWrite(PINO_MPU_SDA, HIGH); delayMicroseconds(10);
+  // 100 kHz (padrão I2C): mais robusto com fios fêmea longos e os fios do LED passando junto
+  Wire.begin(PINO_MPU_SDA, PINO_MPU_SCL, 100000);
+  Wire.setTimeOut(20); // Nunca deixa um fio solto travar o Core 1
+  wireIniciado = true;
+}
+
+// Comando serial I2C: estado das linhas, quem responde no barramento e o WHO_AM_I do módulo
+void diagnosticarI2C() {
+  Wire.end();
+  pinMode(PINO_MPU_SDA, INPUT_PULLUP);
+  pinMode(PINO_MPU_SCL, INPUT_PULLUP);
+  delay(2);
+  int sda = digitalRead(PINO_MPU_SDA), scl = digitalRead(PINO_MPU_SCL);
+  Wire.begin(PINO_MPU_SDA, PINO_MPU_SCL, 100000);
+  Wire.setTimeOut(20);
+  Serial.printf("[I2C] Linhas em repouso: SDA=%s SCL=%s (o certo e ALTO/ALTO)\n",
+                sda ? "ALTO" : "BAIXO (preso!)", scl ? "ALTO" : "BAIXO (preso!)");
+
+  // Teste da alimentação: com o D23 (VCC) desligado, o módulo NÃO pode responder. Se responder,
+  // o fio VCC não leva energia e ele vive só da corrente que vaza pelos fios de dados (SDA/SCL)
+  digitalWrite(PINO_MPU_VCC, LOW);
+  delay(200);
+  Wire.beginTransmission(MPU6050_ADDR);
+  bool respondeSemVcc = Wire.endTransmission() == 0;
+  digitalWrite(PINO_MPU_VCC, HIGH);
+  delay(100);
+  Serial.printf("[I2C] Teste de energia: com o D23 (VCC) desligado o modulo %s\n",
+                respondeSemVcc ? "AINDA RESPONDE -> o fio VCC NAO esta levando energia (confira VCC <-> D23)"
+                               : "parou de responder -> fio VCC no D23 OK");
+  // Mesmo teste para o GND virtual (RX2): sem ele em 0 V, o módulo também não pode responder
+  digitalWrite(PINO_MPU_GND, HIGH);
+  delay(200);
+  Wire.beginTransmission(MPU6050_ADDR);
+  bool respondeSemGnd = Wire.endTransmission() == 0;
+  digitalWrite(PINO_MPU_GND, LOW);
+  delay(100);
+  Serial.printf("[I2C] Teste de terra: com o RX2 (GND) desligado o modulo %s\n",
+                respondeSemGnd ? "AINDA RESPONDE -> o GND do modulo NAO esta no RX2 (esta pegando terra por outro caminho)"
+                               : "parou de responder -> fio GND no RX2 OK");
+  uint8_t achados = 0;
+  for (uint8_t a = 1; a < 127; a++) {
+    Wire.beginTransmission(a);
+    if (Wire.endTransmission() == 0) {
+      if (achados < 6) Serial.printf("[I2C] Respondeu no endereco 0x%02X\n", a);
+      achados++;
+    }
+  }
+  if (achados == 0) Serial.println(F("[I2C] Ninguem respondeu: sem energia (VCC no D23, GND no RX2) ou SDA/SCL soltos."));
+  else if (achados > 3) Serial.printf("[I2C] %u enderecos 'responderam': linha SDA presa em 0 V (travada ou em curto).\n", achados);
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x75); // WHO_AM_I
+  uint8_t erro = Wire.endTransmission(false);
+  uint8_t n = Wire.requestFrom((uint8_t)MPU6050_ADDR, (size_t)1, true);
+  int quem = n ? Wire.read() : -1;
+  if (quem < 0) Serial.printf("[I2C] WHO_AM_I: sem resposta (erro %u) -> leitura de dados falha\n", erro);
+  else Serial.printf("[I2C] WHO_AM_I = 0x%02X (erro %u) (MPU-6050 original = 0x68; clones: 0x70, 0x72, 0x98)\n", quem, erro);
+
+  // Leitura completa usada pelo firmware (14 bytes a partir de 0x3B), com o módulo dormindo e acordado
+  auto lerBloco = [](const char* quando) {
+    Wire.beginTransmission(MPU6050_ADDR);
+    Wire.write(0x3B);
+    uint8_t e = Wire.endTransmission(false);
+    uint8_t q = Wire.requestFrom((uint8_t)MPU6050_ADDR, (size_t)14, true);
+    while (Wire.available()) Wire.read();
+    Serial.printf("[I2C] Leitura de 14 bytes (%s): erro=%u bytes=%u -> %s\n", quando, e, q,
+                  (e == 0 && q == 14) ? "OK" : "FALHOU");
+  };
+  lerBloco("como esta");
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x6B); Wire.write(0x00); // PWR_MGMT_1: acorda (liga o giroscópio)
+  uint8_t eAcordar = Wire.endTransmission(true);
+  // Depois de acordar: quem responde em 0x68 e 0x69 ao longo do tempo (0x69 = pino AD0 encostando no +)
+  for (uint16_t ms : {5, 50, 300, 1000}) {
+    static unsigned long base; if (ms == 5) base = millis();
+    while (millis() - base < ms) delay(1);
+    Wire.beginTransmission(0x68); uint8_t e68 = Wire.endTransmission();
+    Wire.beginTransmission(0x69); uint8_t e69 = Wire.endTransmission();
+    Serial.printf("[I2C]   %4u ms depois de acordar: 0x68=%s 0x69=%s\n", ms, e68 == 0 ? "responde" : "--", e69 == 0 ? "responde" : "--");
+  }
+  Wire.beginTransmission(MPU6050_ADDR);
+  uint8_t eSonda = Wire.endTransmission();
+  Serial.printf("[I2C] Acordar o modulo: erro=%u | ainda responde depois de acordar: %s\n", eAcordar, eSonda == 0 ? "sim" : "NAO (caiu ao acordar)");
+  lerBloco("acordado");
+}
+
 bool inicializarMPU6050() {
   Wire.beginTransmission(MPU6050_ADDR);
   if (Wire.endTransmission() != 0) {
@@ -373,11 +492,28 @@ bool inicializarMPU6050() {
     return false;
   }
 
+  // Giroscópio em standby no modo econômico (definido ANTES de acordar: o módulo já acorda gastando pouco)
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x6C); // PWR_MGMT_2
+  Wire.write(giroDesligado ? 0x07 : 0x00);
+  Wire.endTransmission(true);
+
   // Acorda o MPU-6050 (limpa o registrador PWR_MGMT_1)
   Wire.beginTransmission(MPU6050_ADDR);
   Wire.write(0x6B);
   Wire.write(0x00);
   Wire.endTransmission(true);
+
+  // Confere se ele aguentou acordar; se caiu, religa em modo econômico (só acelerômetro)
+  delay(30);
+  Wire.beginTransmission(MPU6050_ADDR);
+  if (Wire.endTransmission() != 0) {
+    if (giroDesligado) { mpuDetectado = false; return false; }
+    giroDesligado = true;
+    Serial.println(F("[MPU-6050] Caiu ao ligar o giroscopio (energia fraca). Modo economico: so acelerometro."));
+    recuperarBarramentoMPU();
+    return inicializarMPU6050();
+  }
 
   // Filtro digital passa-baixas interno de 44 Hz (reduz vibração do caminhão)
   Wire.beginTransmission(MPU6050_ADDR);
@@ -556,6 +692,11 @@ LeituraMPU lerMPU6050(unsigned long agora) {
     // Tenta reconectar no máximo 1x por segundo (não sobrecarrega o barramento I2C)
     if (agora - ultimaTentativaMpu < 1000) return r;
     ultimaTentativaMpu = agora;
+    // A cada 5 tentativas sem leitura, religa o módulo e destrava o I2C
+    if (++tentativasMpu % 5 == 0) {
+      Serial.println(F("[MPU-6050] Sem leitura: religando o modulo e destravando o I2C..."));
+      recuperarBarramentoMPU();
+    }
     if (!inicializarMPU6050()) return r;
     Serial.println(F("[MPU-6050] Modulo detectado."));
     // Sem referência ainda: calibra com aviso. Se já tinha, mantém (o sensor segue preso no óculos)
@@ -569,6 +710,7 @@ LeituraMPU lerMPU6050(unsigned long agora) {
     Serial.println(F("[MPU-6050] Leitura falhou (modulo desconectado?)."));
     return r;
   }
+  tentativasMpu = 0;
 
   // Filtro passa-baixas leve (70% anterior + 30% atual): suave sem atrasar a pescada
   gFiltX = gFiltX * 0.7 + ax * 0.3;
@@ -613,6 +755,28 @@ LeituraMPU lerMPU6050(unsigned long agora) {
 // ------------------------------------------------------------------------------
 void loop() {
   processarComandosSerial();
+  if (pedidoDiagI2C) {
+    // O I2C só é usado no Core 1: o diagnóstico roda aqui, não no Core 0 da rede
+    pedidoDiagI2C = false;
+    Serial.println(F("[I2C] ===== ANTES ====="));
+    diagnosticarI2C();
+    recuperarBarramentoMPU();
+    Serial.println(F("[I2C] ===== DEPOIS DE RELIGAR O MODULO ====="));
+    diagnosticarI2C();
+    mpuDetectado = false;
+    ultimaTentativaMpu = 0;
+    tentativasMpu = 0;
+  }
+  if (pedidoModoLed >= 0) {
+    ledModoDigital = pedidoModoLed == 1;
+    pedidoModoLed = -1;
+    for (uint8_t pino : {PINO_LED_R, PINO_LED_G, PINO_LED_B}) {
+      if (ledModoDigital) { ledcDetach(pino); pinMode(pino, OUTPUT); }
+      else ledcAttach(pino, 5000, 8);
+      gpio_set_drive_capability((gpio_num_t)pino, GPIO_DRIVE_CAP_1);
+    }
+    Serial.println(ledModoDigital ? F("[LED] Modo digital: sem PWM") : F("[LED] Modo PWM"));
+  }
   aplicarComandosRemotos();
 
   // Calibração guiada pendente (do boot, de nova tentativa ou de módulo reconectado)
@@ -841,6 +1005,9 @@ void interpretarComandosTexto(const char* texto) {
     Serial.println(F("[DIAGNOSTICO] Checagem encerrada: sensores de volta ao normal."));
   }
   if (strstr(texto, "SCAN")) pedidoScanWifi = true;
+  if (strstr(texto, "I2C")) pedidoDiagI2C = true;
+  if (strstr(texto, "LED:DIG")) pedidoModoLed = 1;
+  if (strstr(texto, "LED:PWM")) pedidoModoLed = 0;
   if (strstr(texto, "ARCOIRIS")) {
     arcoIrisAteMs = millis() + 10000;
     Serial.println(F("[LED] Teste do LED RGB: arco-iris por 10 s."));
@@ -898,6 +1065,13 @@ void aplicarComandosRemotos() {
 // ------------------------------------------------------------------------------
 // Acende o LED RGB (0 a 255 em cada cor); inverte sozinho se o LED for de ânodo comum
 void corLed(uint8_t r, uint8_t g, uint8_t b) {
+  if (ledModoDigital) {
+    // Sem PWM: cada cor só acesa ou apagada (metade do brilho para cima = acesa)
+    digitalWrite(PINO_LED_R, (r >= 128) != LED_RGB_ANODO_COMUM ? HIGH : LOW);
+    digitalWrite(PINO_LED_G, (g >= 128) != LED_RGB_ANODO_COMUM ? HIGH : LOW);
+    digitalWrite(PINO_LED_B, (b >= 128) != LED_RGB_ANODO_COMUM ? HIGH : LOW);
+    return;
+  }
   ledcWrite(PINO_LED_R, LED_RGB_ANODO_COMUM ? 255 - r : r);
   ledcWrite(PINO_LED_G, LED_RGB_ANODO_COMUM ? 255 - g : g);
   ledcWrite(PINO_LED_B, LED_RGB_ANODO_COMUM ? 255 - b : b);
