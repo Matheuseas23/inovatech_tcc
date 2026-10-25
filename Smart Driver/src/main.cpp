@@ -69,7 +69,8 @@ const uint8_t PINO_SENSOR_IR = 32; // GPIO 32 - Sensor IR de obstáculo
 const uint8_t PINO_BUZZER    = 25; // GPIO 25 - Buzzer sonoro ativo
 const uint8_t PINO_RELE_1    = 18; // GPIO 18 - Relé Safe-Stop (Tração)
 const uint8_t PINO_RELE_2    = 19; // GPIO 19 - Relé Pisca-Alerta Veicular
-const uint8_t PINO_RELE_GND  = 13; // GPIO 13 (D13) - GND Virtual Relé
+const uint8_t PINO_RELE_GND  = 13; // GPIO 13 (D13) - GND Virtual Relé (as bobinas puxam ~70 mA cada: o ideal é GND de verdade)
+const uint8_t PINO_BUZZER_GND = 33; // GPIO 33 (D33) - GND virtual do buzzer: libera o GND físico para o relé
 const uint8_t PINO_LED_REDE  = 2;  // GPIO 2 - LED azul da placa (status da conexão sem cabo)
 
 // LED RGB de status nos óculos (fios: R laranja, comum cinza, G verde, B roxo)
@@ -326,6 +327,12 @@ void setup() {
   // GND Virtual (0V) no Pino D13 para o terra do Módulo Relé
   pinMode(PINO_RELE_GND, OUTPUT);
   digitalWrite(PINO_RELE_GND, LOW);
+  gpio_set_drive_capability((gpio_num_t)PINO_RELE_GND, GPIO_DRIVE_CAP_3); // Força máxima para as bobinas
+
+  // GND virtual do buzzer no D33 (o buzzer gasta pouco; o GND físico fica para o relé)
+  pinMode(PINO_BUZZER_GND, OUTPUT);
+  digitalWrite(PINO_BUZZER_GND, LOW);
+  gpio_set_drive_capability((gpio_num_t)PINO_BUZZER_GND, GPIO_DRIVE_CAP_3);
 
   // Alimentação Virtual do Acelerômetro GY-521:
   // VCC Virtual no D23 (3.3V)
