@@ -208,6 +208,8 @@ volatile uint8_t statusRede = REDE_SEM_COMUNICACAO;
 
 // Monitoramento ligado no app: chega como "mon":1 / "mon":0 nas respostas do servidor (-1 = sem resposta ainda)
 volatile int8_t monitoramentoServidor = -1;
+// Modo exibição ligado no app do motorista ("exib":1): o display mostra olhos piscando e olhando em volta
+volatile int8_t modoExibicaoServidor = 0;
 volatile bool semContatoServidor = false; // Escrito pelo Core 0 (à prova de falha)
 
 // Modo checagem (comando serial DIAG:1 / DIAG:0): bip de monitor cardíaco a cada 1 s e sensores
@@ -1074,6 +1076,8 @@ void interpretarComandosTexto(const char* texto) {
   if (strstr(texto, "CALIBRAR"))     agendarComando(CMD_CALIBRAR);
   const char* mon = strstr(texto, "\"mon\":");
   if (mon) monitoramentoServidor = (mon[6] == '1') ? 1 : 0;
+  const char* exib = strstr(texto, "\"exib\":");
+  if (exib) modoExibicaoServidor = (exib[7] == '1') ? 1 : 0;
   // Comandos de diagnóstico (só pela serial USB)
   if (strstr(texto, "DIAG:1")) {
     modoDiagnostico = true;
@@ -1455,6 +1459,59 @@ void desenharClaude(unsigned long t) {
   if (t >= 1400) oledCentro("Entrou na ESP", 56, 1);
 }
 
+// Abertura de uma piscada: fecha em 80 ms e abre em 120 ms (1 = aberto, 0 = fechado)
+float aberturaPiscada(unsigned long dt) {
+  if (dt < 80) return 1.0f - dt / 80.0f;
+  if (dt < 200) return (dt - 80) / 120.0f;
+  return 1.0f;
+}
+
+// Modo exibição: olhos grandes abertos, piscando de 2 a 6 s (às vezes piscada dupla)
+// e olhando para os lados de vez em quando
+void desenharOlhosExibicao(unsigned long agora) {
+  static unsigned long proximaPiscada = 0, inicioPiscada = 0;
+  static bool piscadaDupla = false;
+  static unsigned long proximoOlhar = 0, inicioOlhar = 0, duracaoOlhar = 0;
+  static int8_t direcao = 1;
+  if (!proximaPiscada) proximaPiscada = agora + 1500;
+  if (!proximoOlhar) proximoOlhar = agora + 4000;
+
+  float abertura = 1.0f;
+  if (!inicioPiscada && agora >= proximaPiscada) { inicioPiscada = agora; piscadaDupla = random(100) < 25; }
+  if (inicioPiscada) {
+    unsigned long dt = agora - inicioPiscada;
+    unsigned long total = piscadaDupla ? 480 : 200;
+    if (dt >= total) {
+      inicioPiscada = 0;
+      proximaPiscada = agora + random(2000, 6000);
+    } else if (dt < 200) {
+      abertura = aberturaPiscada(dt);
+    } else if (dt >= 280) {
+      abertura = aberturaPiscada(dt - 280);                      // segunda piscada
+    }
+  }
+
+  float desvio = 0;
+  if (!inicioOlhar && agora >= proximoOlhar) {
+    inicioOlhar = agora;
+    direcao = random(2) ? 1 : -1;
+    duracaoOlhar = random(800, 1500);
+  }
+  if (inicioOlhar) {
+    unsigned long dt = agora - inicioOlhar;
+    if (dt < 250) desvio = suave(dt / 250.0f);
+    else if (dt < 250 + duracaoOlhar) desvio = 1;
+    else if (dt < 500 + duracaoOlhar) desvio = 1 - suave((dt - 250 - duracaoOlhar) / 250.0f);
+    else { inicioOlhar = 0; proximoOlhar = agora + random(4000, 9000); }
+  }
+
+  int16_t dx = (int16_t)(14 * desvio * direcao);
+  int16_t h = max((int16_t)2, (int16_t)(36 * abertura));
+  for (int16_t cx : {40, 88}) {
+    oled.fillRoundRect(cx + dx - 14, 32 - h / 2, 28, h, min((int16_t)8, (int16_t)(h / 2)), SSD1306_WHITE);
+  }
+}
+
 void desenharFim(uint8_t tipo, unsigned long t) {
   switch (tipo) {
     case 0: desenharCarinhaDormindo(t); break;
@@ -1508,12 +1565,15 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   if (inicioClaudeMs && agora - inicioClaudeMs >= CLAUDE_TELA_MS) inicioClaudeMs = 0;
   // Alerta interrompe qualquer animação na hora (segurança primeiro)
   if (alarme || preAlerta || d.diagnostico) { inicioVeiculosMs = 0; veiculosPendentes = false; inicioFimMs = 0; inicioClaudeMs = 0; }
-  bool animando = oledOk && !alarme && !preAlerta && (naIntro || inicioVeiculosMs || inicioFimMs || inicioClaudeMs);
+  bool animacaoCurta = naIntro || inicioVeiculosMs || inicioFimMs || inicioClaudeMs;
+  // Modo exibição (olhos piscando) no lugar da tela de status, enquanto estiver ligado no app
+  bool exibindo = !animacaoCurta && modoExibicaoServidor == 1 && !d.diagnostico;
+  bool animando = oledOk && !alarme && !preAlerta && (animacaoCurta || exibindo);
 
   // O display tem que ficar SEMPRE ligado. Um mau contato de um instante no VDD/GND faz o SSD1306
   // reiniciar apagado (ele perde a configuração); por isso, a cada 5 s, a configuração é reenviada.
   // Também religa sozinho se o display for desconectado e conectado de novo.
-  if (!animando && agora - ultimaReconfiguracao >= 5000) {
+  if (!animacaoCurta && agora - ultimaReconfiguracao >= 5000) { // inclusive no modo exibição (fica horas ligado)
     ultimaReconfiguracao = millis();
     uint8_t endereco = detectarOled();
     if (!endereco) {
@@ -1543,8 +1603,10 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
       desenharVeiculos(agora - inicioVeiculosMs);
     } else if (inicioFimMs) {
       desenharFim(animFim, agora - inicioFimMs);
-    } else {
+    } else if (inicioClaudeMs) {
       desenharClaude(agora - inicioClaudeMs);
+    } else {
+      desenharOlhosExibicao(agora);
     }
     oled.display();
     ultimo = 0; // Ao terminar, a tela de status aparece na hora

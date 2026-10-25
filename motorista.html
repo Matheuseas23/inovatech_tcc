@@ -76,8 +76,8 @@
 			align-items: center;
 			padding: 12px 16px;
 			background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(6, 28, 43, 0.30) 45%, rgba(2, 14, 24, 0.44) 100%);
-			backdrop-filter: blur(6px) saturate(150%);
-			-webkit-backdrop-filter: blur(6px) saturate(150%);
+			backdrop-filter: none; /* sem desfoque: a foto de fundo aparece nítida */
+			-webkit-backdrop-filter: none; /* sem desfoque: a foto de fundo aparece nítida */
 			border: 1px solid rgba(255, 255, 255, 0.14);
 			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px rgba(0, 0, 0, 0.5);
 			border-radius: 12px;
@@ -119,8 +119,8 @@
 
 		.driver-shift-card {
 			background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(10, 34, 52, 0.18) 35%, rgba(4, 18, 30, 0.32) 100%);
-			backdrop-filter: blur(6px) saturate(150%) contrast(105%);
-			-webkit-backdrop-filter: blur(6px) saturate(150%) contrast(105%);
+			backdrop-filter: none; /* sem desfoque: a foto de fundo aparece nítida */
+			-webkit-backdrop-filter: none; /* sem desfoque: a foto de fundo aparece nítida */
 			border: 1px solid rgba(255, 255, 255, 0.18);
 			box-shadow:
 				inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35),
@@ -197,8 +197,8 @@
 
 		.driver-live-card {
 			background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(10, 34, 52, 0.20) 35%, rgba(4, 18, 30, 0.34) 100%);
-			backdrop-filter: blur(6px) saturate(150%) contrast(105%);
-			-webkit-backdrop-filter: blur(6px) saturate(150%) contrast(105%);
+			backdrop-filter: none; /* sem desfoque: a foto de fundo aparece nítida */
+			-webkit-backdrop-filter: none; /* sem desfoque: a foto de fundo aparece nítida */
 			border: 2px solid #0052ff;
 			border-radius: 16px;
 			padding: 20px 18px;
@@ -482,6 +482,12 @@
 					<span>NORMALIZAR</span>
 				</button>
 			</div>
+
+			<!-- MODO EXIBIÇÃO: o display dos óculos mostra olhos piscando (para visitas e banca) -->
+			<button class="btn outline" id="btnModoExibicao" type="button" style="margin-top:8px;padding:12px 14px;border:1px solid var(--cyan);color:var(--cyan);background:rgba(8,222,235,0.08);border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;width:100%">
+				<span class="material-symbols-outlined g-icon">visibility</span>
+				<span id="txtModoExibicao">MODO EXIBIÇÃO: DESLIGADO</span>
+			</button>
 		</section>
 
 		<!-- MODO VIAGEM NOTURNA / TELA APAGADA (APENAS ÍCONE DE CELULAR) -->
@@ -848,6 +854,7 @@
 		function atualizarEstadoNoApp(estado) {
 			if (!estado) return;
 			ultimoEstadoRecebido = estado;
+			if (estado.modo_exibicao !== undefined && typeof mostrarModoExibicao === 'function') mostrarModoExibicao(estado.modo_exibicao);
 			var agora = performance.now();
 			var status = estado.estado || 'NORMAL';
 
@@ -965,6 +972,30 @@
 				fecharChamadaTelaCheia();
 				simuladorLocal.parar();
 				if (link.conectado()) link.comando('NORMALIZAR');
+			});
+		}
+
+		// Modo exibição: liga/desliga os olhos piscando no display dos óculos
+		var modoExibicaoAtivo = false;
+		var btnModoExibicao = document.getElementById('btnModoExibicao');
+		var txtModoExibicao = document.getElementById('txtModoExibicao');
+		function mostrarModoExibicao(ativo) {
+			modoExibicaoAtivo = !!ativo;
+			if (txtModoExibicao) txtModoExibicao.textContent = 'MODO EXIBIÇÃO: ' + (modoExibicaoAtivo ? 'LIGADO' : 'DESLIGADO');
+			if (btnModoExibicao) {
+				btnModoExibicao.style.background = modoExibicaoAtivo ? 'rgba(8,222,235,0.28)' : 'rgba(8,222,235,0.08)';
+				btnModoExibicao.style.boxShadow = modoExibicaoAtivo ? '0 0 16px rgba(8,222,235,0.45)' : 'none';
+			}
+		}
+		if (btnModoExibicao) {
+			btnModoExibicao.addEventListener('click', function () {
+				if (!link.conectado()) {
+					driverFeedbackMsg.textContent = 'Sem conexão com o servidor: não foi possível mudar o modo exibição.';
+					return;
+				}
+				var novo = !modoExibicaoAtivo;
+				mostrarModoExibicao(novo);
+				link.comando('MODO_EXIBICAO', { ativo: novo });
 			});
 		}
 

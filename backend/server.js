@@ -112,6 +112,7 @@ const estado = {
   escalonamento: { ...ESCALONAMENTO },
   simulacao_ativa: false,
   modo_espelho: false,
+  modo_exibicao: false, // Display dos óculos mostra olhos piscando (ligado pelo app do motorista)
   contadores: {
     totalAlarmesSessao: 0,
     inicioSessao: new Date().toISOString()
@@ -282,8 +283,13 @@ function retirarComandosESP32() {
 }
 
 // Resposta para a ESP32: comandos pendentes + "mon" (1 = monitoramento ativado no app, liga os sensores)
+// + "exib" (1 = modo exibição: o display mostra os olhos piscando)
 function respostaESP32() {
-  return { cmds: retirarComandosESP32(), mon: estado.motoristas.matheus_garcia.status === 'EM_VIAGEM' ? 1 : 0 };
+  return {
+    cmds: retirarComandosESP32(),
+    mon: estado.motoristas.matheus_garcia.status === 'EM_VIAGEM' ? 1 : 0,
+    exib: estado.modo_exibicao ? 1 : 0
+  };
 }
 
 // ------------------------------------------------------------------------------
@@ -592,7 +598,7 @@ function atualizarGps(gps, origem) {
 function executarComando(comando, origem = 'CENTRAL', extras = {}) {
   const cmd = String(comando || '').toUpperCase();
   const normalizar = ['SILENCIAR_ALARME', 'RESET', 'NORMALIZAR'].includes(cmd);
-  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2'];
+  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2', 'MODO_EXIBICAO'];
   if (!normalizar && !conhecidos.includes(cmd)) return { ok: false, mensagem: `Comando desconhecido: ${comando}` };
 
   // Na nuvem em modo espelho, quem executa é o servidor local (a nuvem só repassa)
@@ -626,6 +632,11 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
     if (!iniciarSimulacao(extras.duracao_ms, origem)) return { ok: false, mensagem: 'Já existe um alerta ativo. Normalize antes de simular.' };
   } else if (cmd === 'CALIBRAR_MPU') {
     registrarEvento('COMANDO_CENTRAL', 'Recalibração do acelerômetro solicitada', 'O motorista deve manter a cabeça erguida por 1 segundo.');
+  } else if (cmd === 'MODO_EXIBICAO') {
+    // Liga/desliga os olhos piscando no display (o app manda o valor desejado em "ativo")
+    estado.modo_exibicao = extras.ativo !== undefined ? Boolean(extras.ativo) : !estado.modo_exibicao;
+    registrarEvento('COMANDO_CENTRAL', `Modo exibição ${estado.modo_exibicao ? 'ligado' : 'desligado'} no display dos óculos`, `Origem: ${origem}`);
+    transmitirEstado();
   } else {
     registrarEvento('COMANDO_CENTRAL', `Comando manual enviado à ESP32: ${cmd}`, `Origem: ${origem}`);
   }
@@ -637,7 +648,7 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
 const CAMPOS_ESPELHO = ['dispositivo', 'online', 'ultimoVisto', 'fonte_conexao', 'sensor_ir', 'ir_confiavel', 'tempo_cabeca_baixa_ms',
   'limiar_seguranca_ms', 'estado', 'buzzer', 'rele', 'rele_2', 'alarme_teste', 'acelerometro', 'wifi', 'alerta_travado',
   'chamada_celular_ativa', 'origem_alerta', 'tempo_sem_resposta_ms', 'nivel_escalonamento', 'tempo_recuperacao_ms',
-  'recuperacao_limite_ms', 'escalonamento', 'simulacao_ativa', 'contadores', 'motoristas', 'gps'];
+  'recuperacao_limite_ms', 'escalonamento', 'simulacao_ativa', 'contadores', 'motoristas', 'gps', 'modo_exibicao'];
 const CAMPOS_ALERTA = ['estado', 'alerta_travado', 'chamada_celular_ativa', 'nivel_escalonamento', 'tempo_sem_resposta_ms'];
 
 function aplicarEspelho(p) {
@@ -828,7 +839,7 @@ app.post('/api/telemetry', (req, res) => {
   const resultado = processarPacote(req.body, 'HTTP');
   if (resultado.cmds) {
     // Resposta enxuta para a ESP32 (o firmware procura os nomes dos comandos no texto)
-    return res.status(200).json({ sucesso: true, srv: 'INOVATECH', cmds: resultado.cmds, mon: resultado.mon });
+    return res.status(200).json({ sucesso: true, srv: 'INOVATECH', cmds: resultado.cmds, mon: resultado.mon, exib: resultado.exib });
   }
   return res.status(200).json({ sucesso: true, estado_processado: estado.estado, ...resultado });
 });
@@ -946,7 +957,7 @@ udpServer.on('message', (msg, rinfo) => {
 
   const resultado = processarPacote(dados, 'UDP');
   // A resposta ensina o IP do servidor para a ESP32 e entrega os comandos da Central
-  const resposta = Buffer.from(JSON.stringify({ srv: 'INOVATECH', cmds: resultado.cmds || [], mon: resultado.mon }));
+  const resposta = Buffer.from(JSON.stringify({ srv: 'INOVATECH', cmds: resultado.cmds || [], mon: resultado.mon, exib: resultado.exib }));
   udpServer.send(resposta, rinfo.port, rinfo.address, () => { });
 });
 
