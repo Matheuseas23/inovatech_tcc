@@ -201,6 +201,9 @@ volatile bool pedidoScanWifi = false; // Comando serial SCAN: lista as redes que
 volatile unsigned long arcoIrisAteMs = 0; // Comando serial ARCOIRIS: teste do LED RGB por 10 s
 volatile bool pedidoDiagI2C = false;      // Comando serial I2C: diagnóstico + destravamento do acelerômetro
 volatile unsigned long bipOlaAteMs = 0;   // Comando serial CLAUDE:OLA: bip de 0,5 s de "sinal de vida"
+unsigned long verdeAtivadoMs = 0;         // Quando o monitoramento foi ativado (LED verde que apaga devagar)
+const unsigned long VERDE_ACESO_MS = 1500; // LED verde aceso ao ativar o monitoramento...
+const unsigned long VERDE_FADE_MS  = 3000; // ...e depois apaga devagar nesse tempo
 volatile int8_t pedidoModoLed = -1;       // Comandos seriais LED:DIG (1) / LED:PWM (0)
 bool ledModoDigital = false;              // true = LED só liga/desliga, sem PWM (sem ruído no I2C)
 uint8_t tentativasMpu = 0;                // Tentativas seguidas de reconectar o acelerômetro sem sucesso
@@ -821,6 +824,7 @@ void loop() {
   if (melodiaPendente && !calibracaoAgendadaMs) {
     melodiaPendente = false;
     tocarMelodiaPronto();
+    verdeAtivadoMs = millis(); // LED da lente: verde e apaga devagar
   }
   // Modo checagem: sensores suspensos (sem alarme); desliga sozinho depois de 15 min
   if (modoDiagnostico && millis() - inicioDiagnosticoMs > DURACAO_MAX_DIAGNOSTICO_MS) modoDiagnostico = false;
@@ -922,10 +926,11 @@ void loop() {
   bool bipOla = bipOlaAteMs && (long)(bipOlaAteMs - agora) > 0;
   aplicarAtuadores(buzzerLigado || bipOla, rele1Ligado, rele2Ligado);
 
-  // LED RGB: vermelho piscando = alarme; roxo piscando = acelerômetro desconectado;
-  // amarelo = aviso (1 s); azul piscando = calibrando; azul fixo = aguardando o servidor;
-  // verde = monitorando normal; azul "respirando" = monitoramento desligado (enfeite);
-  // branco piscando com o "batimento" = modo checagem
+  // LED RGB (fica na lente, no campo de visão do motorista): vermelho piscando = alarme (estímulo
+  // para acordar); roxo piscando = acelerômetro desconectado; amarelo = aviso (1 s); azul piscando =
+  // calibrando; monitorando = acende verde ao ativar e apaga devagar, depois fica APAGADO para não
+  // atrapalhar a visão; azul fixo = aguardando o servidor; azul "respirando" = monitoramento
+  // desligado; branco piscando com o "batimento" = modo checagem
   bool calibrando = calibracaoAgendadaMs != 0;
   if (arcoIrisAteMs && agora < arcoIrisAteMs) {
     // Teste do LED (comando ARCOIRIS): passeia por todas as cores a cada 2 s
@@ -952,10 +957,19 @@ void loop() {
     corLed(255, 140, 0);
   } else if (calibrando) {
     corLed(0, 0, agora % 500 < 250 ? 255 : 0);
+  } else if (sensoresAtivos) {
+    // Verde ao ativar o monitoramento, depois apaga devagar e fica apagado
+    unsigned long dt = agora - verdeAtivadoMs;
+    if (verdeAtivadoMs && dt < VERDE_ACESO_MS) {
+      corLed(0, 160, 0);
+    } else if (verdeAtivadoMs && dt < VERDE_ACESO_MS + VERDE_FADE_MS) {
+      float f = 1.0f - (float)(dt - VERDE_ACESO_MS) / VERDE_FADE_MS;
+      corLed(0, (uint8_t)(160 * f * f), 0);
+    } else {
+      corLed(0, 0, 0);
+    }
   } else if (statusRede == REDE_SEM_COMUNICACAO) {
     corLed(0, 0, 160); // Azul fixo = aguardando o servidor (sem conexão)
-  } else if (sensoresAtivos) {
-    corLed(0, 160, 0);
   } else {
     float fase = (agora % 3000) / 3000.0f; // Respira a cada 3 s
     corLed(0, 0, (uint8_t)(10 + 90 * (0.5f - 0.5f * cosf(fase * 2 * PI))));
