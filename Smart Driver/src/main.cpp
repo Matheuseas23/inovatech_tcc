@@ -1432,6 +1432,29 @@ void desenharPorDoSol(unsigned long t) {
   if (t >= 2800) oledCentro("HORA DE DESCANSAR", 52, 1);
 }
 
+// Fagulha do Claude (símbolo de raios), de tamanho ajustável pela escala
+void desenharFagulha(int16_t cx, int16_t cy, float escala, uint8_t espessura) {
+  const uint8_t raios[12] = {16, 12, 15, 11, 16, 13, 15, 11, 16, 12, 14, 12};
+  for (uint8_t i = 0; i < 12; i++) {
+    float a = -PI / 2 + i * PI / 6;
+    float c = cosf(a), s = sinf(a);
+    int16_t x2 = cx + (int16_t)(c * raios[i] * escala);
+    int16_t y2 = cy + (int16_t)(s * raios[i] * escala);
+    for (int8_t k = -(int8_t)(espessura / 2); k <= (int8_t)(espessura / 2); k++) {
+      int16_t ox = (int16_t)roundf(-s * k), oy = (int16_t)roundf(c * k);
+      oled.drawLine(cx + ox, cy + oy, x2 + ox, y2 + oy, SSD1306_WHITE);
+    }
+  }
+}
+
+// Claude chegou na ESP (CLAUDE:OLA): a fagulha cresce, aparece "Claude" e a frase
+const unsigned long CLAUDE_TELA_MS = 5000;
+void desenharClaude(unsigned long t) {
+  desenharFagulha(64, 19, suave(t / 700.0f), 3);
+  if (t >= 800) oledCentro("Claude", 38, 2);
+  if (t >= 1400) oledCentro("Estradas mais seguras", 56, 1);
+}
+
 void desenharFim(uint8_t tipo, unsigned long t) {
   switch (tipo) {
     case 0: desenharCarinhaDormindo(t); break;
@@ -1453,6 +1476,8 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   static bool monitorandoAntes = false;
   static unsigned long inicioFimMs = 0;
   static uint8_t animFim = 0, proximaFim = 0;
+  static unsigned long chegadaClaudeVista = 0, inicioClaudeMs = 0;
+  static bool claudePendente = false;
   static bool invertido = false;
   bool alarme = d.alarmeAtivo;
   bool preAlerta = strcmp(d.estado, "PRE_ALERTA") == 0;
@@ -1475,9 +1500,15 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   if (veiculosPendentes && !naIntro) { veiculosPendentes = false; inicioVeiculosMs = agora; }
   if (inicioVeiculosMs && agora - inicioVeiculosMs >= 2 * VEICULO_TOTAL_MS) inicioVeiculosMs = 0;
   if (inicioFimMs && agora - inicioFimMs >= DURACAO_FIM_MS[animFim]) inicioFimMs = 0;
+  // Claude chegou na placa: a tela dele espera as outras animações terminarem
+  unsigned long chegada = claudeChegouMs;
+  if (chegada && chegada != chegadaClaudeVista) { chegadaClaudeVista = chegada; claudePendente = true; }
+  if (!d.claudePresente) { claudePendente = false; inicioClaudeMs = 0; }
+  if (claudePendente && !naIntro && !inicioVeiculosMs && !inicioFimMs) { claudePendente = false; inicioClaudeMs = agora; }
+  if (inicioClaudeMs && agora - inicioClaudeMs >= CLAUDE_TELA_MS) inicioClaudeMs = 0;
   // Alerta interrompe qualquer animação na hora (segurança primeiro)
-  if (alarme || preAlerta || d.diagnostico) { inicioVeiculosMs = 0; veiculosPendentes = false; inicioFimMs = 0; }
-  bool animando = oledOk && !alarme && !preAlerta && (naIntro || inicioVeiculosMs || inicioFimMs);
+  if (alarme || preAlerta || d.diagnostico) { inicioVeiculosMs = 0; veiculosPendentes = false; inicioFimMs = 0; inicioClaudeMs = 0; }
+  bool animando = oledOk && !alarme && !preAlerta && (naIntro || inicioVeiculosMs || inicioFimMs || inicioClaudeMs);
 
   // O display tem que ficar SEMPRE ligado. Um mau contato de um instante no VDD/GND faz o SSD1306
   // reiniciar apagado (ele perde a configuração); por isso, a cada 5 s, a configuração é reenviada.
@@ -1510,8 +1541,10 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
       else desenharAbertura();
     } else if (inicioVeiculosMs) {
       desenharVeiculos(agora - inicioVeiculosMs);
-    } else {
+    } else if (inicioFimMs) {
       desenharFim(animFim, agora - inicioFimMs);
+    } else {
+      desenharClaude(agora - inicioClaudeMs);
     }
     oled.display();
     ultimo = 0; // Ao terminar, a tela de status aparece na hora
@@ -1531,6 +1564,7 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   const char* rede = statusRede == REDE_SERVIDOR_LOCAL ? "PC" : statusRede == REDE_NUVEM ? "NUVEM" : "SEM REDE";
   oled.setCursor(128 - (int16_t)strlen(rede) * 6, 0);
   oled.print(rede);
+  if (d.claudePresente) desenharFagulha(128 - (int16_t)strlen(rede) * 6 - 8, 3, 0.25f, 1); // Claude na placa
   oled.drawFastHLine(0, 10, 128, SSD1306_WHITE);
 
   // Estado principal em letra grande
