@@ -1453,7 +1453,8 @@
 			// Card da frota acompanha o turno informado pelo App do Motorista
 			var mg = estado.motoristas && estado.motoristas.matheus_garcia;
 			if (mg) {
-				var emViagem = mg.status === 'EM_VIAGEM' || !!estado.online;
+				// Claro só com o monitoramento ativado no app; desativado fica cinza como os outros motoristas
+				var emViagem = mg.status === 'EM_VIAGEM';
 				var mudou = garciaViagemAtiva !== null && garciaViagemAtiva !== emViagem;
 				atualizarEstadoGarciaUI(emViagem, mudou && emViagem);
 				try { localStorage.setItem('inovatech_turno_matheus_garcia', mg.status === 'EM_VIAGEM' ? 'ATIVO' : 'INATIVO'); } catch (e) { }
