@@ -709,6 +709,8 @@ LeituraMPU lerMPU6050(unsigned long agora) {
       Serial.println(F("[MPU-6050] Sem leitura: religando o modulo e destravando o I2C..."));
       recuperarBarramentoMPU();
     }
+    // Cada reconexão tenta de novo com o giroscópio ligado (o modo econômico só volta se ele cair)
+    giroDesligado = false;
     if (!inicializarMPU6050()) return r;
     Serial.println(F("[MPU-6050] Modulo detectado."));
     // Sem referência ainda: calibra com aviso. Se já tinha, mantém (o sensor segue preso no óculos)
@@ -1071,6 +1073,12 @@ void aplicarComandosRemotos() {
   if (cmds & CMD_CALIBRAR) {
     if (mpuDetectado) {
       Serial.println(F("[COMANDO] Recalibrando acelerometro (mantenha a cabeca erguida)..."));
+      if (giroDesligado) {
+        // Tenta religar o giroscópio antes de calibrar (se cair de novo, volta ao modo econômico)
+        giroDesligado = false;
+        if (inicializarMPU6050()) Serial.println(giroDesligado ? F("[MPU-6050] Giroscopio segue desligado (modo economico).")
+                                                               : F("[MPU-6050] Giroscopio religado."));
+      }
       calibrarComAviso();
     } else {
       Serial.println(F("[COMANDO] Calibracao ignorada: MPU-6050 nao conectado."));
