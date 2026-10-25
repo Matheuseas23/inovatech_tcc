@@ -115,7 +115,9 @@ const unsigned long ALARME_MINIMO_PESCADA_MS = 2000; // Alarme de pescada dura n
 
 // Pegar objeto x sono (giroscópio): sono = cabeça baixa e PARADA; pegar um objeto = cabeça
 // baixa SE MEXENDO. Enquanto a cabeça se mexe de propósito, a contagem de 1,5 s não anda.
-const float LIMIAR_MOVIMENTO_GRAUS_S    = 25.0; // Rotação acima disso = movimento voluntário
+// Medido em 24/10/2026 com os óculos no rosto: cabeça inclinada e parada = até 23 °/s;
+// procurando algo mexendo a cabeça = 44 a 77 °/s. 35 °/s fica no meio, com folga dos dois lados.
+const float LIMIAR_MOVIMENTO_GRAUS_S    = 35.0; // Rotação acima disso = movimento voluntário
 const unsigned long JANELA_MOVIMENTO_MS = 600;  // Depois de mexer, espera a cabeça assentar
 const unsigned long CONFIRMA_PESCADA_MS = 500;  // Pescada vale se a cabeça assentar parada em até 0,5 s
 

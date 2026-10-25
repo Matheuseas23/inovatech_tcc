@@ -54,4 +54,4 @@
 
 **Lições:** o ponto de acesso do Redmi segue a banda do Wi-Fi do celular (escola em 5 GHz derrubava a ESP); solução no dia: Redmi conectado no iPhone de um amigo com "Maximizar Compatibilidade". A conta do notebook não é administradora → firewall bloqueado → caminho ESP → Render → PC, com quedas ocasionais.
 
-**Pendências:** liberar o firewall com senha de administrador; buzzer em 5 V via transistor (S8050/2N2222) para ficar bem mais alto; validar com dados a regra de "pegar objeto" (limite 25°/s); decidir se as funções de teste ficam ("tira a função dos sensores desligados", "tirar wifi redmi").
+**Pendências:** liberar o firewall com senha de administrador; buzzer em 5 V via transistor (S8050/2N2222) para ficar bem mais alto; ~~validar com dados a regra de "pegar objeto"~~ (feito em 24/10: parado até 23 °/s, mexendo 44–77 °/s → limite ajustado para 35 °/s); decidir se as funções de teste ficam ("tira a função dos sensores desligados", "tirar wifi redmi").
