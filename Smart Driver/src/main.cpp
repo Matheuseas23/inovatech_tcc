@@ -1005,6 +1005,11 @@ void loop() {
     unsigned long dt = agora - claudeChegouMs;
     bool aceso = dt >= 1200 || (dt % 400 < 200);
     corLed(aceso ? 255 : 0, aceso ? 70 : 0, aceso ? 18 : 0);
+  } else if (modoExibicaoServidor == 1) {
+    // Modo exibição: passa suavemente de branco para azul e volta (ciclo de 4 s)
+    float f = 0.5f - 0.5f * cosf(2 * PI * (agora % 4000) / 4000.0f);
+    uint8_t rg = (uint8_t)(220 * (1 - f));
+    corLed(rg, rg, 255);
   } else if (sensoresAtivos) {
     // Verde ao ativar o monitoramento, depois apaga devagar e fica apagado
     unsigned long dt = agora - verdeAtivadoMs;
