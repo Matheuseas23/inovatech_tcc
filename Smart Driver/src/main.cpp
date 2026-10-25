@@ -7,8 +7,13 @@
 #include <HTTPClient.h>
 #include <math.h>
 #include "driver/gpio.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 WiFiMulti wifiMulti;
+TwoWire WireOled = TwoWire(1);
+Adafruit_SSD1306 oled(128, 64, &WireOled, -1, 400000UL, 400000UL);
+bool oledOk = false;
 WiFiUDP udp;
 
 // ==============================================================================
@@ -82,6 +87,13 @@ const uint8_t PINO_MPU_VCC   = 23; // GPIO 23 - VCC Virtual (3.3V HIGH): hoje li
 // mais a energia dele pelo D23 ao destravar o I2C. Se voltar o VCC para o D23, troque para false.
 const bool MPU_VCC_NO_3V3      = true;
 const uint8_t PINO_MPU_GND   = 16; // GPIO 16 (RX2) - GND Virtual (0V LOW)
+
+// Display OLED 0,96" (SSD1306) no meio dos óculos, virado para fora. Usa o SEGUNDO barramento I2C
+// da ESP32 (pinos próprios): se o display soltar, o acelerômetro não é afetado. Atualizado no Core 0.
+const uint8_t PINO_OLED_SDA = 17; // TX2 - SDA
+const uint8_t PINO_OLED_SCL = 5;  // D5  - SCK/SCL
+const uint8_t PINO_OLED_VCC = 23; // D23 - VDD (VCC virtual; o acelerômetro foi para o 3V3)
+const uint8_t PINO_OLED_GND = 15; // D15 - GND virtual (todos os GND físicos estão ocupados)
 
 // Endereço I2C padrão do MPU-6050
 const uint8_t MPU6050_ADDR   = 0x68;
@@ -167,6 +179,8 @@ struct DadosTelemetria {
   bool monitorando;
   float giro;
   bool diagnostico;
+  bool calibrando;     // Calibração guiada em andamento (para a tela OLED)
+  bool claudePresente; // Claude acessando a placa pela serial (para a tela OLED)
 };
 
 DadosTelemetria dadosGlobais = {1, 0, 0, 0, 0, 0.0, 0.0, 0.0, false, false, false, false, "NORMAL", false, false, false, 0.0, false};
@@ -274,6 +288,8 @@ void tecAspas();
 LeituraMPU lerMPU6050(unsigned long agora);
 void recuperarBarramentoMPU();
 void diagnosticarI2C();
+void iniciarOled();
+void atualizarOled(const DadosTelemetria &d, bool conectado);
 
 // ------------------------------------------------------------------------------
 // 5. SETUP INICIAL
@@ -321,6 +337,12 @@ void setup() {
   // corrente e, com pino fraco + mau contato, a tensão caía e o módulo reiniciava sozinho
   gpio_set_drive_capability((gpio_num_t)PINO_MPU_VCC, GPIO_DRIVE_CAP_3);
   gpio_set_drive_capability((gpio_num_t)PINO_MPU_GND, GPIO_DRIVE_CAP_3);
+
+  // Display OLED: GND virtual no D15 (o VDD no D23 já está em HIGH acima) e tela de abertura
+  pinMode(PINO_OLED_GND, OUTPUT);
+  digitalWrite(PINO_OLED_GND, LOW);
+  gpio_set_drive_capability((gpio_num_t)PINO_OLED_GND, GPIO_DRIVE_CAP_3);
+  iniciarOled();
 
   aplicarAtuadores(false, false, false);
 
@@ -1006,6 +1028,8 @@ void loop() {
   dadosGlobais.monitorando = sensoresAtivos;
   dadosGlobais.giro = mpu.giro;
   dadosGlobais.diagnostico = modoDiagnostico;
+  dadosGlobais.calibrando = calibracaoAgendadaMs != 0;
+  dadosGlobais.claudePresente = claudeChegouMs && agora - claudeUltimoMs < CLAUDE_AUSENTE_MS;
   strncpy(dadosGlobais.estado, estadoAtualTexto, sizeof(dadosGlobais.estado) - 1);
   portEXIT_CRITICAL(&mutexDados);
 
@@ -1173,6 +1197,115 @@ int montarPayload(const DadosTelemetria &d, uint32_t seq, char *buf, size_t cap)
     ssid.c_str(), conectado ? WiFi.RSSI() : 0, ip.c_str());
 }
 
+// ------------------------------------------------------------------------------
+// 11. DISPLAY OLED NO MEIO DOS ÓCULOS (segundo barramento I2C, atualizado no Core 0)
+// ------------------------------------------------------------------------------
+// Escreve um texto centralizado na linha y
+void oledCentro(const char* txt, int16_t y, uint8_t tamanho) {
+  oled.setTextSize(tamanho);
+  int16_t x1, y1;
+  uint16_t w, h;
+  oled.getTextBounds(txt, 0, y, &x1, &y1, &w, &h);
+  oled.setCursor((128 - (int16_t)w) / 2, y);
+  oled.print(txt);
+}
+
+void iniciarOled() {
+  delay(50); // O VDD virtual (D23) acabou de ligar
+  WireOled.begin(PINO_OLED_SDA, PINO_OLED_SCL, 400000);
+  WireOled.setTimeOut(20);
+  uint8_t endereco = 0;
+  for (uint8_t a : {0x3C, 0x3D}) {
+    WireOled.beginTransmission(a);
+    if (WireOled.endTransmission() == 0) { endereco = a; break; }
+  }
+  if (!endereco) {
+    Serial.println(F("[OLED] Display nao encontrado (SDA=TX2, SCK=D5, VDD=D23, GND=D15). Seguindo sem tela."));
+    return;
+  }
+  // periphBegin = false: o barramento já foi iniciado nos pinos certos (não mexe no I2C do acelerômetro)
+  oledOk = oled.begin(SSD1306_SWITCHCAPVCC, endereco, true, false);
+  if (!oledOk) { Serial.println(F("[OLED] Falha ao iniciar o display.")); return; }
+  oled.cp437(true);
+  oled.clearDisplay();
+  oled.setTextColor(SSD1306_WHITE);
+  oledCentro("INOVA TECH", 10, 2);
+  oledCentro("Smart Driver", 34, 1);
+  oledCentro("TCC 2026", 50, 1);
+  oled.display();
+  Serial.printf("[OLED] Display OK no endereco 0x%02X\n", endereco);
+}
+
+void atualizarOled(const DadosTelemetria &d, bool conectado) {
+  static unsigned long ultimo = 0;
+  static bool invertido = false;
+  bool alarme = d.alarmeAtivo;
+  if (!oledOk || millis() < 3000 || millis() - ultimo < (alarme ? 250UL : 400UL)) return; // 3 s de tela de abertura
+  ultimo = millis();
+
+  oled.clearDisplay();
+  oled.setTextColor(SSD1306_WHITE);
+  oled.setTextSize(1);
+
+  // Cabeçalho: nome do projeto + por onde a placa está falando com o servidor
+  oled.setCursor(0, 0);
+  oled.print(F("INOVA TECH"));
+  const char* rede = statusRede == REDE_SERVIDOR_LOCAL ? "PC" : statusRede == REDE_NUVEM ? "NUVEM" : "SEM REDE";
+  oled.setCursor(128 - (int16_t)strlen(rede) * 6, 0);
+  oled.print(rede);
+  oled.drawFastHLine(0, 10, 128, SSD1306_WHITE);
+
+  // Estado principal em letra grande
+  bool preAlerta = strcmp(d.estado, "PRE_ALERTA") == 0;
+  const char* titulo;
+  const char* sub = nullptr;
+  if (d.diagnostico)        { titulo = "CHECAGEM";   sub = "Sensores suspensos"; }
+  else if (alarme)          { titulo = "ALARME!";    sub = "ACORDE! Erga a cabeca"; }
+  else if (!d.mpuOnline)    { titulo = "SEM SENSOR"; sub = "Confira os fios"; }
+  else if (d.calibrando)    { titulo = "CALIBRANDO"; sub = "Olhe para frente"; }
+  else if (preAlerta)       { titulo = "ATENCAO"; }
+  else if (d.monitorando)   { titulo = "ATIVO";      sub = "Monitorando"; }
+  else                      { titulo = "PAUSADO";    sub = "Ative no app"; }
+  oledCentro(titulo, 15, 2);
+
+  char linha[32];
+  if (preAlerta || (alarme && !d.testeAtivo)) {
+    snprintf(linha, sizeof(linha), "Cabeca baixa %.1f/%.1fs", d.tempoCabecaBaixaMs / 1000.0, LIMIAR_CABECA_BAIXA_MS / 1000.0);
+    oledCentro(linha, 34, 1);
+  } else if (sub) {
+    oledCentro(sub, 34, 1);
+  }
+
+  // Barra de inclinação da cabeça (cheia = 60°), com marca no limite de alerta (32°)
+  if (d.mpuOnline && d.mpuCalibrado) {
+    float inc = constrain(d.inclinacao, 0.0f, 60.0f);
+    oled.drawRect(0, 45, 100, 7, SSD1306_WHITE);
+    oled.fillRect(1, 46, (int16_t)(98 * inc / 60.0f), 5, SSD1306_WHITE);
+    oled.drawFastVLine(1 + (int16_t)(98 * LIMIAR_INCLINACAO_GRAUS / 60.0f), 43, 11, SSD1306_WHITE);
+    snprintf(linha, sizeof(linha), "%2.0f%c", d.inclinacao, (char)248); // 248 = símbolo de grau
+    oled.setCursor(104, 45);
+    oled.print(linha);
+  }
+
+  // Rodapé: Claude na placa, ou a rede Wi-Fi
+  oled.setCursor(0, 56);
+  if (d.claudePresente) {
+    oled.print(F("Claude conectado :)"));
+  } else if (conectado) {
+    String ssid = WiFi.SSID();
+    if (ssid.length() > 13) ssid = ssid.substring(0, 13);
+    snprintf(linha, sizeof(linha), "%s %ddBm", ssid.c_str(), (int)WiFi.RSSI());
+    oled.print(linha);
+  } else {
+    oled.print(F("Procurando Wi-Fi..."));
+  }
+
+  // No alarme, a tela pisca invertida (fundo branco) para chamar atenção
+  invertido = alarme ? !invertido : false;
+  oled.invertDisplay(invertido);
+  oled.display();
+}
+
 void taskTelemetria(void *pvParameters) {
   WiFiClientSecure clienteSeguro;
   clienteSeguro.setInsecure();
@@ -1308,6 +1441,8 @@ void taskTelemetria(void *pvParameters) {
     statusRede = !conectado ? REDE_SEM_COMUNICACAO
                : servidorConhecido ? REDE_SERVIDOR_LOCAL
                : nuvemRespondendo ? REDE_NUVEM : REDE_SEM_COMUNICACAO;
+
+    atualizarOled(snap, conectado);
 
     bool emAlerta = strcmp(snap.estado, "NORMAL") != 0;
     vTaskDelay(pdMS_TO_TICKS(emAlerta ? INTERVALO_TELEMETRIA_ALERTA_MS : INTERVALO_TELEMETRIA_MS));
