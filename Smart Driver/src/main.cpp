@@ -1210,15 +1210,20 @@ void oledCentro(const char* txt, int16_t y, uint8_t tamanho) {
   oled.print(txt);
 }
 
+// Endereço I2C do display (0x3C ou 0x3D); 0 = não respondeu
+uint8_t detectarOled() {
+  for (uint8_t a : {0x3C, 0x3D}) {
+    WireOled.beginTransmission(a);
+    if (WireOled.endTransmission() == 0) return a;
+  }
+  return 0;
+}
+
 void iniciarOled() {
   delay(50); // O VDD virtual (D23) acabou de ligar
   WireOled.begin(PINO_OLED_SDA, PINO_OLED_SCL, 400000);
   WireOled.setTimeOut(20);
-  uint8_t endereco = 0;
-  for (uint8_t a : {0x3C, 0x3D}) {
-    WireOled.beginTransmission(a);
-    if (WireOled.endTransmission() == 0) { endereco = a; break; }
-  }
+  uint8_t endereco = detectarOled();
   if (!endereco) {
     Serial.println(F("[OLED] Display nao encontrado (SDA=TX2, SCK=D5, VDD=D23, GND=D15). Seguindo sem tela."));
     return;
@@ -1238,8 +1243,28 @@ void iniciarOled() {
 
 void atualizarOled(const DadosTelemetria &d, bool conectado) {
   static unsigned long ultimo = 0;
+  static unsigned long ultimaReconfiguracao = 0;
   static bool invertido = false;
   bool alarme = d.alarmeAtivo;
+
+  // O display tem que ficar SEMPRE ligado. Um mau contato de um instante no VDD/GND faz o SSD1306
+  // reiniciar apagado (ele perde a configuração); por isso, a cada 5 s, a configuração é reenviada.
+  // Também religa sozinho se o display for desconectado e conectado de novo.
+  if (millis() > 3000 && millis() - ultimaReconfiguracao >= 5000) {
+    ultimaReconfiguracao = millis();
+    uint8_t endereco = detectarOled();
+    if (!endereco) {
+      if (oledOk) Serial.println(F("[OLED] Display nao responde (fio VDD/GND/SDA/SCK solto?)."));
+      oledOk = false;
+    } else {
+      bool estavaFora = !oledOk;
+      oledOk = oled.begin(SSD1306_SWITCHCAPVCC, endereco, false, false);
+      oled.cp437(true);
+      if (estavaFora && oledOk) Serial.println(F("[OLED] Display reconectado."));
+      ultimo = 0; // Redesenha já
+    }
+  }
+
   if (!oledOk || millis() < 3000 || millis() - ultimo < (alarme ? 250UL : 400UL)) return; // 3 s de tela de abertura
   ultimo = millis();
 
