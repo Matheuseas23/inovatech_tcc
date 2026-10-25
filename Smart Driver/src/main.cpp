@@ -82,7 +82,7 @@ const bool LED_RGB_ANODO_COMUM = false; // true se for ânodo comum (cores inver
 // Acelerômetro GY-521 (I2C + Alimentação Virtual)
 const uint8_t PINO_MPU_SDA   = 21; // GPIO 21 - Linha SDA I2C
 const uint8_t PINO_MPU_SCL   = 22; // GPIO 22 - Linha SCL I2C
-const uint8_t PINO_MPU_VCC   = 23; // GPIO 23 - VCC Virtual (3.3V HIGH): hoje livre, fica para o VCC do IR se ele voltar
+const uint8_t PINO_MPU_VCC   = 23; // GPIO 23 - VCC Virtual (3.3V HIGH): hoje alimenta o display OLED (VDD)
 // 24/10/2026: VCC do GY-521 passou para o pino 3V3 (alimentação forte). Com isso a ESP32 não corta
 // mais a energia dele pelo D23 ao destravar o I2C. Se voltar o VCC para o D23, troque para false.
 const bool MPU_VCC_NO_3V3      = true;
