@@ -1553,12 +1553,17 @@ void desenharFagulha(int16_t cx, int16_t cy, float escala, uint8_t espessura) {
   }
 }
 
-// Claude chegou na ESP (CLAUDE:OLA): a fagulha cresce, aparece "Claude" e "Entrou na ESP"
-const unsigned long CLAUDE_TELA_MS = 5000;
+// Claude na ESP (CLAUDE:OLA): por 2 s a fagulha cresce com "Claude" e "Entrou na ESP"; depois fica
+// só a fagulha (sem texto), centralizada, enquanto ele estiver na placa
 void desenharClaude(unsigned long t) {
-  desenharFagulha(64, 19, suave(t / 700.0f), 3);
-  if (t >= 800) oledCentro("Claude", 38, 2);
-  if (t >= 1400) oledCentro("Entrou na ESP", 56, 1);
+  if (t < 2000) {
+    desenharFagulha(64, 19, suave(t / 700.0f), 3);
+    if (t >= 800) oledCentro("Claude", 38, 2);
+    if (t >= 1400) oledCentro("Entrou na ESP", 56, 1);
+    return;
+  }
+  float p = suave((t - 2000) / 400.0f);            // desliza para o centro e cresce um pouco
+  desenharFagulha(64, 19 + (int16_t)(13 * p), 1.0f + 0.6f * p, 3);
 }
 
 // Abertura de uma piscada: fecha em 80 ms e abre em 120 ms (1 = aberto, 0 = fechado)
@@ -1711,13 +1716,14 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   if (chegada && chegada != chegadaClaudeVista) { chegadaClaudeVista = chegada; claudePendente = true; }
   if (!d.claudePresente) { claudePendente = false; inicioClaudeMs = 0; }
   if (claudePendente && !naIntro && !inicioVeiculosMs && !inicioFimMs) { claudePendente = false; inicioClaudeMs = agora; }
-  if (inicioClaudeMs && agora - inicioClaudeMs >= CLAUDE_TELA_MS) inicioClaudeMs = 0;
   // Alerta interrompe qualquer animação na hora (segurança primeiro)
   if (alarme || preAlerta || d.diagnostico) { inicioVeiculosMs = 0; veiculosPendentes = false; inicioFimMs = 0; inicioClaudeMs = 0; }
-  bool animacaoCurta = naIntro || inicioVeiculosMs || inicioFimMs || inicioClaudeMs;
+  // Tela do Claude: fica enquanto ele estiver na placa (as outras animações passam por cima)
+  bool claudeNaTela = inicioClaudeMs != 0;
+  bool animacaoCurta = naIntro || inicioVeiculosMs || inicioFimMs || (claudeNaTela && agora - inicioClaudeMs < 2500);
   // Modo exibição (olhos piscando) no lugar da tela de status, enquanto estiver ligado no app
-  bool exibindo = !animacaoCurta && modoExibicaoServidor == 1 && !d.diagnostico;
-  bool animando = oledOk && !alarme && !preAlerta && (animacaoCurta || exibindo);
+  bool exibindo = !naIntro && !inicioVeiculosMs && !inicioFimMs && !claudeNaTela && modoExibicaoServidor == 1 && !d.diagnostico;
+  bool animando = oledOk && !alarme && !preAlerta && (animacaoCurta || claudeNaTela || exibindo);
 
   // O display tem que ficar SEMPRE ligado. Um mau contato de um instante no VDD/GND faz o SSD1306
   // reiniciar apagado (ele perde a configuração); por isso, a cada 5 s, a configuração é reenviada.
