@@ -388,8 +388,8 @@
 			<div class="driver-call-escalation-box">
 				<span class="material-symbols-outlined g-icon" style="color:#ffdd66;margin-right:4px">timer</span>
 				<strong>CONFIRMAÇÃO OBRIGATÓRIA:</strong> <span id="driverCallEscalationTimer">0.0s</span><br>
-				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos ou
-					aperte abaixo para desativar o alerta!</span>
+				<span id="driverCallEscalationSub" style="font-size:10px;color:#ffffff">Erga a cabeça por 3 segundos: o alerta
+					desliga sozinho, sem tocar no celular. Botões abaixo só com o veículo parado.</span>
 			</div>
 		</div>
 
@@ -900,7 +900,7 @@
 				driverTimerCount.textContent = formatarSegundos(anim.limiarMs) + 's / ' + formatarSegundos(anim.limiarMs) + 's (CRÍTICO)';
 				driverBarFill.className = 'progresso-bar-fill danger';
 				driverBarFill.style.width = '100%';
-				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + ' segundos ou confirme na tela para desligar.';
+				driverFeedbackMsg.textContent = 'Alerta de segurança ativado! Erga a cabeça por ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + ' segundos: o alerta desliga sozinho, sem tocar no celular.';
 			}
 
 			// A chamada em tela cheia acompanha o alerta travado do servidor
