@@ -202,6 +202,11 @@ volatile unsigned long arcoIrisAteMs = 0; // Comando serial ARCOIRIS: teste do L
 volatile bool pedidoDiagI2C = false;      // Comando serial I2C: diagnóstico + destravamento do acelerômetro
 volatile unsigned long bipOlaAteMs = 0;   // Comando serial CLAUDE:OLA: bip de 0,5 s de "sinal de vida"
 unsigned long verdeAtivadoMs = 0;         // Quando o monitoramento foi ativado (LED verde que apaga devagar)
+// Claude na ESP (CLAUDE:OLA / CLAUDE:TCHAU pela serial): LED pisca e fica no laranja do Claude.
+// Sem comando nenhum por 3 min, a placa entende que ele saiu e volta ao normal.
+volatile unsigned long claudeChegouMs = 0;
+volatile unsigned long claudeUltimoMs = 0;
+const unsigned long CLAUDE_AUSENTE_MS = 180000;
 const unsigned long VERDE_ACESO_MS = 1500; // LED verde aceso ao ativar o monitoramento...
 const unsigned long VERDE_FADE_MS  = 3000; // ...e depois apaga devagar nesse tempo
 volatile int8_t pedidoModoLed = -1;       // Comandos seriais LED:DIG (1) / LED:PWM (0)
@@ -957,6 +962,11 @@ void loop() {
     corLed(255, 140, 0);
   } else if (calibrando) {
     corLed(0, 0, agora % 500 < 250 ? 255 : 0);
+  } else if (claudeChegouMs && agora - claudeUltimoMs < CLAUDE_AUSENTE_MS) {
+    // Laranja do Claude: pisca 3 vezes ao chegar e depois fica aceso
+    unsigned long dt = agora - claudeChegouMs;
+    bool aceso = dt >= 1200 || (dt % 400 < 200);
+    corLed(aceso ? 255 : 0, aceso ? 70 : 0, aceso ? 18 : 0);
   } else if (sensoresAtivos) {
     // Verde ao ativar o monitoramento, depois apaga devagar e fica apagado
     unsigned long dt = agora - verdeAtivadoMs;
@@ -1040,7 +1050,12 @@ void interpretarComandosTexto(const char* texto) {
   if (strstr(texto, "I2C")) pedidoDiagI2C = true;
   if (strstr(texto, "CLAUDE:OLA")) {
     bipOlaAteMs = millis() + 500;
+    claudeChegouMs = millis();
     Serial.println(F("[CLAUDE] Ola! Cheguei na ESP32."));
+  }
+  if (strstr(texto, "CLAUDE:TCHAU")) {
+    claudeChegouMs = 0;
+    Serial.println(F("[CLAUDE] Tchau! Sai da ESP32."));
   }
   if (strstr(texto, "LED:DIG")) pedidoModoLed = 1;
   if (strstr(texto, "LED:PWM")) pedidoModoLed = 0;
@@ -1054,7 +1069,10 @@ void processarComandosSerial() {
   if (Serial.available()) {
     String cmd = Serial.readStringUntil('\n');
     cmd.trim();
-    if (cmd.length() > 0) interpretarComandosTexto(cmd.c_str());
+    if (cmd.length() > 0) {
+      claudeUltimoMs = millis(); // Qualquer comando pela serial = Claude ainda presente
+      interpretarComandosTexto(cmd.c_str());
+    }
   }
 }
 
