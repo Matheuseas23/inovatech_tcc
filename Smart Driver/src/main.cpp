@@ -198,6 +198,7 @@ volatile unsigned long inicioDiagnosticoMs = 0;
 volatile bool pedidoScanWifi = false; // Comando serial SCAN: lista as redes que a ESP32 enxerga
 volatile unsigned long arcoIrisAteMs = 0; // Comando serial ARCOIRIS: teste do LED RGB por 10 s
 volatile bool pedidoDiagI2C = false;      // Comando serial I2C: diagnóstico + destravamento do acelerômetro
+volatile unsigned long bipOlaAteMs = 0;   // Comando serial CLAUDE:OLA: bip de 0,5 s de "sinal de vida"
 volatile int8_t pedidoModoLed = -1;       // Comandos seriais LED:DIG (1) / LED:PWM (0)
 bool ledModoDigital = false;              // true = LED só liga/desliga, sem PWM (sem ruído no I2C)
 uint8_t tentativasMpu = 0;                // Tentativas seguidas de reconectar o acelerômetro sem sucesso
@@ -913,7 +914,9 @@ void loop() {
   bool rele2Ligado  = alarmeGeral || avisoPiscaAlerta || testeManualRele2;
   if (alarmeGeral) estadoAtualTexto = "ALARME_ATIVADO";
   else if (cabecaEstavaBaixa) estadoAtualTexto = "PRE_ALERTA";
-  aplicarAtuadores(buzzerLigado, rele1Ligado, rele2Ligado);
+  // "Sinal de vida" (comando CLAUDE:OLA): bip de 0,5 s quando o Claude acessa a placa pela serial
+  bool bipOla = bipOlaAteMs && (long)(bipOlaAteMs - agora) > 0;
+  aplicarAtuadores(buzzerLigado || bipOla, rele1Ligado, rele2Ligado);
 
   // LED RGB: vermelho piscando = alarme; roxo piscando = acelerômetro desconectado;
   // amarelo = aviso (1 s); azul piscando = calibrando; azul fixo = aguardando o servidor;
@@ -1017,6 +1020,10 @@ void interpretarComandosTexto(const char* texto) {
   }
   if (strstr(texto, "SCAN")) pedidoScanWifi = true;
   if (strstr(texto, "I2C")) pedidoDiagI2C = true;
+  if (strstr(texto, "CLAUDE:OLA")) {
+    bipOlaAteMs = millis() + 500;
+    Serial.println(F("[CLAUDE] Ola! Cheguei na ESP32."));
+  }
   if (strstr(texto, "LED:DIG")) pedidoModoLed = 1;
   if (strstr(texto, "LED:PWM")) pedidoModoLed = 0;
   if (strstr(texto, "ARCOIRIS")) {
