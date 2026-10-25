@@ -1447,12 +1447,12 @@ void desenharFagulha(int16_t cx, int16_t cy, float escala, uint8_t espessura) {
   }
 }
 
-// Claude chegou na ESP (CLAUDE:OLA): a fagulha cresce, aparece "Claude" e a frase
+// Claude chegou na ESP (CLAUDE:OLA): a fagulha cresce, aparece "Claude" e "Entrou na ESP"
 const unsigned long CLAUDE_TELA_MS = 5000;
 void desenharClaude(unsigned long t) {
   desenharFagulha(64, 19, suave(t / 700.0f), 3);
   if (t >= 800) oledCentro("Claude", 38, 2);
-  if (t >= 1400) oledCentro("Estradas mais seguras", 56, 1);
+  if (t >= 1400) oledCentro("Entrou na ESP", 56, 1);
 }
 
 void desenharFim(uint8_t tipo, unsigned long t) {
