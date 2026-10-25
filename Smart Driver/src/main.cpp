@@ -1343,6 +1343,106 @@ void desenharVeiculos(unsigned long t) {
   else desenharOnibus(posicaoVeiculo(t - VEICULO_TOTAL_MS, 58), 57);
 }
 
+// ---- Animações ao DESATIVAR o monitoramento (uma diferente a cada vez, em sequência) ----
+// 0 = carinha dormindo · 1 = caminhão estacionando · 2 = pôr do sol · 3 = estaciona + carinha dorme
+const unsigned long DURACAO_FIM_MS[4] = {4000, 4000, 4000, 8000};
+
+// Carinha boceja, fecha os olhos devagar, sobem "Z z z" e aparece "BOM DESCANSO!"
+void desenharCarinhaDormindo(unsigned long t) {
+  const int16_t xOlhos[2] = {44, 84};
+  if (t < 1600) {
+    // Olhos abertos que vão apertando durante o bocejo
+    float bocejo = t < 600 ? 0 : sinf(PI * (t - 600) / 1000.0f);    // 0 -> 1 -> 0 entre 0,6 e 1,6 s
+    int16_t h = (int16_t)(14 - 9 * bocejo);
+    for (int16_t cx : xOlhos) oled.fillRoundRect(cx - 8, 20 - h / 2, 16, h, h >= 8 ? 4 : h / 2, SSD1306_WHITE);
+    int16_t rBoca = (int16_t)(2 + 7 * bocejo);
+    oled.drawCircle(64, 40, rBoca, SSD1306_WHITE);                   // boca abrindo no bocejo
+    if (rBoca > 3) oled.drawCircle(64, 40, rBoca - 1, SSD1306_WHITE);
+    return;
+  }
+  if (t < 2200) {
+    // Olhos fechando devagar
+    int16_t h = (int16_t)(14 - 12 * suave((t - 1600) / 600.0f));
+    for (int16_t cx : xOlhos) oled.fillRoundRect(cx - 8, 20 - h / 2, 16, h, h >= 8 ? 4 : h / 2, SSD1306_WHITE);
+    oled.drawFastHLine(58, 40, 12, SSD1306_WHITE);
+    return;
+  }
+  // Dormindo: olhos fechados (arcos para baixo), boquinha, "Z z z" subindo
+  for (int16_t cx : xOlhos) {
+    oled.drawCircleHelper(cx, 17, 7, 4 | 8, SSD1306_WHITE);
+    oled.drawCircleHelper(cx, 17, 6, 4 | 8, SSD1306_WHITE);
+  }
+  oled.drawFastHLine(59, 38, 10, SSD1306_WHITE);
+  oled.setTextSize(1);
+  for (uint8_t i = 0; i < 3; i++) {
+    float fase = ((t - 2200 + i * 400) % 1200) / 1200.0f;
+    oled.setCursor(100 + i * 7 + (int16_t)(fase * 6), 30 - (int16_t)(fase * 28));
+    oled.print(i == 0 ? 'Z' : 'z');
+  }
+  oledCentro("BOM DESCANSO!", 54, 1);
+}
+
+// Caminhão entra devagar, para na vaga com placa "P" e apaga os faróis: "FIM DE VIAGEM"
+void desenharEstacionando(unsigned long t) {
+  oled.drawFastHLine(0, 58, 128, SSD1306_WHITE);                    // pista
+  oled.drawFastVLine(60, 50, 8, SSD1306_WHITE);                     // marcas da vaga
+  oled.drawFastVLine(109, 50, 8, SSD1306_WHITE);
+  oled.drawFastVLine(118, 26, 32, SSD1306_WHITE);                   // poste da placa
+  oled.fillRect(111, 14, 14, 14, SSD1306_WHITE);                    // placa "P"
+  oled.setTextSize(1);
+  oled.setTextColor(SSD1306_BLACK);
+  oled.setCursor(116, 18);
+  oled.print('P');
+  oled.setTextColor(SSD1306_WHITE);
+  float p = 1 - powf(1 - constrain(t / 2000.0f, 0.0f, 1.0f), 3);   // freia devagar até parar
+  int16_t x = (int16_t)(-46 + (62 + 46) * p);
+  desenharCaminhao(x, 57);
+  if (t < 2300) {                                                   // farol aceso até estacionar
+    const int16_t yFarol = 47;
+    oled.drawLine(x + 47, yFarol, x + 56, yFarol - 4, SSD1306_WHITE);
+    oled.drawLine(x + 47, yFarol, x + 56, yFarol + 4, SSD1306_WHITE);
+  }
+  if (t >= 2600) oledCentro("FIM DE VIAGEM", 2, 1);
+}
+
+// Sol desce atrás do horizonte, aparecem a lua e as estrelas: "HORA DE DESCANSAR"
+void desenharPorDoSol(unsigned long t) {
+  const int16_t horizonte = 44;
+  int16_t ySol = 22 + (int16_t)(34 * suave(t / 2000.0f));
+  oled.fillCircle(64, ySol, 9, SSD1306_WHITE);
+  if (t < 1200) {                                                   // raios enquanto está alto
+    for (uint8_t i = 0; i < 8; i++) {
+      float a = i * PI / 4;
+      oled.drawLine(64 + cosf(a) * 12, ySol + sinf(a) * 12, 64 + cosf(a) * 15, ySol + sinf(a) * 15, SSD1306_WHITE);
+    }
+  }
+  oled.fillRect(0, horizonte + 1, 128, 64 - horizonte - 1, SSD1306_BLACK); // esconde o sol abaixo do horizonte
+  oled.drawFastHLine(0, horizonte, 128, SSD1306_WHITE);
+  if (t >= 2000) {
+    oled.fillCircle(100, 14, 7, SSD1306_WHITE);                     // lua crescente
+    oled.fillCircle(104, 11, 6, SSD1306_BLACK);
+    const int16_t estrelas[7][2] = {{12, 8}, {30, 20}, {48, 6}, {70, 16}, {84, 4}, {118, 26}, {20, 32}};
+    uint8_t visiveis = (uint8_t)constrain((t - 2000) / 120, 0UL, 7UL);
+    for (uint8_t i = 0; i < visiveis; i++) {
+      if ((t / 300 + i) % 4 == 0) continue;                         // estrelas piscando
+      oled.drawPixel(estrelas[i][0], estrelas[i][1], SSD1306_WHITE);
+      oled.drawPixel(estrelas[i][0] + 1, estrelas[i][1], SSD1306_WHITE);
+    }
+  }
+  if (t >= 2800) oledCentro("HORA DE DESCANSAR", 52, 1);
+}
+
+void desenharFim(uint8_t tipo, unsigned long t) {
+  switch (tipo) {
+    case 0: desenharCarinhaDormindo(t); break;
+    case 1: desenharEstacionando(t); break;
+    case 2: desenharPorDoSol(t); break;
+    default:
+      if (t < 4000) desenharEstacionando(t);
+      else desenharCarinhaDormindo(t - 4000);
+  }
+}
+
 // Desenha um quadro do display. Retorna true enquanto uma animação está rodando (quadros rápidos).
 bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   static unsigned long ultimo = 0;
@@ -1351,6 +1451,8 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   static unsigned long inicioVeiculosMs = 0;
   static bool veiculosPendentes = false;
   static bool monitorandoAntes = false;
+  static unsigned long inicioFimMs = 0;
+  static uint8_t animFim = 0, proximaFim = 0;
   static bool invertido = false;
   bool alarme = d.alarmeAtivo;
   bool preAlerta = strcmp(d.estado, "PRE_ALERTA") == 0;
@@ -1361,13 +1463,21 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
 
   // Caminhão e ônibus quando o monitoramento é ativado (espera a abertura terminar)
   if (d.monitorando && !monitorandoAntes) veiculosPendentes = true;
+  // Desativado no app: uma animação de "fim de viagem" diferente a cada vez, em sequência
+  if (!d.monitorando && monitorandoAntes && !d.diagnostico && !naIntro) {
+    animFim = proximaFim;
+    proximaFim = (proximaFim + 1) % 4;
+    inicioFimMs = agora;
+  }
   if (!d.monitorando) { veiculosPendentes = false; inicioVeiculosMs = 0; }
+  else inicioFimMs = 0;
   monitorandoAntes = d.monitorando;
   if (veiculosPendentes && !naIntro) { veiculosPendentes = false; inicioVeiculosMs = agora; }
   if (inicioVeiculosMs && agora - inicioVeiculosMs >= 2 * VEICULO_TOTAL_MS) inicioVeiculosMs = 0;
+  if (inicioFimMs && agora - inicioFimMs >= DURACAO_FIM_MS[animFim]) inicioFimMs = 0;
   // Alerta interrompe qualquer animação na hora (segurança primeiro)
-  if (alarme || preAlerta || d.diagnostico) { inicioVeiculosMs = 0; veiculosPendentes = false; }
-  bool animando = oledOk && !alarme && !preAlerta && (naIntro || inicioVeiculosMs);
+  if (alarme || preAlerta || d.diagnostico) { inicioVeiculosMs = 0; veiculosPendentes = false; inicioFimMs = 0; }
+  bool animando = oledOk && !alarme && !preAlerta && (naIntro || inicioVeiculosMs || inicioFimMs);
 
   // O display tem que ficar SEMPRE ligado. Um mau contato de um instante no VDD/GND faz o SSD1306
   // reiniciar apagado (ele perde a configuração); por isso, a cada 5 s, a configuração é reenviada.
@@ -1398,8 +1508,10 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
     if (naIntro) {
       if (t < INTRO_CARINHA_MS) desenharCarinha(t);
       else desenharAbertura();
-    } else {
+    } else if (inicioVeiculosMs) {
       desenharVeiculos(agora - inicioVeiculosMs);
+    } else {
+      desenharFim(animFim, agora - inicioFimMs);
     }
     oled.display();
     ultimo = 0; // Ao terminar, a tela de status aparece na hora
