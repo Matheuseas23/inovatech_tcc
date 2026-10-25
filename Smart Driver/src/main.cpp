@@ -77,7 +77,10 @@ const bool LED_RGB_ANODO_COMUM = false; // true se for ânodo comum (cores inver
 // Acelerômetro GY-521 (I2C + Alimentação Virtual)
 const uint8_t PINO_MPU_SDA   = 21; // GPIO 21 - Linha SDA I2C
 const uint8_t PINO_MPU_SCL   = 22; // GPIO 22 - Linha SCL I2C
-const uint8_t PINO_MPU_VCC   = 23; // GPIO 23 - VCC Virtual (3.3V HIGH)
+const uint8_t PINO_MPU_VCC   = 23; // GPIO 23 - VCC Virtual (3.3V HIGH): hoje livre, fica para o VCC do IR se ele voltar
+// 24/10/2026: VCC do GY-521 passou para o pino 3V3 (alimentação forte). Com isso a ESP32 não corta
+// mais a energia dele pelo D23 ao destravar o I2C. Se voltar o VCC para o D23, troque para false.
+const bool MPU_VCC_NO_3V3      = true;
 const uint8_t PINO_MPU_GND   = 16; // GPIO 16 (RX2) - GND Virtual (0V LOW)
 
 // Endereço I2C padrão do MPU-6050
@@ -385,13 +388,17 @@ void setup() {
 // depois de um reset ou de um fio mexido no meio de uma leitura. Bloqueia ~0,4 s.
 void recuperarBarramentoMPU() {
   if (wireIniciado) Wire.end();
-  // Linhas em 0 V junto com o VCC: o módulo não fica meio-alimentado pelos pull-ups
-  pinMode(PINO_MPU_SDA, OUTPUT); digitalWrite(PINO_MPU_SDA, LOW);
+  if (!MPU_VCC_NO_3V3) {
+    // Linhas em 0 V junto com o VCC: o módulo não fica meio-alimentado pelos pull-ups
+    pinMode(PINO_MPU_SDA, OUTPUT); digitalWrite(PINO_MPU_SDA, LOW);
+    pinMode(PINO_MPU_SCL, OUTPUT); digitalWrite(PINO_MPU_SCL, LOW);
+    digitalWrite(PINO_MPU_VCC, LOW);
+    delay(250);
+    digitalWrite(PINO_MPU_VCC, HIGH);
+    delay(100);
+  }
+  // No 3V3 não dá para cortar a energia: só destrava o barramento (9 pulsos de clock + STOP)
   pinMode(PINO_MPU_SCL, OUTPUT); digitalWrite(PINO_MPU_SCL, LOW);
-  digitalWrite(PINO_MPU_VCC, LOW);
-  delay(250);
-  digitalWrite(PINO_MPU_VCC, HIGH);
-  delay(100);
   pinMode(PINO_MPU_SDA, INPUT_PULLUP);
   for (uint8_t i = 0; i < 9; i++) {
     digitalWrite(PINO_MPU_SCL, HIGH); delayMicroseconds(10);
@@ -420,15 +427,19 @@ void diagnosticarI2C() {
 
   // Teste da alimentação: com o D23 (VCC) desligado, o módulo NÃO pode responder. Se responder,
   // o fio VCC não leva energia e ele vive só da corrente que vaza pelos fios de dados (SDA/SCL)
-  digitalWrite(PINO_MPU_VCC, LOW);
-  delay(200);
-  Wire.beginTransmission(MPU6050_ADDR);
-  bool respondeSemVcc = Wire.endTransmission() == 0;
-  digitalWrite(PINO_MPU_VCC, HIGH);
-  delay(100);
-  Serial.printf("[I2C] Teste de energia: com o D23 (VCC) desligado o modulo %s\n",
-                respondeSemVcc ? "AINDA RESPONDE -> o fio VCC NAO esta levando energia (confira VCC <-> D23)"
-                               : "parou de responder -> fio VCC no D23 OK");
+  if (MPU_VCC_NO_3V3) {
+    Serial.println(F("[I2C] Teste de energia: VCC do modulo no pino 3V3 (alimentacao fixa, sem teste)"));
+  } else {
+    digitalWrite(PINO_MPU_VCC, LOW);
+    delay(200);
+    Wire.beginTransmission(MPU6050_ADDR);
+    bool respondeSemVcc = Wire.endTransmission() == 0;
+    digitalWrite(PINO_MPU_VCC, HIGH);
+    delay(100);
+    Serial.printf("[I2C] Teste de energia: com o D23 (VCC) desligado o modulo %s\n",
+                  respondeSemVcc ? "AINDA RESPONDE -> o fio VCC NAO esta levando energia (confira VCC <-> D23)"
+                                 : "parou de responder -> fio VCC no D23 OK");
+  }
   // Mesmo teste para o GND virtual (RX2): sem ele em 0 V, o módulo também não pode responder
   digitalWrite(PINO_MPU_GND, HIGH);
   delay(200);
