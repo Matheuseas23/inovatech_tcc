@@ -156,6 +156,9 @@ const unsigned long INTERVALO_TELEMETRIA_MS  = 200;   // 5 pacotes/s em operaç�
 const unsigned long INTERVALO_TELEMETRIA_ALERTA_MS = 100; // 10 pacotes/s durante alertas
 const unsigned long TIMEOUT_SERVIDOR_LOCAL_MS = 5000;
 const unsigned long INTERVALO_NUVEM_MS        = 1000;
+// Durante a contagem (1,5 s) e o alarme a nuvem recebe mais rápido; e TODA mudança de estado
+// (normal -> contando -> alarme -> normal) é enviada na hora, senão o app nunca via a contagem
+const unsigned long INTERVALO_NUVEM_ALERTA_MS = 300;
 
 // ------------------------------------------------------------------------------
 // 4. ESTRUTURA DE TELEMETRIA COMPARTILHADA ENTRE OS CORES
@@ -1345,6 +1348,7 @@ void taskTelemetria(void *pvParameters) {
   unsigned long desconectadoDesdeMs = 0;
   unsigned long ultimoEnvioNuvem = 0;
   unsigned long ultimoSucessoNuvem = 0;
+  char estadoEnviadoNuvem[24] = "";
   uint32_t seq = 0;
   char payload[700];
   char resposta[256];
@@ -1441,11 +1445,14 @@ void taskTelemetria(void *pvParameters) {
       // 3. Fallback para a nuvem quando não há servidor local respondendo
       bool semServidorLocal = !servidorConhecido &&
                               (millis() - ultimoContatoServidor > TIMEOUT_SERVIDOR_LOCAL_MS);
+      bool mudouEstado = strcmp(snap.estado, estadoEnviadoNuvem) != 0;
+      unsigned long intervaloNuvem = strcmp(snap.estado, "NORMAL") != 0 ? INTERVALO_NUVEM_ALERTA_MS : INTERVALO_NUVEM_MS;
       if (ENVIAR_NUVEM_SEM_SERVIDOR_LOCAL && semServidorLocal &&
-          millis() - ultimoEnvioNuvem >= INTERVALO_NUVEM_MS) {
+          (mudouEstado || millis() - ultimoEnvioNuvem >= intervaloNuvem)) {
         ultimoEnvioNuvem = millis();
-        httpNuvem.setConnectTimeout(4000);
-        httpNuvem.setTimeout(4000);
+        strncpy(estadoEnviadoNuvem, snap.estado, sizeof(estadoEnviadoNuvem) - 1);
+        httpNuvem.setConnectTimeout(2500);
+        httpNuvem.setTimeout(2500);
         if (httpNuvem.begin(clienteSeguro, BACKEND_URL_CLOUD)) {
           httpNuvem.addHeader("Content-Type", "application/json");
           int codigo = httpNuvem.POST((uint8_t*)payload, tamanho);
