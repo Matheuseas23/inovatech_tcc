@@ -491,7 +491,7 @@
 				</button>
 				<button class="btn outline" id="btnDesligarOculos" type="button" style="padding:12px 10px;border:1px solid #ff4b72;color:#ff4b72;background:rgba(255,42,85,0.08);border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Space Mono',monospace;font-size:10.5px;cursor:pointer">
 					<span class="material-symbols-outlined g-icon">power_settings_new</span>
-					<span>DESLIGAR</span>
+					<span id="txtDesligarOculos">DESLIGAR</span>
 				</button>
 			</div>
 		</section>
@@ -861,6 +861,7 @@
 			if (!estado) return;
 			ultimoEstadoRecebido = estado;
 			if (estado.modo_exibicao !== undefined && typeof mostrarModoExibicao === 'function') mostrarModoExibicao(estado.modo_exibicao);
+			if (estado.oculos_ligados !== undefined && typeof mostrarEnergiaOculos === 'function') mostrarEnergiaOculos(estado.oculos_ligados);
 			var agora = performance.now();
 			var status = estado.estado || 'NORMAL';
 
@@ -1005,18 +1006,37 @@
 			});
 		}
 
-		// Desligar os óculos com segurança (a ESP32 desliga os componentes e entra em sono profundo)
+		// Desligar / Ligar os óculos (repouso: componentes desligados, Wi-Fi da placa esperando o "Ligar")
+		var oculosLigados = true;
 		var btnDesligarOculos = document.getElementById('btnDesligarOculos');
+		var txtDesligarOculos = document.getElementById('txtDesligarOculos');
+		function mostrarEnergiaOculos(ligados) {
+			oculosLigados = !!ligados;
+			if (txtDesligarOculos) txtDesligarOculos.textContent = oculosLigados ? 'DESLIGAR' : 'LIGAR';
+			if (btnDesligarOculos) {
+				var cor = oculosLigados ? '#ff4b72' : '#55ee77';
+				btnDesligarOculos.style.borderColor = cor;
+				btnDesligarOculos.style.color = cor;
+				btnDesligarOculos.style.background = oculosLigados ? 'rgba(255,42,85,0.08)' : 'rgba(85,238,119,0.12)';
+			}
+		}
 		if (btnDesligarOculos) {
 			btnDesligarOculos.addEventListener('click', function () {
 				if (!link.conectado()) {
-					driverFeedbackMsg.textContent = 'Sem conexão com o servidor: não foi possível desligar os óculos.';
+					driverFeedbackMsg.textContent = 'Sem conexão com o servidor: não foi possível ' + (oculosLigados ? 'desligar' : 'ligar') + ' os óculos.';
 					return;
 				}
-				var ok = window.confirm('Desligar os óculos?\n\nO monitoramento para e a placa entra em repouso.\nPara ligar de novo: aperte o botão EN da placa ou reconecte o cabo.');
-				if (!ok) return;
-				link.comando('DESLIGAR_OCULOS');
-				driverFeedbackMsg.textContent = 'Desligando os óculos... Em alguns segundos você pode tirar o cabo com segurança.';
+				if (oculosLigados) {
+					var ok = window.confirm('Desligar os óculos?\n\nOs sensores, o display e os alertas ficam desligados.\nPara ligar de novo: botão LIGAR aqui no app, botão EN da placa ou reconectar o cabo.');
+					if (!ok) return;
+					mostrarEnergiaOculos(false);
+					link.comando('DESLIGAR_OCULOS');
+					driverFeedbackMsg.textContent = 'Desligando os óculos... Em alguns segundos você pode tirar o cabo com segurança.';
+				} else {
+					mostrarEnergiaOculos(true);
+					link.comando('LIGAR_OCULOS');
+					driverFeedbackMsg.textContent = 'Ligando os óculos... Olhe para frente durante a calibração (1 bip → parado → 2 bips).';
+				}
 			});
 		}
 

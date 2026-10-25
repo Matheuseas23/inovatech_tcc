@@ -1437,7 +1437,13 @@
 			var agora = performance.now();
 
 			if (esp32StatusLabel && esp32StatusChip && esp32PulseDot) {
-				if (estado.online) {
+				if (estado.online && estado.oculos_ligados === false) {
+					// Desligada pelo app: a placa está em repouso (só o Wi-Fi ligado, esperando o "Ligar")
+					esp32StatusLabel.textContent = 'ESP32: DESLIGADA (REPOUSO)';
+					esp32StatusChip.title = 'Óculos desligados pelo app. Para ligar: botão LIGAR no app, botão EN da placa ou reconectar o cabo.';
+					esp32StatusChip.className = 'painel-chip offline';
+					esp32PulseDot.className = 'pulse-dot danger';
+				} else if (estado.online) {
 					var wifi = estado.wifi || {};
 					esp32StatusLabel.textContent = 'ESP32: ONLINE · ' + (estado.fonte_conexao || 'REDE') + (wifi.rssi ? ' · ' + wifi.rssi + ' dBm' : '');
 					esp32StatusChip.title = wifi.ssid ? 'Rede: ' + wifi.ssid + ' · IP da ESP32: ' + wifi.ip : '';

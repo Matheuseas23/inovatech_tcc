@@ -197,9 +197,13 @@ const uint8_t CMD_SILENCIAR    = 0x02;
 const uint8_t CMD_TOGGLE_RELE1 = 0x04;
 const uint8_t CMD_TOGGLE_RELE2 = 0x08;
 const uint8_t CMD_CALIBRAR     = 0x10;
-const uint8_t CMD_DESLIGAR     = 0x20; // Botão "Desligar" do app: componentes desligados + sono profundo
+// Botão Desligar/Ligar do app ("pwr":0/1): repouso com componentes desligados, mas Wi-Fi ligado
+// para ouvir o "Ligar". Também liga com o botão EN ou reconectando o cabo.
+volatile int8_t energiaServidor = -1;    // -1 = ainda sem resposta do servidor
+bool emRepouso = false;
 volatile unsigned long desligandoMs = 0; // Quando começou o desligamento (o display mostra a despedida)
-volatile bool oledApagado = false;       // O display já foi apagado (pode dormir)
+volatile bool oledApagado = false;       // O display já se despediu e apagou
+volatile bool religarDisplay = false;    // Saiu do repouso: o display liga e mostra a carinha "OLÁ"
 volatile uint8_t comandosRemotos = 0;
 portMUX_TYPE mutexComandos = portMUX_INITIALIZER_UNLOCKED;
 
@@ -299,6 +303,8 @@ LeituraMPU lerMPU6050(unsigned long agora);
 void recuperarBarramentoMPU();
 void diagnosticarI2C();
 void iniciarOled();
+void entrarRepouso();
+void sairRepouso();
 bool atualizarOled(const DadosTelemetria &d, bool conectado);
 void taskDisplay(void *pvParameters);
 
@@ -873,9 +879,13 @@ void loop() {
     tocarMelodiaPronto();
     verdeAtivadoMs = millis(); // LED da lente: verde e apaga devagar
   }
+  // Botão Desligar/Ligar do app ("pwr":0/1): repouso com o Wi-Fi ligado para ouvir o "Ligar"
+  if (energiaServidor == 0 && !emRepouso) entrarRepouso();
+  else if (energiaServidor == 1 && emRepouso) sairRepouso();
+
   // Modo checagem: sensores suspensos (sem alarme); desliga sozinho depois de 15 min
   if (modoDiagnostico && millis() - inicioDiagnosticoMs > DURACAO_MAX_DIAGNOSTICO_MS) modoDiagnostico = false;
-  bool sensoresAtivos = !modoDiagnostico &&
+  bool sensoresAtivos = !emRepouso && !modoDiagnostico &&
                         (!SENSORES_SO_COM_MONITORAMENTO || (monitoramentoAtivo && !melodiaPendente));
 
   // Leitura digital do Sensor Infravermelho
@@ -886,7 +896,9 @@ void loop() {
   const char* estadoAtualTexto = "NORMAL";
 
   // Leitura do Acelerômetro GY-521
-  LeituraMPU mpu = lerMPU6050(agora);
+  // (em repouso o acelerômetro está dormindo: não lê)
+  LeituraMPU mpu = {false, 0.0, 0.0, 0.0, false, 0.0};
+  if (!emRepouso) mpu = lerMPU6050(agora);
   // Histerese: inclinada acima de 32°, só volta a "erguida" abaixo de 25° (sem liga-desliga)
   float limiarAtual = (cabecaInclinada || alarmeAtivo) ? LIMIAR_RETORNO_GRAUS : LIMIAR_INCLINACAO_GRAUS;
   cabecaInclinada = mpu.valida && (mpu.inclinacao > limiarAtual);
@@ -1009,6 +1021,8 @@ void loop() {
     unsigned long dt = agora - claudeChegouMs;
     bool aceso = dt >= 1200 || (dt % 400 < 200);
     corLed(aceso ? 255 : 0, aceso ? 70 : 0, aceso ? 18 : 0);
+  } else if (emRepouso) {
+    corLed(0, 0, 0); // Desligado pelo app
   } else if (modoExibicaoServidor == 1) {
     // Modo exibição: passa suavemente de branco para azul e volta (ciclo de 4 s)
     float f = 0.5f - 0.5f * cosf(2 * PI * (agora % 4000) / 4000.0f);
@@ -1083,7 +1097,8 @@ void interpretarComandosTexto(const char* texto) {
   if (strstr(texto, "TOGGLE_RELE1")) agendarComando(CMD_TOGGLE_RELE1);
   if (strstr(texto, "TOGGLE_RELE2")) agendarComando(CMD_TOGGLE_RELE2);
   if (strstr(texto, "CALIBRAR"))     agendarComando(CMD_CALIBRAR);
-  if (strstr(texto, "DESLIGAR_ESP")) agendarComando(CMD_DESLIGAR);
+  const char* pwr = strstr(texto, "\"pwr\":");
+  if (pwr) energiaServidor = (pwr[6] == '1') ? 1 : 0;
   const char* mon = strstr(texto, "\"mon\":");
   if (mon) monitoramentoServidor = (mon[6] == '1') ? 1 : 0;
   const char* exib = strstr(texto, "\"exib\":");
@@ -1128,34 +1143,83 @@ void processarComandosSerial() {
   }
 }
 
-// Executa no Core 1 os comandos agendados pelo Core 0 / Serial
-// Desligamento seguro pelo app: avisa com som e no display, desliga atuadores, LED e display, põe o
-// acelerômetro para dormir e entra em sono profundo. Liga de novo com o botão EN ou reconectando o cabo.
-// (Tirar o cabo sem isso também não estraga a ESP32: o firmware não grava nada na memória flash.)
-void desligarOculos() {
-  Serial.println(F("[ENERGIA] Desligando os oculos com seguranca..."));
-  desligandoMs = millis();                      // O display mostra "DESLIGANDO"
+// Toca notas no buzzer (Hz, ms). Num buzzer PASSIVO sai a melodia de verdade; no buzzer ATIVO (o atual,
+// de uma nota só) sai o ritmo, com o timbre dele.
+void tocarNotas(const uint16_t* freqs, const uint16_t* duracoes, uint8_t n) {
+  ledcAttach(PINO_BUZZER, 2000, 10);
+  for (uint8_t i = 0; i < n; i++) {
+    ledcWriteTone(PINO_BUZZER, freqs[i]);
+    delay(duracoes[i]);
+    ledcWriteTone(PINO_BUZZER, 0);
+    delay(25);
+  }
+  ledcDetach(PINO_BUZZER);
+  pinMode(PINO_BUZZER, OUTPUT);
+  gpio_set_drive_capability((gpio_num_t)PINO_BUZZER, GPIO_DRIVE_CAP_3);
+  digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO);
+}
+
+// Sons de ligar/desligar inspirados na máquina de lavar Samsung: "tiriri-rim" subindo / descendo
+// (sol5, dó6, mi6, sol6; a última nota mais longa)
+void somLigar() {
+  const uint16_t f[4] = {784, 1047, 1319, 1568};
+  const uint16_t d[4] = {100, 100, 100, 280};
+  tocarNotas(f, d, 4);
+}
+void somDesligar() {
+  const uint16_t f[4] = {1568, 1319, 1047, 784};
+  const uint16_t d[4] = {100, 100, 100, 280};
+  tocarNotas(f, d, 4);
+}
+
+// Botão Desligar do app: despedida (som, LED e "TCHAU!" no display), atuadores e sensores desligados e
+// acelerômetro dormindo. O Wi-Fi continua ligado para ouvir o botão Ligar.
+// (Tirar o cabo também não estraga a ESP32: o firmware não grava nada na memória flash.)
+void entrarRepouso() {
+  Serial.println(F("[ENERGIA] Desligando os oculos (repouso) pelo app..."));
+  emRepouso = true;
+  oledApagado = false;
+  desligandoMs = millis();                      // O display mostra "TCHAU!" e a TV desligando
+  cabecaEstavaBaixa = false;
+  alarmeAtivo = false;
+  alarmeMinimoAte = 0;
+  tempoInicioCabecaBaixa = 0;
+  testeAlarmeAtivo = false;
+  testeManualRele1 = false;
+  testeManualRele2 = false;
+  calibracaoAgendadaMs = 0;
+  melodiaPendente = false;
   aplicarAtuadores(false, false, false);
   tecAspas();
-  for (uint16_t d : {220, 160, 110}) {          // Bips descendo: "desligando"
-    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO); delay(d);
-    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO); delay(140);
-  }
+  somDesligar();
   for (int16_t v = 120; v >= 0; v -= 8) { corLed(v, 0, 0); delay(40); } // LED vermelho apagando devagar
   corLed(0, 0, 0);
   unsigned long inicio = millis();
   while (!oledApagado && millis() - inicio < 4000) delay(50); // Espera o display se despedir e apagar
-  // Acelerômetro em modo sono (ele fica no 3V3, que continua ligado)
-  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.beginTransmission(MPU6050_ADDR);         // Acelerômetro em modo sono
   Wire.write(0x6B); Wire.write(0x40);
   Wire.endTransmission(true);
-  WiFi.disconnect(true);
-  WiFi.mode(WIFI_OFF);
-  digitalWrite(PINO_OLED_VCC, LOW);             // Corta a energia do display (D23)
-  Serial.println(F("[ENERGIA] Desligado. Para ligar: botao EN ou reconectar o cabo."));
-  Serial.flush();
-  esp_deep_sleep_start();
+  Serial.println(F("[ENERGIA] Em repouso. Para ligar: botao Ligar do app, botao EN ou reconectar o cabo."));
 }
+
+// Botão Ligar do app: acorda o acelerômetro, bips subindo, autoteste do LED, carinha "OLÁ" no display
+// e calibração guiada (1 bip -> olhar para frente -> 2 bips)
+void sairRepouso() {
+  Serial.println(F("[ENERGIA] Ligando os oculos pelo app..."));
+  emRepouso = false;
+  desligandoMs = 0;
+  religarDisplay = true;
+  giroDesligado = false;
+  inicializarMPU6050();
+  tecAspas();
+  somLigar();
+  corLed(255, 0, 0); delay(250); corLed(0, 255, 0); delay(250); corLed(0, 0, 255); delay(250); corLed(0, 0, 0);
+  calibracaoAgendadaMs = millis() + ESPERA_CALIBRACAO_MS;
+  bipAviso(1, 120);
+  if (monitoramentoAtivo) melodiaPendente = true; // O ritmo toca depois da calibração
+}
+
+// Executa no Core 1 os comandos agendados pelo Core 0 / Serial
 
 void aplicarComandosRemotos() {
   portENTER_CRITICAL(&mutexComandos);
@@ -1163,8 +1227,6 @@ void aplicarComandosRemotos() {
   comandosRemotos = 0;
   portEXIT_CRITICAL(&mutexComandos);
   if (!cmds) return;
-
-  if (cmds & CMD_DESLIGAR) desligarOculos(); // Não retorna: a placa dorme até apertar EN ou reconectar
 
   if (cmds & CMD_SILENCIAR) {
     testeAlarmeAtivo = false;
@@ -1564,7 +1626,17 @@ void desenharFim(uint8_t tipo, unsigned long t) {
 }
 
 // Desenha um quadro do display. Retorna true enquanto uma animação está rodando (quadros rápidos).
+unsigned long inicioIntroMs = 0; // Início da abertura (carinha "OLÁ" + "INOVA TECH"); volta a 0 ao religar
+
 bool atualizarOled(const DadosTelemetria &d, bool conectado) {
+  // Ligado de novo pelo app: o display volta e repete a abertura com a carinha "OLÁ"
+  if (religarDisplay) {
+    religarDisplay = false;
+    oledApagado = false;
+    uint8_t endereco = detectarOled();
+    if (endereco) { oledOk = oled.begin(SSD1306_SWITCHCAPVCC, endereco, false, false); oled.cp437(true); }
+    inicioIntroMs = millis();
+  }
   // Desligando pelo app (prioridade máxima): carinha dizendo "TCHAU!" e efeito de TV antiga
   // desligando (tela branca achata numa faixa, a faixa vira um ponto e o ponto some)
   if (desligandoMs) {
@@ -1604,7 +1676,7 @@ bool atualizarOled(const DadosTelemetria &d, bool conectado) {
   }
   static unsigned long ultimo = 0;
   static unsigned long ultimaReconfiguracao = 0;
-  static unsigned long inicioIntroMs = millis();
+  if (!inicioIntroMs) inicioIntroMs = millis();
   static unsigned long inicioVeiculosMs = 0;
   static bool veiculosPendentes = false;
   static bool monitorandoAntes = false;

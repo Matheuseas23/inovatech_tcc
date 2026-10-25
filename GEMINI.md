@@ -278,6 +278,8 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
   - O cabo USB só alimenta; toda a comunicação é Wi-Fi. `WiFi.setSleep(false)` mantém o consumo constante (power bank não desliga por carga baixa) e os comandos chegam sem atraso.
   - **LED azul da placa (GPIO 2)**: aceso fixo = falando com o servidor do PC (UDP) · pisca devagar = só pela nuvem (Render) · pisca rápido = sem comunicação.
   - Se a ESP32 só alcança a nuvem (outra rede ou firewall) e o PC está espelhando, o Render **repassa a telemetria ao PC** (`TELEMETRIA_ESP32`) e os comandos da Central sobem no espelho (`cmds_esp32`). A Central mostra "ESP32: ONLINE · NUVEM". Exige o `server.js` atualizado no Render.
+  - **Botão Desligar/Ligar do app** (out/2026): `DESLIGAR_OCULOS`/`LIGAR_OCULOS` → servidor guarda `oculos_ligados` e manda `"pwr":0/1` à ESP. Desligar = repouso (som inspirado na lavadora Samsung descendo, LED vermelho apagando, "TCHAU!" + efeito de TV desligando, atuadores/sensores desligados, acelerômetro dormindo, **Wi-Fi ligado** para ouvir o Ligar). Ligar = som subindo, autoteste do LED, carinha "OLÁ" e calibração guiada. Reiniciar a placa (EN ou cabo) também liga (o servidor percebe o `seq` voltando a zero). Tirar o cabo não estraga a ESP (o firmware não grava na flash).
+  - **Modo exibição** (botão no app): `"exib":1` → display com olhos piscando/olhando em volta e LED branco ↔ azul.
   - `iniciar-painel.bat` pede administrador sozinho e troca as regras "Bloquear" do Node.js (criadas quando alguém clica em Cancelar no aviso do Windows) por "Permitir" — sem isso o UDP 3002 é barrado em rede pública/hotspot.
   - ESP32 só conecta em **2,4 GHz**: no hotspot do celular, desligar 5 GHz / ativar "compatibilidade máxima".
 
