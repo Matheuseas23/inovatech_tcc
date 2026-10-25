@@ -7,6 +7,7 @@
 #include <HTTPClient.h>
 #include <math.h>
 #include "driver/gpio.h"
+#include "esp_sleep.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
@@ -196,6 +197,9 @@ const uint8_t CMD_SILENCIAR    = 0x02;
 const uint8_t CMD_TOGGLE_RELE1 = 0x04;
 const uint8_t CMD_TOGGLE_RELE2 = 0x08;
 const uint8_t CMD_CALIBRAR     = 0x10;
+const uint8_t CMD_DESLIGAR     = 0x20; // Botão "Desligar" do app: componentes desligados + sono profundo
+volatile unsigned long desligandoMs = 0; // Quando começou o desligamento (o display mostra a despedida)
+volatile bool oledApagado = false;       // O display já foi apagado (pode dormir)
 volatile uint8_t comandosRemotos = 0;
 portMUX_TYPE mutexComandos = portMUX_INITIALIZER_UNLOCKED;
 
@@ -1079,6 +1083,7 @@ void interpretarComandosTexto(const char* texto) {
   if (strstr(texto, "TOGGLE_RELE1")) agendarComando(CMD_TOGGLE_RELE1);
   if (strstr(texto, "TOGGLE_RELE2")) agendarComando(CMD_TOGGLE_RELE2);
   if (strstr(texto, "CALIBRAR"))     agendarComando(CMD_CALIBRAR);
+  if (strstr(texto, "DESLIGAR_ESP")) agendarComando(CMD_DESLIGAR);
   const char* mon = strstr(texto, "\"mon\":");
   if (mon) monitoramentoServidor = (mon[6] == '1') ? 1 : 0;
   const char* exib = strstr(texto, "\"exib\":");
@@ -1124,12 +1129,42 @@ void processarComandosSerial() {
 }
 
 // Executa no Core 1 os comandos agendados pelo Core 0 / Serial
+// Desligamento seguro pelo app: avisa com som e no display, desliga atuadores, LED e display, põe o
+// acelerômetro para dormir e entra em sono profundo. Liga de novo com o botão EN ou reconectando o cabo.
+// (Tirar o cabo sem isso também não estraga a ESP32: o firmware não grava nada na memória flash.)
+void desligarOculos() {
+  Serial.println(F("[ENERGIA] Desligando os oculos com seguranca..."));
+  desligandoMs = millis();                      // O display mostra "DESLIGANDO"
+  aplicarAtuadores(false, false, false);
+  tecAspas();
+  for (uint16_t d : {220, 160, 110}) {          // Bips descendo: "desligando"
+    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_LIGADO); delay(d);
+    digitalWrite(PINO_BUZZER, NIVEL_BUZZER_DESLIGADO); delay(140);
+  }
+  for (int16_t v = 120; v >= 0; v -= 8) { corLed(v, 0, 0); delay(40); } // LED vermelho apagando devagar
+  corLed(0, 0, 0);
+  unsigned long inicio = millis();
+  while (!oledApagado && millis() - inicio < 4000) delay(50); // Espera o display se despedir e apagar
+  // Acelerômetro em modo sono (ele fica no 3V3, que continua ligado)
+  Wire.beginTransmission(MPU6050_ADDR);
+  Wire.write(0x6B); Wire.write(0x40);
+  Wire.endTransmission(true);
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  digitalWrite(PINO_OLED_VCC, LOW);             // Corta a energia do display (D23)
+  Serial.println(F("[ENERGIA] Desligado. Para ligar: botao EN ou reconectar o cabo."));
+  Serial.flush();
+  esp_deep_sleep_start();
+}
+
 void aplicarComandosRemotos() {
   portENTER_CRITICAL(&mutexComandos);
   uint8_t cmds = comandosRemotos;
   comandosRemotos = 0;
   portEXIT_CRITICAL(&mutexComandos);
   if (!cmds) return;
+
+  if (cmds & CMD_DESLIGAR) desligarOculos(); // Não retorna: a placa dorme até apertar EN ou reconectar
 
   if (cmds & CMD_SILENCIAR) {
     testeAlarmeAtivo = false;
@@ -1530,6 +1565,43 @@ void desenharFim(uint8_t tipo, unsigned long t) {
 
 // Desenha um quadro do display. Retorna true enquanto uma animação está rodando (quadros rápidos).
 bool atualizarOled(const DadosTelemetria &d, bool conectado) {
+  // Desligando pelo app (prioridade máxima): carinha dizendo "TCHAU!" e efeito de TV antiga
+  // desligando (tela branca achata numa faixa, a faixa vira um ponto e o ponto some)
+  if (desligandoMs) {
+    if (!oledOk || oledApagado) return false;
+    unsigned long t = millis() - desligandoMs;
+    if (t < 2800) {
+      oled.clearDisplay();
+      oled.invertDisplay(false);
+      oled.setTextColor(SSD1306_WHITE);
+      if (t < 1500) {
+        for (int16_t cx : {44, 84}) {                       // olhinhos felizes ^ ^
+          oled.drawCircleHelper(cx, 22, 7, 1 | 2, SSD1306_WHITE);
+          oled.drawCircleHelper(cx, 22, 6, 1 | 2, SSD1306_WHITE);
+        }
+        oled.drawCircleHelper(64, 26, 14, 4 | 8, SSD1306_WHITE); // sorriso
+        oled.drawCircleHelper(64, 26, 13, 4 | 8, SSD1306_WHITE);
+        oledCentro("TCHAU!", 47, 2);
+      } else if (t < 1900) {
+        int16_t h = 64 - (int16_t)(62 * suave((t - 1500) / 400.0f));  // tela branca achatando
+        oled.fillRect(0, 32 - h / 2, 128, h, SSD1306_WHITE);
+      } else if (t < 2300) {
+        int16_t w = 128 - (int16_t)(124 * suave((t - 1900) / 400.0f)); // faixa encolhendo
+        oled.fillRect(64 - w / 2, 31, w, 2, SSD1306_WHITE);
+      } else {
+        int16_t r = 3 - (int16_t)(3 * (t - 2300) / 500.0f);            // ponto sumindo
+        if (r > 0) oled.fillCircle(64, 32, r, SSD1306_WHITE);
+        else oled.drawPixel(64, 32, SSD1306_WHITE);
+      }
+      oled.display();
+      return true;
+    }
+    oled.clearDisplay();
+    oled.display();
+    oled.ssd1306_command(SSD1306_DISPLAYOFF);
+    oledApagado = true;
+    return false;
+  }
   static unsigned long ultimo = 0;
   static unsigned long ultimaReconfiguracao = 0;
   static unsigned long inicioIntroMs = millis();

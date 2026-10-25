@@ -483,11 +483,17 @@
 				</button>
 			</div>
 
-			<!-- MODO EXIBIÇÃO: o display dos óculos mostra olhos piscando (para visitas e banca) -->
-			<button class="btn outline" id="btnModoExibicao" type="button" style="margin-top:8px;padding:12px 14px;border:1px solid var(--cyan);color:var(--cyan);background:rgba(8,222,235,0.08);border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;width:100%">
-				<span class="material-symbols-outlined g-icon">visibility</span>
-				<span id="txtModoExibicao">MODO EXIBIÇÃO: DESLIGADO</span>
-			</button>
+			<!-- MODO EXIBIÇÃO (olhos piscando no display) e DESLIGAR os óculos com segurança -->
+			<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:8px">
+				<button class="btn outline" id="btnModoExibicao" type="button" style="padding:12px 10px;border:1px solid var(--cyan);color:var(--cyan);background:rgba(8,222,235,0.08);border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Space Mono',monospace;font-size:10.5px;cursor:pointer">
+					<span class="material-symbols-outlined g-icon">visibility</span>
+					<span id="txtModoExibicao">MODO EXIBIÇÃO: DESLIGADO</span>
+				</button>
+				<button class="btn outline" id="btnDesligarOculos" type="button" style="padding:12px 10px;border:1px solid #ff4b72;color:#ff4b72;background:rgba(255,42,85,0.08);border-radius:6px;display:flex;align-items:center;justify-content:center;gap:6px;font-family:'Space Mono',monospace;font-size:10.5px;cursor:pointer">
+					<span class="material-symbols-outlined g-icon">power_settings_new</span>
+					<span>DESLIGAR</span>
+				</button>
+			</div>
 		</section>
 
 		<!-- MODO VIAGEM NOTURNA / TELA APAGADA (APENAS ÍCONE DE CELULAR) -->
@@ -996,6 +1002,21 @@
 				var novo = !modoExibicaoAtivo;
 				mostrarModoExibicao(novo);
 				link.comando('MODO_EXIBICAO', { ativo: novo });
+			});
+		}
+
+		// Desligar os óculos com segurança (a ESP32 desliga os componentes e entra em sono profundo)
+		var btnDesligarOculos = document.getElementById('btnDesligarOculos');
+		if (btnDesligarOculos) {
+			btnDesligarOculos.addEventListener('click', function () {
+				if (!link.conectado()) {
+					driverFeedbackMsg.textContent = 'Sem conexão com o servidor: não foi possível desligar os óculos.';
+					return;
+				}
+				var ok = window.confirm('Desligar os óculos?\n\nO monitoramento para e a placa entra em repouso.\nPara ligar de novo: aperte o botão EN da placa ou reconecte o cabo.');
+				if (!ok) return;
+				link.comando('DESLIGAR_OCULOS');
+				driverFeedbackMsg.textContent = 'Desligando os óculos... Em alguns segundos você pode tirar o cabo com segurança.';
 			});
 		}
 

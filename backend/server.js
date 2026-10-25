@@ -268,7 +268,8 @@ const MAPA_COMANDOS_ESP32 = {
   SILENCIAR_ALARME: 'SILENCIAR',
   CALIBRAR_MPU: 'CALIBRAR',
   TOGGLE_RELE1: 'TOGGLE_RELE1',
-  TOGGLE_RELE2: 'TOGGLE_RELE2'
+  TOGGLE_RELE2: 'TOGGLE_RELE2',
+  DESLIGAR_OCULOS: 'DESLIGAR_ESP' // ESP32 desliga os componentes e entra em sono profundo
 };
 
 function enfileirarComandoESP32(cmdFirmware) {
@@ -598,7 +599,7 @@ function atualizarGps(gps, origem) {
 function executarComando(comando, origem = 'CENTRAL', extras = {}) {
   const cmd = String(comando || '').toUpperCase();
   const normalizar = ['SILENCIAR_ALARME', 'RESET', 'NORMALIZAR'].includes(cmd);
-  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2', 'MODO_EXIBICAO'];
+  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2', 'MODO_EXIBICAO', 'DESLIGAR_OCULOS'];
   if (!normalizar && !conhecidos.includes(cmd)) return { ok: false, mensagem: `Comando desconhecido: ${comando}` };
 
   // Na nuvem em modo espelho, quem executa é o servidor local (a nuvem só repassa)
@@ -637,6 +638,8 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
     estado.modo_exibicao = extras.ativo !== undefined ? Boolean(extras.ativo) : !estado.modo_exibicao;
     registrarEvento('COMANDO_CENTRAL', `Modo exibição ${estado.modo_exibicao ? 'ligado' : 'desligado'} no display dos óculos`, `Origem: ${origem}`);
     transmitirEstado();
+  } else if (cmd === 'DESLIGAR_OCULOS') {
+    registrarEvento('COMANDO_CENTRAL', 'Óculos desligados com segurança', `Origem: ${origem}. Para ligar de novo: botão EN da placa ou reconectar o cabo.`);
   } else {
     registrarEvento('COMANDO_CENTRAL', `Comando manual enviado à ESP32: ${cmd}`, `Origem: ${origem}`);
   }
