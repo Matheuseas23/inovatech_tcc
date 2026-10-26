@@ -839,7 +839,7 @@
 		}
 
 		.manual-video:before {
-			content: 'MANUAL DE OPERAÇÕES  /  INOVATECH-500\A\A  SMART DRIVER\A\A  HUD        ESP32        ALERTAS';
+			content: 'SMART DRIVER  /  FLUXO DO ALERTA\A\A  CABEÇA BAIXA  →  1,0 s BIPE  →  1,5 s ALARME\A\A  APP + CENTRAL AVISADOS AO VIVO';
 			white-space: pre;
 			width: 78%;
 			height: 164px;
@@ -865,7 +865,7 @@
 		}
 
 		.manual-video:after {
-			content: '▶';
+			content: none;
 			display: grid;
 			place-items: center;
 			width: 55px;
@@ -1010,7 +1010,7 @@
 		}
 
 		.prototype:after {
-			content: '◉  ESP32   ◉  ACELERÔMETRO   ◉  HUD';
+			content: '◉  ESP32   ◉  GIROSCÓPIO   ◉  OLED   ◉  RELÉS';
 			position: absolute;
 			bottom: 12px;
 			color: var(--muted);
@@ -3365,7 +3365,7 @@
 	<div class="shell"><header><div class="brand"><img id="brandLogo" src="logo_inovatech.png" alt="INOVA TECH"></div><nav aria-label="Navegação principal"><button class="active" data-view="home">HOME</button><button data-view="manual">MANUAL DE OPERAÇÕES</button><button data-view="ecosystem">ECOSSISTEMA DE SEGURANÇA</button><button data-view="about">QUEM SOMOS</button><button data-view="references">REFERÊNCIAS</button><button data-view="game">O JOGO</button></nav><div class="tools"><button class="theme-toggle" id="themeToggle" aria-label="Alternar tema"><img id="themeIcon" src="moon.svg" alt="Modo escuro"></button></div></header>
 		<main>
 			<section id="home" class="view active"><div class="home-content-wrapper"><div class="hero"><div class="hero-content"><div class="hero-logo-box"><img class="hero-brand-logo" src="logo_inovatech.png" alt="INOVA TECH - Smart Driver"></div><div class="eyebrow">Monitoramento inteligente em movimento</div><h1>Monitoramento biométrico de<br><span style="color:var(--cyan)">alta performance</span></h1><p>Segurança em tempo real para operações industriais. Antecipe riscos, otimize eficiência e garanta um ambiente operacional protegido através de telemetria avançada e resposta imediata.</p><div class="actions"><button class="btn" data-view="manual">Ver manual completo</button><button class="btn outline" data-view="ecosystem">Conheça o ecossistema</button><button class="btn outline" data-view="about">Quem somos</button></div></div></div><div class="grid" style="margin-top:34px"><article class="card"><div class="card-label">◉ PÚBLICO-ALVO</div><h3>Para quem dirige e opera</h3><p>Motoristas profissionais, operadores industriais e empresas de transporte que precisam reduzir riscos durante a operação.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">ϟ DIFERENCIAL</div><h3>Biometria em tempo real</h3><p>O Smart Driver integra wearable, sensores e veículo para transformar sinais do condutor em alertas imediatos.</p></article><article class="card"><div class="card-label">⌁ OBJETIVO</div><h3>Prevenir antes do risco</h3><p>Identificar fadiga, perda de atenção e alterações físicas para apoiar decisões rápidas e tornar a operação mais segura.</p></article></div></div></section>
-			<section id="manual" class="view"><div class="eyebrow">INOVA TECH SMART DRIVER / DOCUMENTAÇÃO</div><h2>Manual de operações</h2><p style="color:var(--muted);font-size:11px;max-width:570px;line-height:1.8">Guia técnico passo a passo para instalação e operação do sistema InovaTech Smart Driver.</p><div class="manual-top"><div class="manual-video"><div style="position:absolute;bottom:16px;left:18px;color:var(--cyan);font-size:10px">▶ EXPLICAÇÃO VISUAL · 04:28</div></div><article class="card spec"><strong>◫ INOVA TECH-500</strong><h3>Unidade central</h3><p>Processamento biométrico de alta precisão, conectado ao wearable e aos sensores do veículo.</p><p><span style="color:var(--muted)">STATUS DO SISTEMA</span><br><span style="color:var(--cyan)">● OPERACIONAL</span></p></article></div><div class="steps"><article class="card step"><b class="step-number">01</b><div><h3>Conexão do wearable</h3><p>Insira o dispositivo, verifique o LED de conexão e aguarde a sincronização.</p></div></article><article class="card step"><b class="step-number">02</b><div><h3>Configuração da unidade central</h3><p>Conecte a unidade à rede e confirme o pareamento com os sensores.</p></div></article><article class="card step"><b class="step-number">03</b><div><h3>Calibração</h3><p>Execute o teste de calibração para iniciar o monitoramento preciso.</p></div></article><article class="card step"><b class="step-number">04</b><div><h3>Monitoramento HUD</h3><p>Confira os indicadores vitais e o mapa de risco no painel do veículo.</p></div></article></div></section>
+			<section id="manual" class="view"><div class="eyebrow">INOVA TECH SMART DRIVER / DOCUMENTAÇÃO</div><h2>Manual de operações</h2><p style="color:var(--muted);font-size:11px;max-width:570px;line-height:1.8">Passo a passo real de uso do InovaTech Smart Driver: ligar, calibrar, ativar e acompanhar.</p><div class="manual-top"><div class="manual-video"><div style="position:absolute;bottom:16px;left:18px;color:var(--cyan);font-size:10px">◉ FLUXO DO ALERTA · 1,5 s</div></div><article class="card spec"><strong>◫ SMART DRIVER · ÓCULOS</strong><h3>Unidade de monitoramento</h3><p>ESP32 dual-core com acelerômetro e giroscópio, buzzer, LED RGB, display OLED e relés de segurança, conectada por Wi-Fi ao app do motorista e à Central Tech.</p><p><span style="color:var(--muted)">STATUS DO SISTEMA</span><br><span style="color:var(--cyan)">● PROTÓTIPO FUNCIONAL</span></p></article></div><div class="steps"><article class="card step"><b class="step-number">01</b><div><h3>Ligar os óculos</h3><p>Conecte o cabo no power bank (ou toque em LIGAR no app). O LED faz o autoteste vermelho → verde → azul e o display mostra a carinha dizendo “OLÁ”.</p></div></article><article class="card step"><b class="step-number">02</b><div><h3>Calibração</h3><p>Coloque os óculos e olhe para frente. Ao ouvir 1 bipe, fique parado; 2 bipes = calibrado. Também dá para recalibrar pela Central Tech.</p></div></article><article class="card step"><b class="step-number">03</b><div><h3>Conexão</h3><p>A ESP32 entra sozinha no Wi-Fi 2,4 GHz (ponto de acesso do celular) e envia os dados para o servidor. O display mostra se a conexão é pelo PC ou pela nuvem.</p></div></article><article class="card step"><b class="step-number">04</b><div><h3>Ativar o monitoramento</h3><p>No app do motorista, toque em “Ativar monitoramento seguro”: os relés fazem “tec”, toca uma musiquinha e o display mostra o caminhão e o ônibus passando.</p></div></article><article class="card step"><b class="step-number">05</b><div><h3>Durante a viagem</h3><p>Cabeça baixa por 1 s: bipe e LED amarelo. Por 1,5 s: alarme contínuo, LED vermelho e relés acionados. Queda brusca (pescada): alarme na hora. Erguer a cabeça por 3 s encerra o alerta, sem tocar no celular.</p></div></article><article class="card step"><b class="step-number">06</b><div><h3>Central e desligamento</h3><p>A Central Tech acompanha tudo ao vivo e escala o alerta sem resposta (9 s: alerta crítico; 15 s: SOS). Para encerrar, toque em DESLIGAR no app: os óculos dizem “TCHAU!” e entram em repouso.</p></div></article></div></section>
 						<section id="ecosystem" class="view">
 				<div class="eyebrow">INOVA TECH / COMPONENTES DO PROJETO</div>
 				<div class="section-title" style="margin-top:8px">
@@ -3398,23 +3398,21 @@
 									</div>
 									<div>
 										<h4 class="tech-item-title">Placa ESP32</h4>
-										<span class="tech-item-tag">MICROCONTROLADOR & TELEMETRIA</span>
+										<span class="tech-item-tag">MICROCONTROLADOR DUAL-CORE & WI-FI</span>
 									</div>
 								</article>
-
 								<article class="tech-item-card">
 									<div class="tech-item-top">
 										<div class="tech-item-icon-box">
-											<span class="material-symbols-outlined g-icon">dns</span>
+											<span class="material-symbols-outlined g-icon">3d_rotation</span>
 										</div>
 										<span class="tech-item-num">02</span>
 									</div>
 									<div>
-										<h4 class="tech-item-title">Servidores Fechados</h4>
-										<span class="tech-item-tag">INFRAESTRUTURA & NÚCLEO LOCAL</span>
+										<h4 class="tech-item-title">Acelerômetro + Giroscópio</h4>
+										<span class="tech-item-tag">GY-521 · INCLINAÇÃO & PESCADA</span>
 									</div>
 								</article>
-
 								<article class="tech-item-card">
 									<div class="tech-item-top">
 										<div class="tech-item-icon-box">
@@ -3424,46 +3422,67 @@
 									</div>
 									<div>
 										<h4 class="tech-item-title">Buzzer</h4>
-										<span class="tech-item-tag">ATUADOR SONORO PREVENTIVO</span>
+										<span class="tech-item-tag">ALERTA SONORO NOS ÓCULOS</span>
 									</div>
 								</article>
-
 								<article class="tech-item-card">
 									<div class="tech-item-top">
 										<div class="tech-item-icon-box">
-											<span class="material-symbols-outlined g-icon">sensors</span>
+											<span class="material-symbols-outlined g-icon">toggle_on</span>
 										</div>
 										<span class="tech-item-num">04</span>
 									</div>
 									<div>
-										<h4 class="tech-item-title">Sensor Infravermelho</h4>
-										<span class="tech-item-tag">DETECÇÃO POSTURAL & QUEIXO</span>
+										<h4 class="tech-item-title">Relé Duplo</h4>
+										<span class="tech-item-tag">PISCA-ALERTA & PARADA SEGURA</span>
 									</div>
 								</article>
-
 								<article class="tech-item-card">
 									<div class="tech-item-top">
 										<div class="tech-item-icon-box">
-											<span class="material-symbols-outlined g-icon">screen_rotation</span>
+											<span class="material-symbols-outlined g-icon">monitor</span>
 										</div>
 										<span class="tech-item-num">05</span>
 									</div>
 									<div>
-										<h4 class="tech-item-title">Acelerômetro</h4>
-										<span class="tech-item-tag">INÉRCIA, PITCH & ROLL</span>
+										<h4 class="tech-item-title">Display OLED 0,96"</h4>
+										<span class="tech-item-tag">STATUS VISÍVEL NA ARMAÇÃO</span>
 									</div>
 								</article>
-
+								<article class="tech-item-card">
+									<div class="tech-item-top">
+										<div class="tech-item-icon-box">
+											<span class="material-symbols-outlined g-icon">lightbulb</span>
+										</div>
+										<span class="tech-item-num">06</span>
+									</div>
+									<div>
+										<h4 class="tech-item-title">LED RGB</h4>
+										<span class="tech-item-tag">ALERTA LUMINOSO NA LENTE</span>
+									</div>
+								</article>
 								<article class="tech-item-card">
 									<div class="tech-item-top">
 										<div class="tech-item-icon-box">
 											<span class="material-symbols-outlined g-icon">visibility</span>
 										</div>
-										<span class="tech-item-num">06</span>
+										<span class="tech-item-num">07</span>
 									</div>
 									<div>
 										<h4 class="tech-item-title">Óculos</h4>
-										<span class="tech-item-tag">ESTRUTURA WEARABLE ERGONÔMICA</span>
+										<span class="tech-item-tag">ESTRUTURA WEARABLE</span>
+									</div>
+								</article>
+								<article class="tech-item-card">
+									<div class="tech-item-top">
+										<div class="tech-item-icon-box">
+											<span class="material-symbols-outlined g-icon">cable</span>
+										</div>
+										<span class="tech-item-num">08</span>
+									</div>
+									<div>
+										<h4 class="tech-item-title">Fios Jumper & Resistores</h4>
+										<span class="tech-item-tag">LIGAÇÕES DO KIT ELETRÔNICO</span>
 									</div>
 								</article>
 							</div>
@@ -3489,7 +3508,6 @@
 										<span class="tech-item-tag">AMBIENTE DE DESENVOLVIMENTO</span>
 									</div>
 								</article>
-
 								<article class="tech-item-card software-card">
 									<div class="tech-item-top">
 										<div class="tech-item-icon-box">
@@ -3499,33 +3517,43 @@
 									</div>
 									<div>
 										<h4 class="tech-item-title">PlatformIO</h4>
-										<span class="tech-item-tag">TOOLCHAIN DE EMBARCADOS</span>
+										<span class="tech-item-tag">FIRMWARE DA ESP32</span>
 									</div>
 								</article>
-
+								<article class="tech-item-card software-card">
+									<div class="tech-item-top">
+										<div class="tech-item-icon-box">
+											<span class="material-symbols-outlined g-icon">dns</span>
+										</div>
+										<span class="tech-item-num">03</span>
+									</div>
+									<div>
+										<h4 class="tech-item-title">Node.js</h4>
+										<span class="tech-item-tag">SERVIDOR & WEBSOCKET</span>
+									</div>
+								</article>
 								<article class="tech-item-card software-card">
 									<div class="tech-item-top">
 										<div class="tech-item-icon-box">
 											<span class="material-symbols-outlined g-icon">cloud_upload</span>
 										</div>
-										<span class="tech-item-num">03</span>
+										<span class="tech-item-num">04</span>
 									</div>
 									<div>
 										<h4 class="tech-item-title">Vercel</h4>
-										<span class="tech-item-tag">HOSPEDAGEM DO FRONTEND</span>
+										<span class="tech-item-tag">HOSPEDAGEM DO SITE, APP & CENTRAL</span>
 									</div>
 								</article>
-
 								<article class="tech-item-card software-card">
 									<div class="tech-item-top">
 										<div class="tech-item-icon-box">
 											<span class="material-symbols-outlined g-icon">lan</span>
 										</div>
-										<span class="tech-item-num">04</span>
+										<span class="tech-item-num">05</span>
 									</div>
 									<div>
 										<h4 class="tech-item-title">Render</h4>
-										<span class="tech-item-tag">BACKEND API & WEBSOCKET</span>
+										<span class="tech-item-tag">SERVIDOR NA NUVEM</span>
 									</div>
 								</article>
 							</div>
