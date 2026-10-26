@@ -54,4 +54,25 @@
 
 **Lições:** o ponto de acesso do Redmi segue a banda do Wi-Fi do celular (escola em 5 GHz derrubava a ESP); solução no dia: Redmi conectado no iPhone de um amigo com "Maximizar Compatibilidade". A conta do notebook não é administradora → firewall bloqueado → caminho ESP → Render → PC, com quedas ocasionais.
 
-**Pendências:** liberar o firewall com senha de administrador; buzzer em 5 V via transistor (S8050/2N2222) para ficar bem mais alto; ~~validar com dados a regra de "pegar objeto"~~ (feito em 24/10: parado até 23 °/s, mexendo 44–77 °/s → limite ajustado para 35 °/s); decidir se as funções de teste ficam ("tira a função dos sensores desligados", "tirar wifi redmi").
+**Pendências (de 23/10):** liberar o firewall com senha de administrador; buzzer em 5 V via transistor (S8050/2N2222) para ficar bem mais alto; ~~validar com dados a regra de "pegar objeto"~~ (feito em 24/10: parado até 23 °/s, mexendo 44–77 °/s → limite ajustado para 35 °/s); decidir se as funções de teste ficam ("tira a função dos sensores desligados", "tirar wifi redmi").
+
+## Sessão 3 — 24/10/2026 a 26/10/2026 (mesma conversa da sessão 2, continuada)
+
+Conversa completa: [conversas/sessao-3-2026-10-23-a-26.md](conversas/sessao-3-2026-10-23-a-26.md).
+
+**Hardware / firmware:**
+- LED RGB na lente: autoteste ao ligar, azul aguardando o servidor, verde ao ativar e apaga devagar, amarelo no aviso, vermelho no alarme, roxo com o acelerômetro desconectado, laranja do Claude (`CLAUDE:OLA` / `CLAUDE:TCHAU`), branco↔azul no modo exibição.
+- Acelerômetro: VCC no 3V3, I²C em 100 kHz, religamento automático, comando `I2C`; giroscópio validado com dados (limite de 35 °/s).
+- Relés com GND físico (bobina precisa de ~70 mA); buzzer com GND virtual no D33.
+- Display OLED 128×64 no meio dos óculos (2º barramento I²C, tarefa própria no Core 0): carinha "OLÁ", caminhão/ônibus ao ativar, 4 animações ao desativar, fagulha do Claude ("Entrou na ESP"), olhos do modo exibição, "TCHAU!" com efeito de TV. Reconfigurado a cada 5 s contra mau contato.
+- Botão **Desligar/Ligar** no app: repouso com Wi-Fi ligado, sons inspirados na lavadora Samsung.
+- Envio imediato à nuvem a cada mudança de estado (barra do app com 0,2–0,4 s de atraso).
+
+**Páginas:** modo exibição no app, card da Central cinza com monitoramento desligado, mapas maiores, site com os papéis reais da equipe, ecossistema e manual corrigidos.
+
+**26/10 (escola):** o ponto de acesso do Redmi foi para 5 GHz quando o celular entrou no Wi-Fi da escola e a ESP sumiu (só enxerga 2,4 GHz). `SOMENTE_WIFI_REDMI = true` de novo, a pedido ("coloca as redes de volta" desfaz). Modo exibição ligado para mostrar ao professor de robótica. Sem rede, os sensores ligam sozinhos em 15 s.
+
+**Pendências:**
+- Tabela "Investimento no protótipo" no site (óculos R$ 160; o resto veio num kit, exceto a ESP32 — faltam os preços).
+- **Câmera YPAY X7 (GOKE GK7202)** para ler o rosto no painel: resetar (8 s + desligar/ligar), instalar o app HOMEEYE, depois testar as portas (RTSP/ONVIF). Plano B: OpenIPC; alternativa: webcam do notebook.
+- Preparação da banca (≈ 11/11): roteiro, perguntas prováveis, solda dos fios, caixinha de proteção.
