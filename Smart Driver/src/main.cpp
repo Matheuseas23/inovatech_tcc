@@ -52,6 +52,10 @@ const char* WIFI_IPHONE_PASS = "12345678910";
 const char* WIFI_TPLINK_SSID = "TP-Link_5E68";
 const char* WIFI_TPLINK_PASS = "GQW5Yt5N";
 
+// 5. Wi-Fi RODRIGUES (faixa de 2,4 GHz) — sempre cadastrado, junto com o Redmi:
+const char* WIFI_RODRIGUES_SSID = "RODRIGUES 2.4";
+const char* WIFI_RODRIGUES_PASS = "diniz123456";
+
 // true = conecta SOMENTE no ponto de acesso do Redmi (usado na apresentação do CPIC).
 // false = qualquer rede conhecida; o WiFiMulti escolhe a de melhor sinal.
 const bool SOMENTE_WIFI_REDMI = true;
@@ -416,8 +420,9 @@ void setup() {
   }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
   // Registra as redes conhecidas (o WiFiMulti escolhe a de melhor sinal).
-  // SOMENTE_WIFI_REDMI = true: conecta só no ponto de acesso do Redmi (apresentação).
+  // SOMENTE_WIFI_REDMI = true: conecta só no ponto de acesso do Redmi e na RODRIGUES 2.4.
   wifiMulti.addAP(WIFI_REDMI_SSID, WIFI_REDMI_PASS);
+  wifiMulti.addAP(WIFI_RODRIGUES_SSID, WIFI_RODRIGUES_PASS);
   if (!SOMENTE_WIFI_REDMI) {
     wifiMulti.addAP(WIFI_TPLINK_SSID, WIFI_TPLINK_PASS);
     wifiMulti.addAP(WIFI_CASA_SSID, WIFI_CASA_PASS);
