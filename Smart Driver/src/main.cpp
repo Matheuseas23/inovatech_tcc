@@ -54,7 +54,7 @@ const char* WIFI_TPLINK_PASS = "GQW5Yt5N";
 
 // true = conecta SOMENTE no ponto de acesso do Redmi (usado na apresentação do CPIC).
 // false = qualquer rede conhecida; o WiFiMulti escolhe a de melhor sinal.
-const bool SOMENTE_WIFI_REDMI = false;
+const bool SOMENTE_WIFI_REDMI = true;
 
 // Servidor na nuvem (usado somente quando nenhum servidor local responde):
 const char* BACKEND_URL_CLOUD = "https://inovatech-tcc.onrender.com/api/telemetry";
