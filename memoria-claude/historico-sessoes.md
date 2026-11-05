@@ -79,3 +79,4 @@ Conversa completa: [conversas/sessao-3-2026-10-23-a-26.md](conversas/sessao-3-20
 ## Sessão 4 — 05/11/2026
 
 - `index.html`: a caixinha de acesso (`#portalAccessModal`) **não abre mais sozinha** ao entrar no site. Ela abre pelo botão **"Central / App do Motorista"** (cadeado) nos botões da Home. Ficaram só 2 opções (Central e App, com a senha); a opção "Apresentação do Projeto" e a flag `MOSTRAR_PORTAL_SELETOR` saíram. Fecha pelo X, Esc ou clique fora. `GEMINI.md` atualizado.
+- **Logo:** o C e o H de "TECH" estavam grudados no próprio PNG (a haste do H cobria as pontas do C). Corrigido em `logo_inovatech.png` e `image.png` (são o mesmo arquivo, usado no site, na Central, no app e no manifest): as pontas do C foram reconstruídas, o H foi afastado 56 px, a linha neon foi estendida e o brilho foi recalculado. A imagem passou de 1024×237 para 1080×237. Versão antiga no git (antes do commit desta correção).
