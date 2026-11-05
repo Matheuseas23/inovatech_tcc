@@ -3123,7 +3123,43 @@
     0 0 40px rgba(8, 222, 235, 0.20);
   position: relative;
   overflow: hidden;
+}
+
+/* A animação roda toda vez que a caixinha é aberta pelo botão da Home */
+.portal-access-modal:not(.hidden) .portal-access-card {
   animation: portalCardZoom 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.portal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(8, 222, 235, 0.35);
+  background: rgba(2, 14, 24, 0.85);
+  color: #9bb0b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.portal-close:hover {
+  border-color: #08deeb;
+  color: #08deeb;
+  box-shadow: 0 0 12px rgba(8, 222, 235, 0.45);
+}
+
+/* Botão da Home que abre a caixinha de acesso */
+.btn-portal {
+  gap: 8px;
+}
+
+.btn-portal .g-icon {
+  font-size: 18px;
 }
 
 @keyframes portalCardZoom {
@@ -3281,29 +3317,20 @@
 </head>
 <body data-active-view="home">
 
-	<!-- MODAL SELETOR DE TERMINAIS DE ACESSO INOVATECH (CONTROLE OPERACIONAL) -->
-	<div class="portal-access-modal" id="portalAccessModal">
+	<!-- MODAL SELETOR DE TERMINAIS DE ACESSO INOVATECH (abre pelo botão da Home) -->
+	<div class="portal-access-modal hidden" id="portalAccessModal" role="dialog" aria-modal="true" aria-labelledby="portalTitulo">
 		<div class="portal-access-card">
+			<button class="portal-close" type="button" onclick="fecharPortalSeletor()" aria-label="Fechar">
+				<span class="material-symbols-outlined g-icon">close</span>
+			</button>
 			<div class="portal-header">
 				<div class="portal-eyebrow">INOVA TECH · ECOSSISTEMA SMART DRIVER</div>
-				<h2>Selecione o Terminal de Acesso</h2>
-				<p>Selecione o ambiente operacional desejado para esta estação ou apresentação:</p>
+				<h2 id="portalTitulo">Selecione o Terminal de Acesso</h2>
+				<p>Qual painel você quer abrir?</p>
 			</div>
 
 			<div class="portal-options-grid">
-				<!-- Opção 1: Apresentação Livre -->
-				<button class="portal-btn-option" type="button" onclick="selecionarPortal('apresentacao')">
-					<div class="portal-btn-icon">
-						<span class="material-symbols-outlined g-icon">visibility</span>
-					</div>
-					<div class="portal-btn-text">
-						<div class="portal-btn-title">Apresentação do Projeto</div>
-						<div class="portal-btn-desc">Acesso público à documentação técnica, ecossistema e equipe do TCC.</div>
-					</div>
-					<span class="portal-btn-badge badge-free">ACESSO LIVRE</span>
-				</button>
-
-				<!-- Opção 2: Central Tech -->
+				<!-- Opção 1: Central Tech -->
 				<button class="portal-btn-option" type="button" onclick="pedirSenhaPortal('central')">
 					<div class="portal-btn-icon">
 						<span class="material-symbols-outlined g-icon">dashboard</span>
@@ -3317,7 +3344,7 @@
 					</span>
 				</button>
 
-				<!-- Opção 3: App do Motorista -->
+				<!-- Opção 2: App do Motorista -->
 				<button class="portal-btn-option" type="button" onclick="pedirSenhaPortal('motorista')">
 					<div class="portal-btn-icon">
 						<span class="material-symbols-outlined g-icon">smartphone</span>
@@ -3364,7 +3391,7 @@
 	</div>
 	<div class="shell"><header><div class="brand"><img id="brandLogo" src="logo_inovatech.png" alt="INOVA TECH"></div><nav aria-label="Navegação principal"><button class="active" data-view="home">HOME</button><button data-view="manual">MANUAL DE OPERAÇÕES</button><button data-view="ecosystem">ECOSSISTEMA DE SEGURANÇA</button><button data-view="about">QUEM SOMOS</button><button data-view="references">REFERÊNCIAS</button><button data-view="game">O JOGO</button></nav><div class="tools"><button class="theme-toggle" id="themeToggle" aria-label="Alternar tema"><img id="themeIcon" src="moon.svg" alt="Modo escuro"></button></div></header>
 		<main>
-			<section id="home" class="view active"><div class="home-content-wrapper"><div class="hero"><div class="hero-content"><div class="hero-logo-box"><img class="hero-brand-logo" src="logo_inovatech.png" alt="INOVA TECH - Smart Driver"></div><div class="eyebrow">Monitoramento inteligente em movimento</div><h1>Monitoramento biométrico de<br><span style="color:var(--cyan)">alta performance</span></h1><p>Segurança em tempo real para operações industriais. Antecipe riscos, otimize eficiência e garanta um ambiente operacional protegido através de telemetria avançada e resposta imediata.</p><div class="actions"><button class="btn" data-view="manual">Ver manual completo</button><button class="btn outline" data-view="ecosystem">Conheça o ecossistema</button><button class="btn outline" data-view="about">Quem somos</button></div></div></div><div class="grid" style="margin-top:34px"><article class="card"><div class="card-label">◉ PÚBLICO-ALVO</div><h3>Para quem dirige e opera</h3><p>Motoristas profissionais, operadores industriais e empresas de transporte que precisam reduzir riscos durante a operação.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">ϟ DIFERENCIAL</div><h3>Biometria em tempo real</h3><p>O Smart Driver integra wearable, sensores e veículo para transformar sinais do condutor em alertas imediatos.</p></article><article class="card"><div class="card-label">⌁ OBJETIVO</div><h3>Prevenir antes do risco</h3><p>Identificar fadiga, perda de atenção e alterações físicas para apoiar decisões rápidas e tornar a operação mais segura.</p></article></div></div></section>
+			<section id="home" class="view active"><div class="home-content-wrapper"><div class="hero"><div class="hero-content"><div class="hero-logo-box"><img class="hero-brand-logo" src="logo_inovatech.png" alt="INOVA TECH - Smart Driver"></div><div class="eyebrow">Monitoramento inteligente em movimento</div><h1>Monitoramento biométrico de<br><span style="color:var(--cyan)">alta performance</span></h1><p>Segurança em tempo real para operações industriais. Antecipe riscos, otimize eficiência e garanta um ambiente operacional protegido através de telemetria avançada e resposta imediata.</p><div class="actions"><button class="btn" data-view="manual">Ver manual completo</button><button class="btn outline" data-view="ecosystem">Conheça o ecossistema</button><button class="btn outline" data-view="about">Quem somos</button><button class="btn btn-portal" type="button" onclick="abrirPortalSeletor()"><span class="material-symbols-outlined g-icon">lock</span>Central / App do Motorista</button></div></div></div><div class="grid" style="margin-top:34px"><article class="card"><div class="card-label">◉ PÚBLICO-ALVO</div><h3>Para quem dirige e opera</h3><p>Motoristas profissionais, operadores industriais e empresas de transporte que precisam reduzir riscos durante a operação.</p></article><article class="card" style="border-color:var(--cyan)"><div class="card-label">ϟ DIFERENCIAL</div><h3>Biometria em tempo real</h3><p>O Smart Driver integra wearable, sensores e veículo para transformar sinais do condutor em alertas imediatos.</p></article><article class="card"><div class="card-label">⌁ OBJETIVO</div><h3>Prevenir antes do risco</h3><p>Identificar fadiga, perda de atenção e alterações físicas para apoiar decisões rápidas e tornar a operação mais segura.</p></article></div></div></section>
 			<section id="manual" class="view"><div class="eyebrow">INOVA TECH SMART DRIVER / DOCUMENTAÇÃO</div><h2>Manual de operações</h2><p style="color:var(--muted);font-size:11px;max-width:570px;line-height:1.8">Passo a passo real de uso do InovaTech Smart Driver: ligar, calibrar, ativar e acompanhar.</p><div class="manual-top"><div class="manual-video"><div style="position:absolute;bottom:16px;left:18px;color:var(--cyan);font-size:10px">◉ FLUXO DO ALERTA · 1,5 s</div></div><article class="card spec"><strong>◫ SMART DRIVER · ÓCULOS</strong><h3>Unidade de monitoramento</h3><p>ESP32 dual-core com acelerômetro e giroscópio, buzzer, LED RGB, display OLED e relés de segurança, conectada por Wi-Fi ao app do motorista e à Central Tech.</p><p><span style="color:var(--muted)">STATUS DO SISTEMA</span><br><span style="color:var(--cyan)">● PROTÓTIPO FUNCIONAL</span></p></article></div><div class="steps"><article class="card step"><b class="step-number">01</b><div><h3>Ligar os óculos</h3><p>Conecte o cabo no power bank (ou toque em LIGAR no app). O LED faz o autoteste vermelho → verde → azul e o display mostra a carinha dizendo “OLÁ”.</p></div></article><article class="card step"><b class="step-number">02</b><div><h3>Calibração</h3><p>Coloque os óculos e olhe para frente. Ao ouvir 1 bipe, fique parado; 2 bipes = calibrado. Também dá para recalibrar pela Central Tech.</p></div></article><article class="card step"><b class="step-number">03</b><div><h3>Conexão</h3><p>A ESP32 entra sozinha no Wi-Fi 2,4 GHz (ponto de acesso do celular) e envia os dados para o servidor. O display mostra se a conexão é pelo PC ou pela nuvem.</p></div></article><article class="card step"><b class="step-number">04</b><div><h3>Ativar o monitoramento</h3><p>No app do motorista, toque em “Ativar monitoramento seguro”: os relés fazem “tec”, toca uma musiquinha e o display mostra o caminhão e o ônibus passando.</p></div></article><article class="card step"><b class="step-number">05</b><div><h3>Durante a viagem</h3><p>Cabeça baixa por 1 s: bipe e LED amarelo. Por 1,5 s: alarme contínuo, LED vermelho e relés acionados. Queda brusca (pescada): alarme na hora. Erguer a cabeça por 3 s encerra o alerta, sem tocar no celular.</p></div></article><article class="card step"><b class="step-number">06</b><div><h3>Central e desligamento</h3><p>A Central Tech acompanha tudo ao vivo e escala o alerta sem resposta (9 s: alerta crítico; 15 s: SOS). Para encerrar, toque em DESLIGAR no app: os óculos dizem “TCHAU!” e entram em repouso.</p></div></article></div></section>
 						<section id="ecosystem" class="view">
 				<div class="eyebrow">INOVA TECH / COMPONENTES DO PROJETO</div>
@@ -4033,31 +4060,23 @@ if (painelAuthForm) {
 // ==============================================================================
 // GESTÃO DO PORTAL DE ACESSO INOVATECH (CONTROLE OPERACIONAL)
 // ==============================================================================
-// REGRA: Controla a exibição da caixinha de acesso inicial.
-// true  = Exibe sempre logo de cara ao abrir o site.
-// false = Oculta totalmente para a apresentação do professor.
-const MOSTRAR_PORTAL_SELETOR = true;
+// REGRA: o site abre direto na apresentação. A caixinha de acesso
+// (Central Tech / App do Motorista) só aparece pelo botão da Home.
 const SENHA_MESTRE_INOVATECH = "inovatech26";
 let destinoPortalPendente = null;
 
-function inicializarPortalSeletor() {
+function abrirPortalSeletor() {
 	var modal = document.getElementById('portalAccessModal');
 	if (!modal) return;
-	
-	if (MOSTRAR_PORTAL_SELETOR) {
-		modal.classList.remove('hidden');
-	} else {
-		modal.classList.add('hidden');
-	}
+	cancelarSenhaPortal();
+	modal.classList.remove('hidden');
 }
 
-function selecionarPortal(tipo) {
+function fecharPortalSeletor() {
 	var modal = document.getElementById('portalAccessModal');
-	if (tipo === 'apresentacao') {
-		if (modal) {
-			modal.classList.add('hidden');
-		}
-	}
+	if (!modal) return;
+	cancelarSenhaPortal();
+	modal.classList.add('hidden');
 }
 
 function pedirSenhaPortal(destino) {
@@ -4111,10 +4130,13 @@ function validarSenhaPortal(e) {
 	}
 }
 
-// Dispara imediatamente e no DOMContentLoaded para garantir aparição logo de cara
-inicializarPortalSeletor();
-window.addEventListener('DOMContentLoaded', inicializarPortalSeletor);
-window.addEventListener('load', inicializarPortalSeletor);
+// Fecha a caixinha ao clicar fora do cartão ou apertar Esc
+document.getElementById('portalAccessModal').addEventListener('click', function (e) {
+	if (e.target === this) fecharPortalSeletor();
+});
+document.addEventListener('keydown', function (e) {
+	if (e.key === 'Escape') fecharPortalSeletor();
+});
 
 </script>
 </body>

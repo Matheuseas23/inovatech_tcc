@@ -76,3 +76,6 @@ Conversa completa: [conversas/sessao-3-2026-10-23-a-26.md](conversas/sessao-3-20
 - Tabela "Investimento no protótipo" no site (óculos R$ 160; o resto veio num kit, exceto a ESP32 — faltam os preços).
 - **Câmera YPAY X7 (GOKE GK7202)** para ler o rosto no painel: resetar (8 s + desligar/ligar), instalar o app HOMEEYE, depois testar as portas (RTSP/ONVIF). Plano B: OpenIPC; alternativa: webcam do notebook.
 - Preparação da banca (≈ 11/11): roteiro, perguntas prováveis, solda dos fios, caixinha de proteção.
+## Sessão 4 — 05/11/2026
+
+- `index.html`: a caixinha de acesso (`#portalAccessModal`) **não abre mais sozinha** ao entrar no site. Ela abre pelo botão **"Central / App do Motorista"** (cadeado) nos botões da Home. Ficaram só 2 opções (Central e App, com a senha); a opção "Apresentação do Projeto" e a flag `MOSTRAR_PORTAL_SELETOR` saíram. Fecha pelo X, Esc ou clique fora. `GEMINI.md` atualizado.

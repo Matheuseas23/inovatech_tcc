@@ -190,11 +190,10 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
   1. **`index.html` (Apresentação do Projeto para o Professor/Banca)**:
      - Portal público contendo: Home com Hero e vídeo, Manual de Operações, Ecossistema com tabela de custos, Quem Somos (Equipe com Instagram oficial de cada membro), Referências Científicas e O Jogo no GDevelop.
      - O painel de controle e telemetria pesada de rede foram removidos desta página para garantir que professores acessando via QR Code vejam unicamente o site de apresentação acadêmica do TCC, com navegação fluida e sem consumir banda da rede escolar.
-     - **Modal Seletor Inicial (`#portalAccessModal`)**: Modal visual Dark-Tech que surge ao abrir a página com 3 botões estilizados:
-       - *[ Apresentação do Projeto (Acesso Livre) ]*: Fecha o modal e navega normalmente na documentação.
+     - **Modal Seletor de Acesso (`#portalAccessModal`)** — *alterado em 05/11/2026*: o site abre **direto na apresentação**; a caixinha só aparece pelo botão **"Central / App do Motorista"** (ícone `lock`) da Home (`abrirPortalSeletor()`). Tem 2 opções:
        - *[ Central Tech (Torre de Controle) ]*: Exibe ícone de cadeado (`lock`), solicita senha `inovatech26` e redireciona para `central.html`.
        - *[ App do Motorista (Cabine Veicular) ]*: Exibe ícone de cadeado (`lock`), solicita senha `inovatech26` e redireciona para `motorista.html`.
-       - **Chave de Ocultação Temporária**: Controlada pela flag `const MOSTRAR_PORTAL_SELETOR = true;` no JavaScript de `index.html`. Quando a banca do professor for iniciar, basta definir como `false` para que qualquer pessoa com o link/QR Code entre direto na apresentação sem ver a caixa de pergunta.
+       - Fecha pelo botão X, pela tecla Esc ou clicando fora do cartão. A antiga flag `MOSTRAR_PORTAL_SELETOR` e a opção "Apresentação do Projeto" foram removidas.
   2. **`central.html` (CENTRAL TECH — Torre de Controle Operacional para TV/PC)**:
      - **Seleção de Frota Dinâmica**:
        - 🟢 **Matheus Garcia**: Veículo Scania R-450 Highline (Placa INO-2026) na Rodovia BR-116 KM 284 -> **EM OPERAÇÃO** (Único acessível na demonstração). Ao clicar no card, abre instantaneamente o Cockpit de Monitoramento Ao Vivo.

@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CENTRAL TECH | Gestão de Frotas & Telemetria Smart Driver</title>
+	<link rel="icon" type="image/svg+xml" href="favicon.svg">
+	<link rel="apple-touch-icon" href="favicon.svg">
+	<!-- Fontes e ícones locais: a Central funciona mesmo sem internet -->
+	<link rel="stylesheet" href="fontes/fontes.css">
+	<link rel="stylesheet" href="style.css">
+	<style>
+
+		body {
+			background: #020b12;
+			color: #e6f4f6;
+			font-family: 'Space Mono', monospace;
+			margin: 0;
+			min-height: 100vh;
+			position: relative;
+		}
+
+		/* Fundo Imersivo Dark-Tech com Foto dos Óculos e Overlay Tático */
+		.central-bg-layer {
+			position: fixed;
+			inset: 0;
+			z-index: 0;
+			pointer-events: none;
+			overflow: hidden;
+		}
+
+		.central-bg-image {
+			position: absolute;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+			background-image: url('oculos_central.png');
+			background-size: cover;
+			background-position: center center;
+			background-repeat: no-repeat;
+			filter: brightness(0.95) contrast(1.10) saturate(1.15);
+			transform: scale(1.01);
+		}
+
+		.central-bg-overlay {
+			position: absolute;
+			inset: 0;
+			background: linear-gradient(180deg, rgba(2, 11, 18, 0.35) 0%, rgba(3, 21, 34, 0.60) 45%, rgba(2, 11, 18, 0.85) 100%);
+		}
+
+		.central-shell {
+			position: relative;
+			z-index: 1;
+			max-width: 1480px;
+			margin: 0 auto;
+			padding: 24px 20px 60px;
+		}
+
+		.central-topbar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 16px 24px;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(6, 28, 43, 0.45) 45%, rgba(2, 14, 24, 0.65) 100%);
+			backdrop-filter: blur(24px) saturate(200%);
+			-webkit-backdrop-filter: blur(24px) saturate(200%);
+			border: 1px solid rgba(255, 255, 255, 0.22);
+			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.40), 0 10px 30px rgba(0, 0, 0, 0.35);
+			border-radius: 12px;
+			margin-bottom: 24px;
+			flex-wrap: wrap;
+			gap: 16px;
+			height: auto;
+			min-height: 76px;
+		}
+
+		.central-brand {
+			display: flex;
+			align-items: center;
+			gap: 14px;
+		}
+
+		.central-brand img {
+			height: 38px;
+			width: auto;
+		}
+
+		.central-brand-title {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 26px;
+			font-weight: 700;
+			letter-spacing: 2px;
+			color: #ffffff;
+			text-transform: uppercase;
+		}
+
+		.central-brand-sub {
+			font-size: 10px;
+			color: var(--cyan);
+			letter-spacing: 1.5px;
+			display: block;
+		}
+
+		/* Tela de Seleção de Frota */
+		.fleet-view {
+			display: block;
+		}
+
+		.fleet-view.hidden {
+			display: none;
+		}
+
+		.fleet-header {
+			margin-bottom: 24px;
+		}
+
+		.fleet-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+			gap: 20px;
+		}
+
+		.driver-card {
+			background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(11, 34, 51, 0.45) 40%, rgba(5, 18, 28, 0.60) 100%);
+			backdrop-filter: blur(24px) saturate(200%) contrast(108%);
+			-webkit-backdrop-filter: blur(24px) saturate(200%) contrast(108%);
+			border: 1px solid rgba(255, 255, 255, 0.24);
+			border-radius: 14px;
+			padding: 22px;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			transition: all 0.25s ease;
+			position: relative;
+			overflow: hidden;
+			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.40), 0 12px 32px rgba(0, 0, 0, 0.35);
+		}
+
+		.driver-card.active-route {
+			border-color: #08deeb;
+			background: linear-gradient(135deg, rgba(8, 222, 235, 0.20) 0%, rgba(11, 34, 51, 0.50) 40%, rgba(5, 18, 28, 0.65) 100%);
+			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.50), 0 0 35px rgba(8, 222, 235, 0.35);
+		}
+
+		.driver-card.disabled-route {
+			opacity: 0.65;
+			border-color: #0d2a3a;
+			filter: grayscale(0.2);
+		}
+
+		.driver-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			margin-bottom: 14px;
+		}
+
+		.driver-badge-live {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 4px 10px;
+			background: rgba(85, 238, 119, 0.15);
+			border: 1px solid #55ee77;
+			border-radius: 20px;
+			color: #55ee77;
+			font-size: 10px;
+			font-weight: 700;
+		}
+
+		.driver-badge-inactive {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 4px 10px;
+			background: rgba(140, 164, 173, 0.1);
+			border: 1px solid rgba(140, 164, 173, 0.3);
+			border-radius: 20px;
+			color: #8ca4ad;
+			font-size: 10px;
+		}
+
+		.driver-name {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 26px;
+			font-weight: 700;
+			letter-spacing: 1px;
+			color: #ffffff;
+			margin: 0 0 4px;
+			text-transform: uppercase;
+		}
+
+		.driver-role {
+			font-size: 11px;
+			color: var(--cyan);
+			letter-spacing: 0.5px;
+			margin-bottom: 14px;
+			display: block;
+		}
+
+		.driver-meta-list {
+			list-style: none;
+			padding: 0;
+			margin: 0 0 20px;
+			font-size: 11px;
+			color: #8ca4ad;
+			line-height: 1.8;
+			border-top: 1px solid rgba(22, 73, 91, 0.4);
+			padding-top: 12px;
+		}
+
+		.driver-meta-list strong {
+			color: #e6f4f6;
+		}
+
+		.btn-access-cabine {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			width: 100%;
+			padding: 12px 18px;
+			background: #08deeb;
+			color: #031522;
+			border: none;
+			border-radius: 6px;
+			font-family: 'Space Mono', monospace;
+			font-size: 12px;
+			font-weight: 700;
+			cursor: pointer;
+			text-transform: uppercase;
+			transition: all 0.2s ease;
+		}
+
+		.btn-access-cabine:hover {
+			background: #55ee77;
+			box-shadow: 0 0 20px rgba(85, 238, 119, 0.4);
+		}
+
+		.btn-access-disabled {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			width: 100%;
+			padding: 12px 18px;
+			background: rgba(13, 42, 58, 0.5);
+			color: #627b85;
+			border: 1px solid #16495b;
+			border-radius: 6px;
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			cursor: not-allowed;
+			text-transform: uppercase;
+		}
+
+		/* Cockpit da Cabine (Monitoramento Ao Vivo) */
+		.cockpit-view {
+			display: none;
+		}
+
+		.cockpit-view.active {
+			display: block;
+		}
+
+		.cockpit-subbar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
+			flex-wrap: wrap;
+			gap: 12px;
+		}
+
+		.btn-back-fleet {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			padding: 8px 16px;
+			background: rgba(11, 36, 53, 0.8);
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			color: var(--cyan);
+			cursor: pointer;
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			transition: all 0.2s;
+		}
+
+		.btn-back-fleet:hover {
+			border-color: var(--cyan);
+			background: rgba(8, 222, 235, 0.15);
+		}
+
+		/* Toast de Notificação Tática da Central no Canto Superior Direito */
+		.central-toast-banner {
+			position: fixed;
+			top: 24px;
+			right: 24px;
+			left: auto;
+			transform: translateX(120%);
+			background: linear-gradient(135deg, rgba(8, 222, 235, 0.28) 0%, rgba(6, 28, 43, 0.95) 50%, rgba(2, 14, 24, 0.98) 100%);
+			border: 1.5px solid var(--cyan);
+			border-radius: 12px;
+			padding: 16px 22px;
+			max-width: 440px;
+			color: #ffffff;
+			font-family: 'Space Mono', monospace;
+			font-size: 11.5px;
+			font-weight: 700;
+			letter-spacing: 0.5px;
+			line-height: 1.5;
+			display: flex;
+			align-items: center;
+			gap: 14px;
+			box-shadow: 0 12px 35px rgba(8, 222, 235, 0.45), inset 0 1.5px 1px #ffffff;
+			backdrop-filter: blur(24px) saturate(190%);
+			-webkit-backdrop-filter: blur(24px) saturate(190%);
+			z-index: 999999;
+			opacity: 0;
+			pointer-events: none;
+			transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+		}
+
+		.central-toast-banner.show {
+			transform: translateX(0);
+			opacity: 1;
+		}
+
+		/* ==============================================================================
+   BARRA DE ROLAGEM PERSONALIZADA (DARK TECH HUD SCROLLBAR)
+   ============================================================================== */
+		::-webkit-scrollbar {
+			width: 9px;
+			height: 9px;
+		}
+
+		::-webkit-scrollbar-track {
+			background: #020c15;
+			border-left: 1px solid rgba(8, 222, 235, 0.12);
+		}
+
+		::-webkit-scrollbar-thumb {
+			background: linear-gradient(180deg, #103b4d 0%, #08deeb 50%, #0c3344 100%);
+			border-radius: 5px;
+			border: 1.5px solid #020c15;
+			box-shadow: inset 0 0 4px rgba(8, 222, 235, 0.6);
+		}
+
+		::-webkit-scrollbar-thumb:hover {
+			background: linear-gradient(180deg, #12e3ee 0%, #08deeb 50%, #16a085 100%);
+			box-shadow: 0 0 10px rgba(8, 222, 235, 0.75), inset 0 0 4px #ffffff;
+		}
+
+		::-webkit-scrollbar-corner {
+			background: #020c15;
+		}
+
+		* {
+			scrollbar-width: thin;
+			scrollbar-color: #08deeb #020c15;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- Toast de Notificação Tática Flutuante -->
+	<div class="central-toast-banner" id="centralToastBanner" role="status" aria-live="polite">
+		<span class="material-symbols-outlined g-icon"
+			style="color:var(--cyan);font-size:22px">notifications_active</span>
+		<span id="centralToastMsg">CONDUTOR MATHEUS GARCIA INICIOU A VIAGEM!</span>
+	</div>
+
+	<!-- Camada de Fundo Dinâmico Dark-Tech com os Óculos -->
+	<div class="central-bg-layer" aria-hidden="true">
+		<div class="central-bg-image"></div>
+		<div class="central-bg-overlay"></div>
+	</div>
+
+	<div class="central-shell">
+		<!-- BARRA SUPERIOR DA CENTRAL TECH -->
+		<header class="central-topbar">
+			<div class="central-brand">
+				<img src="image.png" alt="InovaTech Logo">
+				<div>
+					<div class="central-brand-title">CENTRAL TECH</div>
+					<span class="central-brand-sub">SISTEMA CORPORATIVO DE GESTÃO DE FROTAS & AUDITORIA
+						BIOMÉTRICA</span>
+				</div>
+			</div>
+			<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+				<div class="painel-chip online" id="esp32StatusChip">
+					<span class="pulse-dot" id="esp32PulseDot"></span>
+					<span id="esp32StatusLabel">ESP32: CONECTANDO...</span>
+				</div>
+				<div class="painel-chip" id="backendStatusChip">
+					<span class="material-symbols-outlined g-icon" style="color:var(--cyan)">bolt</span>
+					<span id="backendStatusLabel">BACKEND: PROCURANDO...</span>
+				</div>
+				<span class="eyebrow" id="centralClockDisplay" style="margin:0;color:var(--cyan);font-weight:700">AO
+					VIVO · 00:00:00</span>
+				<a href="index.html" class="btn-tactical"
+					style="text-decoration:none;display:inline-flex;align-items:center;gap:6px"
+					title="Voltar ao portal institucional">
+					<span class="material-symbols-outlined g-icon">home</span>
+					<span>Site Institucional</span>
+				</a>
+			</div>
+		</header>
+
+		<!-- 1. TELA DE SELEÇÃO DE FROTA / MOTORISTAS ATIVOS -->
+		<section class="fleet-view" id="fleetSelectionView">
+			<div class="fleet-header">
+				<div class="eyebrow">CONTROLE DE TRÁFEGO · FROTA RODOVIÁRIA PESADA</div>
+				<h1
+					style="font-family:'Barlow Condensed',sans-serif;font-size:32px;letter-spacing:1.5px;margin:6px 0 10px;text-transform:uppercase">
+					Unidades Operacionais & Condutores em Trânsito
+				</h1>
+				<p style="color:var(--muted);font-size:12px;margin:0;max-width:760px;line-height:1.7">
+					Selecione a cabine em operação ativa para abrir o canal seguro de telemetria biométrica, transmissão
+					de vídeo 24/7 e controle dos atuadores de proteção veicular.
+				</p>
+			</div>
+
+			<div class="fleet-grid">
+				<!-- MOTORISTA 1: MATHEUS GARCIA (DINÂMICO: INICIALIZA EM STANDBY / OFFLINE) -->
+				<article class="driver-card disabled-route" id="cardFrotaGarcia">
+					<div>
+						<div class="driver-header">
+							<div>
+								<span class="card-label">VEÍCULO #01 · EMBARCADO</span>
+								<h2 class="driver-name">Matheus Garcia</h2>
+								<span class="driver-role" id="garciaRoleSub">Condutor Titular · Aguardando Início de
+									Viagem</span>
+							</div>
+							<span class="driver-badge-inactive" id="garciaBadgeStatus">
+								<span class="material-symbols-outlined g-icon"
+									style="font-size:12px;margin-right:2px">power_settings_new</span>
+								<span id="garciaBadgeText">STANDBY / OFFLINE</span>
+							</span>
+						</div>
+						<ul class="driver-meta-list">
+							<li>Veículo: <strong>Scania R-450 Highline (Bi-Trem 9 Eixos)</strong></li>
+							<li>Placa: <strong>INO-2026 · São Paulo/SP</strong></li>
+							<li>Rota: <strong>BR-116 (São Paulo -> Curitiba) · KM 284</strong></li>
+							<li>Dispositivo: <strong>Óculos Smart Driver ESP32 DevKit (Wi-Fi)</strong></li>
+							<li>Tolerância de Fadiga: <strong><span class="limiar-txt">1,50s</span> (Filtro Temporal de Segurança)</strong></li>
+							<li>Status de Telemetria: <strong id="garciaTelemetriaStatus" style="color:#8ca4ad">EM
+									ESPERA (CABINE INATIVA)</strong>
+							</li>
+						</ul>
+					</div>
+					<div>
+						<button class="btn-access-disabled" id="btnAcessarCabineGarcia">
+							<span class="material-symbols-outlined g-icon" id="garciaBtnIcon">lock</span>
+							<span id="garciaBtnText">Aguardando Iniciar Viagem no App</span>
+						</button>
+					</div>
+				</article>
+
+				<!-- MOTORISTA 2: MATHEUS OLIVEIRA (FORA DE TURNO) -->
+				<article class="driver-card disabled-route">
+					<div>
+						<div class="driver-header">
+							<div>
+								<span class="card-label">VEÍCULO #02 · DESCANSO</span>
+								<h2 class="driver-name">Matheus Oliveira</h2>
+								<span class="driver-role">Condutor Profissional · Escala Noturna</span>
+							</div>
+							<span class="driver-badge-inactive">
+								<span>FORA DE TURNO</span>
+							</span>
+						</div>
+						<ul class="driver-meta-list">
+							<li>Veículo: <strong>Volvo FH-540 Globetrotter</strong></li>
+							<li>Placa: <strong>NOV-2026 · Santos/SP</strong></li>
+							<li>Última Jornada: <strong>Finalizada há 04h12m</strong></li>
+							<li>Localização: <strong>Posto Graal Miracatu (Em Repouso)</strong></li>
+							<li>Telemetria: <strong>Dispositivo em base de recarga</strong></li>
+						</ul>
+					</div>
+					<div>
+						<button class="btn-access-disabled" disabled>
+							<span class="material-symbols-outlined g-icon">lock</span>
+							<span>Monitoramento Inacessível (Repouso)</span>
+						</button>
+					</div>
+				</article>
+
+				<!-- MOTORISTA 3: NATHAN ARKHANJO (AGUARDANDO ESCALA) -->
+				<article class="driver-card disabled-route">
+					<div>
+						<div class="driver-header">
+							<div>
+								<span class="card-label">VEÍCULO #03 · PÁTIO</span>
+								<h2 class="driver-name">Nathan Arkhanjo</h2>
+								<span class="driver-role">Condutor Profissional · Escala Diurna</span>
+							</div>
+							<span class="driver-badge-inactive">
+								<span>AGUARDANDO ESCALA</span>
+							</span>
+						</div>
+						<ul class="driver-meta-list">
+							<li>Veículo: <strong>Mercedes-Benz Actros 2653</strong></li>
+							<li>Placa: <strong>NAT-2026 · Campinas/SP</strong></li>
+							<li>Início Previsto: <strong>Amanhã · 06:00h</strong></li>
+							<li>Localização: <strong>Pátio Logístico Central #02</strong></li>
+							<li>Telemetria: <strong>Em espera de inicialização</strong></li>
+						</ul>
+					</div>
+					<div>
+						<button class="btn-access-disabled" disabled>
+							<span class="material-symbols-outlined g-icon">lock</span>
+							<span>Monitoramento Inacessível (Inativo)</span>
+						</button>
+					</div>
+				</article>
+
+				<!-- MOTORISTA 4: THIAGO TIVIUM (MANUTENÇÃO) -->
+				<article class="driver-card disabled-route">
+					<div>
+						<div class="driver-header">
+							<div>
+								<span class="card-label">VEÍCULO #04 · OFICINA</span>
+								<h2 class="driver-name">Thiago Tivium</h2>
+								<span class="driver-role">Condutor Profissional · Mecânica Operacional</span>
+							</div>
+							<span class="driver-badge-inactive">
+								<span>MANUTENÇÃO PREVENTIVA</span>
+							</span>
+						</div>
+						<ul class="driver-meta-list">
+							<li>Veículo: <strong>DAF XF 530 Super Space</strong></li>
+							<li>Placa: <strong>THI-2026 · São José dos Campos/SP</strong></li>
+							<li>Status Técnico: <strong>Revisão de Freios ABS & Calibração</strong></li>
+							<li>Localização: <strong>Concessionária Autorizada</strong></li>
+							<li>Telemetria: <strong>Sensores desconectados</strong></li>
+						</ul>
+					</div>
+					<div>
+						<button class="btn-access-disabled" disabled>
+							<span class="material-symbols-outlined g-icon">lock</span>
+							<span>Monitoramento Inacessível (Oficina)</span>
+						</button>
+					</div>
+				</article>
+			</div>
+		</section>
+
+		<!-- 2. COCKPIT DE TELEMETRIA DA CABINE (CABINE DO MATHEUS GARCIA) -->
+		<section class="cockpit-view" id="cockpitMonitorView">
+			<div class="cockpit-subbar">
+				<button class="btn-back-fleet" id="btnVoltarFrota">
+					<span class="material-symbols-outlined g-icon">arrow_back</span>
+					<span>Voltar à Lista de Frota</span>
+				</button>
+				<div style="display:flex;align-items:center;gap:10px">
+					<span style="font-size:11px;color:var(--muted)">CABINE ATIVA:</span>
+					<strong style="color:#ffffff;font-size:13px;letter-spacing:1px">MATHEUS GARCIA · SCANIA R-450
+						(INO-2026)</strong>
+				</div>
+			</div>
+
+			<!-- PAINEL DE ESCALONAMENTO DE EMERGÊNCIA DA CENTRAL TECH (20s SUSPEITA DE ACIDENTE & MAPA GNSS -> 35s PROTOCOLO SAFE-STOP & RESGATE SOS) -->
+			<div class="central-escalation-panel" id="centralEscalationPanel" role="alert" aria-live="assertive">
+				<div class="central-esc-header">
+					<span class="central-esc-badge" id="centralEscBadge">
+						<span class="pulse-dot danger"></span>
+						<span id="centralEscBadgeText"><span class="material-symbols-outlined g-icon"
+								style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO
+							CELULAR</span>
+					</span>
+					<span class="central-esc-timer" id="centralEscTimer">SEM RESPOSTA: 0.0s</span>
+				</div>
+
+				<h3 class="central-esc-title" id="centralEscTitle"><span class="material-symbols-outlined g-icon"
+						style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA
+				</h3>
+				<p class="central-esc-desc" id="centralEscDesc">
+					O alerta físico (Buzzer/Relés) e a chamada em tela inteira no celular foram disparados.
+					Aguardando a confirmação do motorista.
+				</p>
+
+				<div class="progresso-bar-bg" style="height:10px">
+					<div class="progresso-bar-fill danger" id="centralEscBarFill" style="width:0%"></div>
+				</div>
+
+				<!-- MAPA TÁTICO & LOCALIZAÇÃO VIA SATÉLITE GNSS (Acionado aos 20s sem resposta) -->
+				<div class="satellite-map-container" id="satelliteMapContainer"
+					style="display:none;margin-top:8px;border:1px solid rgba(8,222,235,0.4);border-radius:10px;background:rgba(3,17,28,0.92);padding:14px;overflow:hidden;">
+					<div
+						style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;border-bottom:1px solid rgba(8,222,235,0.2);padding-bottom:8px">
+						<div style="display:flex;align-items:center;gap:8px">
+							<span class="pulse-dot" style="background:#08deeb;box-shadow:0 0 10px #08deeb"></span>
+							<span
+								style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:1px">
+								<span class="material-symbols-outlined g-icon"
+									style="font-size:16px;vertical-align:middle;margin-right:4px">satellite_alt</span>
+								LOCALIZAÇÃO SATELITAL GNSS EM TEMPO REAL · SCANIA R-450 (INO-2026)
+							</span>
+						</div>
+						<span style="font-family:'Space Mono',monospace;font-size:10px;color:#55ee77;font-weight:700">
+							SINAL GNSS: FIX 3D (14 SATÉLITES GPS/GLONASS)
+						</span>
+					</div>
+
+					<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:stretch"
+						class="sat-grid-responsive">
+						<!-- Mapa Tático Interativo Embed OpenStreetMap com Marcador Dinâmico -->
+						<div
+							style="position:relative;border-radius:8px;overflow:hidden;height:clamp(340px, 45vh, 520px);border:1px solid rgba(8,222,235,0.3);background:#020b12;">
+							<iframe
+								id="centralMapIframe"
+								src="https://www.openstreetmap.org/export/embed.html?bbox=-46.8854%2C-23.6921%2C-46.8654%2C-23.6721&amp;layer=mapnik&amp;marker=-23.6821%2C-46.8754"
+								style="width:100%;height:100%;border:none;filter:invert(90%) hue-rotate(180deg) contrast(110%) brightness(85%);"
+								loading="lazy"></iframe>
+							<div
+								id="centralMapBadgeAlvo"
+								style="position:absolute;top:10px;left:10px;background:rgba(2,11,18,0.88);border:1px solid var(--cyan);padding:4px 8px;border-radius:4px;font-size:9.5px;font-family:'Space Mono';color:#ffffff;pointer-events:none;">
+								📍 ALVO: BR-116 KM 284 · RÉGIS BITTENCOURT
+							</div>
+							<div
+								style="position:absolute;bottom:10px;right:10px;background:rgba(255,42,85,0.9);color:#ffffff;padding:3px 8px;border-radius:4px;font-size:9px;font-family:'Space Mono';font-weight:700;pointer-events:none;">
+								SCANIA R-450 #01
+							</div>
+						</div>
+
+						<!-- Telemetria do Ponto do Veículo -->
+						<div
+							style="display:flex;flex-direction:column;gap:8px;justify-content:center;background:rgba(6,28,43,0.7);border-radius:8px;padding:12px;border:1px solid rgba(8,222,235,0.25);">
+							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono'">COORDENADAS
+								GEOGRÁFICAS
+							</div>
+							<div style="font-size:13px;color:#ffffff;font-family:'Space Mono';font-weight:700" id="centralGpsCoordsDisplay">LAT:
+								-23.682138°<br>LON: -46.875412°</div>
+
+							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono';margin-top:4px">
+								RODOVIA
+								/ TRECHO</div>
+							<div style="font-size:12px;color:var(--cyan);font-family:'Space Mono';font-weight:700" id="centralGpsTrechoDisplay">
+								BR-116 KM 284 (Sentido Sul)</div>
+							<div style="font-size:10px;color:#8ca4ad" id="centralGpsSubTrechoDisplay">Régis Bittencourt · Graal Buenos Aires</div>
+
+							<div style="font-size:10px;color:var(--muted);font-family:'Space Mono';margin-top:4px">
+								STATUS
+								DO SINAL</div>
+							<div style="font-size:11px;color:#ffdd66;font-family:'Space Mono';font-weight:700" id="centralGpsPrecisaoDisplay">
+								PRECISÃO: ±1,8 METROS</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- PROTOCOLO AUTÔNOMO SAFE-STOP & RESGATE SOS (Acionado aos 35s sem resposta) -->
+				<div class="sos-protocol-board" id="sosProtocolBoard" style="display:none">
+					<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+						<span
+							style="font-family:'Space Mono';font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:1px">
+							<span class="material-symbols-outlined g-icon" style="margin-right:4px">bolt</span>
+							PROTOCOLO AUTÔNOMO CENTRAL TECH "SAFE-STOP & RESGATE SOS" ATIVADO AUTOMATICAMENTE:
+						</span>
+						<span style="font-family:'Space Mono';font-size:10px;color:#ff4b72;font-weight:700">●
+							INTERVENÇÃO VEICULAR EM CURSO</span>
+					</div>
+
+					<div class="sos-protocol-grid">
+						<div class="sos-module-card">
+							<span class="sos-module-tag">1. INTERVENÇÃO VEICULAR (RELÉ GPIO 18)</span>
+							<strong class="sos-module-title"><span class="material-symbols-outlined g-icon"
+									style="color:#ff4b72;margin-right:4px">pan_tool</span> DESACELERAÇÃO
+								SAFE-STOP</strong>
+							<span class="sos-module-val" id="sosVelocidadeVal">Corte gradual de tração ativo ·
+								Reduzindo: 64 km/h -> 0 km/h · Pisca-Alerta e Buzina LIGADOS</span>
+						</div>
+						<div class="sos-module-card">
+							<span class="sos-module-tag">2. RASTREAMENTO DE EMERGÊNCIA</span>
+							<strong class="sos-module-title"><span class="material-symbols-outlined g-icon"
+									style="color:var(--cyan);margin-right:4px">location_on</span> TELEMETRIA GPS
+								SOS</strong>
+							<span class="sos-module-val">Rodovia BR-116 · KM 284 (Sentido Sul) · Lat -23.6821° / Lon
+								-46.8754° enviado à Torre</span>
+						</div>
+						<div class="sos-module-card">
+							<span class="sos-module-tag">3. SOCORRO MÉDICO & RODOVIÁRIO</span>
+							<strong class="sos-module-title"><span class="material-symbols-outlined g-icon"
+									style="color:#ff4b72;margin-right:4px">emergency</span> DESPACHO SAMU 192 /
+								PRF</strong>
+							<span class="sos-module-val">Alerta automático de suspeita de Mal Súbito / Colisão
+								transmitido com prioridade máxima</span>
+						</div>
+						<div class="sos-module-card">
+							<span class="sos-module-tag">4. CAIXA-PRETA & AUDITORIA</span>
+							<strong class="sos-module-title"><span class="material-symbols-outlined g-icon"
+									style="color:var(--cyan);margin-right:4px">videocam</span> GRAVAÇÃO DE
+								CABINE</strong>
+							<span class="sos-module-val">Vídeo da câmera Linklemo e log biométrico travados na nuvem
+								para perícia e socorro</span>
+						</div>
+					</div>
+				</div>
+
+				<div style="display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:4px">
+					<button type="button" class="btn-tactical danger" id="btnCentralConfirmarResgate"
+						style="display:none;padding:8px 16px;font-size:11px">
+						<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency</span>
+							Confirmar Despacho de Resgate & Contato na Cabine</span>
+					</button>
+					<button type="button" class="btn-tactical" id="btnCentralDesativarEscalonamento"
+						style="padding:8px 16px;font-size:11px;border-color:#55ee77;color:#55ee77">
+						<span><span class="material-symbols-outlined g-icon"
+								style="margin-right:5px">check_circle</span> Motorista Confirmou / Desativar
+							Alerta</span>
+					</button>
+				</div>
+			</div>
+
+			<!-- GRID DOS 6 CARDS DE MONITORAMENTO DA CENTRAL -->
+			<div class="painel-grid">
+				<!-- COLUNA ESQUERDA -->
+				<div style="display:flex;flex-direction:column;gap:20px">
+					<!-- Card 1: Destaque Principal — Estado do Condutor em Tempo Real (4,00s) -->
+					<article class="card card-alerta-principal estado-normal" id="cardStatusGeral">
+						<div class="card-label"
+							style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+							<span>◉ ESTADO DO CONDUTOR EM TEMPO REAL</span>
+							<span id="precisaoTempoMsBadge"
+								style="color:var(--cyan);font-family:'Space Mono';font-size:10px">PRECISÃO AO VIVO: 0 ms
+								(0.0%)</span>
+						</div>
+						<div class="alerta-display-large">
+							<div>
+								<span style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">ESTADO
+									POSTURAL AO VIVO</span>
+								<div class="alerta-status-text" id="statusMotoristaTexto" style="color:#08deeb">NORMAL:
+									CABEÇA ERGUIDA</div>
+							</div>
+							<div style="text-align:right">
+								<span
+									style="font-size:10px;color:var(--muted);letter-spacing:1px;display:block">CRONÔMETRO
+									DE TOLERÂNCIA (<span class="limiar-txt">1,50s</span>)</span>
+								<div class="alerta-timer-count" id="tempoInclinacaoDisplay">0.00s / 1.50s</div>
+							</div>
+						</div>
+
+						<!-- Barra de Progresso do Filtro de Segurança -->
+						<div class="progresso-tempo-container">
+							<div
+								style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px;flex-wrap:wrap;gap:4px">
+								<span>ESTÁVEL (0.00s)</span>
+								<span>BIP DE AVISO + PISCA-ALERTA (1,00s)</span>
+								<span style="color:#ff4b72;font-weight:700">DISPARO FÍSICO + CELULAR (<span class="limiar-txt">1,50s</span>)</span>
+							</div>
+							<div class="progresso-bar-bg">
+								<div class="progresso-bar-fill" id="barraProgressoTempo"></div>
+							</div>
+						</div>
+
+						<!-- Faixa de Métricas de Alta Precisão em Tempo Real -->
+						<div class="precisao-live-strip">
+							<div class="precisao-pill">
+								<span class="precisao-pill-label">TAXA DE AMOSTRAGEM</span>
+								<span class="precisao-pill-val">100 Hz (10 ms) · ZERO DELAY</span>
+							</div>
+							<div class="precisao-pill">
+								<span class="precisao-pill-label">LEITURA INSTANTÂNEA IR</span>
+								<span class="precisao-pill-val" id="precisaoIrLiveVal" style="color:#55ee77">CABEÇA
+									ERGUIDA (0 ms)</span>
+							</div>
+							<div class="precisao-pill">
+								<span class="precisao-pill-label">RECUPERAÇÃO POSTURAL</span>
+								<span class="precisao-pill-val" style="color:#55ee77">3s CABEÇA ERGUIDA = AUTO
+									CANCEL</span>
+							</div>
+						</div>
+
+						<p id="descricaoEstadoCondutor" style="margin-top:12px;font-size:11px;line-height:1.6">
+							Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de
+							<span class="limiar-txt">1,50s</span> para evitar alarmes falsos ao checar painel e espelhos.
+						</p>
+
+						<!-- BOTÕES DE CONTINGÊNCIA / SIMULAÇÃO RÁPIDA (EMBAIXO DA SITUAÇÃO ATUAL) -->
+						<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(8,222,235,0.25)">
+							<button class="btn" id="btnSimularAlertaCentral" type="button" style="padding:14px 16px;background:linear-gradient(90deg, #ff2a55 0%, #b30026 100%);color:#fff;border:none;border-radius:6px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 18px rgba(255,42,85,0.5);font-size:12px;cursor:pointer;font-family:'Space Mono',monospace">
+								<span class="material-symbols-outlined g-icon">warning</span>
+								<span>SIMULAR ALERTA DE FADIGA (1.5s)</span>
+							</button>
+							<button class="btn outline" id="btnNormalizarCentral" type="button" style="padding:14px 16px;border:1px solid #55ee77;color:#55ee77;background:rgba(85,238,119,0.08);border-radius:6px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;font-size:12px;cursor:pointer;font-family:'Space Mono',monospace">
+								<span class="material-symbols-outlined g-icon">check_circle</span>
+								<span>NORMALIZAR POSTURA</span>
+							</button>
+						</div>
+					</article>
+
+					<!-- Card 2: Rastreamento Satelital e Localização GPS em Tempo Real -->
+					<article class="card gps-tracker-card" id="cardLocalizacaoVeicular">
+						<div class="camera-alerta-banner" id="bannerAlertaAcidente" style="display:none;background:linear-gradient(90deg, #ff1a4b 0%, #b30026 100%);color:#fff;padding:10px 14px;border-radius:8px;font-family:'Space Mono';font-size:11px;font-weight:700;margin-bottom:12px;box-shadow:0 0 20px rgba(255,26,75,0.6)">
+							<span class="material-symbols-outlined g-icon" style="margin-right:6px">emergency</span>
+							POSSÍVEL ACIDENTE (15s SEM RESPOSTA): COORDENADAS GPS ENVIADAS PARA SAMU 192 E PRF!
+						</div>
+						<div class="card-label">◉ RASTREAMENTO SATELITAL & TELEMETRIA GPS · SCANIA R-450</div>
+						<h3 style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">
+							<span>Localização do Veículo ao Vivo</span>
+							<span class="camera-live-badge" style="border-color:#55ee77;color:#55ee77"><span class="pulse-dot"></span> <span id="gpsPrecisaoBadge">GPS ATIVO · 1.8m PRECISÃO</span></span>
+						</h3>
+						<p style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:12px">
+							Monitoramento geográfico contínuo. Em caso de ausência de resposta do motorista aos 15 segundos, a localização é destacada para resgate imediato.
+						</p>
+
+						<!-- Visualizador de Mapa Satelital Integrado com HUD de Coordenadas -->
+						<div style="position:relative;width:100%;height:clamp(340px, 45vh, 520px);border-radius:10px;overflow:hidden;border:1px solid #16495b;background:#031522">
+							<iframe id="centralGpsLiveMap" src="https://www.openstreetmap.org/export/embed.html?bbox=-46.885412%2C-23.689138%2C-46.865412%2C-23.675138&layer=mapnik&marker=-23.682138%2C-46.875412" style="width:100%;height:100%;border:none;filter:invert(90%) hue-rotate(180deg) contrast(120%)"></iframe>
+							<div style="position:absolute;top:8px;left:8px;background:rgba(2,11,18,0.85);padding:6px 10px;border-radius:6px;border:1px solid rgba(8,222,235,0.3);font-family:'Space Mono';font-size:10px;color:var(--cyan)">
+								RODOVIA BR-116 · KM 284 (SENTIDO SUL)
+							</div>
+							<div style="position:absolute;bottom:8px;left:8px;right:8px;display:flex;justify-content:space-between;background:rgba(2,11,18,0.85);padding:6px 10px;border-radius:6px;border:1px solid rgba(8,222,235,0.3);font-family:'Space Mono';font-size:10px">
+								<span id="gpsLiveCoordsLabel" style="color:#ffffff">LAT: -23.682138° | LON: -46.875412°</span>
+								<span id="gpsLiveSpeedLabel" style="color:var(--cyan)">VELOCIDADE: 64 km/h</span>
+							</div>
+						</div>
+
+						<!-- Barra de Status Rápido do Condutor -->
+						<div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:12px">
+							<div style="background:rgba(2,11,18,0.6);padding:8px 10px;border-radius:6px;border:1px solid #16495b">
+								<span style="font-size:9.5px;color:var(--muted);display:block;font-family:'Space Mono'">ROTA ATUAL</span>
+								<strong style="font-size:11px;color:#fff;font-family:'Space Mono'">SP ➔ Curitiba</strong>
+							</div>
+							<div style="background:rgba(2,11,18,0.6);padding:8px 10px;border-radius:6px;border:1px solid #16495b">
+								<span style="font-size:9.5px;color:var(--muted);display:block;font-family:'Space Mono'">FROTA / CABINE</span>
+								<strong style="font-size:11px;color:#fff;font-family:'Space Mono'">INO-2026 (#01)</strong>
+							</div>
+							<div style="background:rgba(2,11,18,0.6);padding:8px 10px;border-radius:6px;border:1px solid #16495b">
+								<span style="font-size:9.5px;color:var(--muted);display:block;font-family:'Space Mono'">SINAL TELEMETRIA</span>
+								<strong style="font-size:11px;color:#55ee77;font-family:'Space Mono'">100% ONLINE</strong>
+							</div>
+						</div>
+					</article>
+				</div>
+
+				<!-- COLUNA DIREITA -->
+				<div style="display:flex;flex-direction:column;gap:20px">
+					<!-- Card 3: Telemetria do Sensor Infravermelho (GPIO 32 / D32) -->
+					<article class="card">
+						<div class="card-label">⌁ SENSOR DE OBSTÁCULO INFRAVERMELHO · GPIO 32</div>
+						<h3>Telemetria Óptica de Queixo/Peito</h3>
+						<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+							<div class="axis-item">
+								<div class="axis-label">NÍVEL LÓGICO D32</div>
+								<div class="axis-val" id="irNivelLogico" style="color:var(--cyan)">HIGH (1)</div>
+								<span style="font-size:10px;color:var(--muted)" id="irNivelSub">Postura Erguida</span>
+							</div>
+							<div class="axis-item">
+								<div class="axis-label">TEMPO DE REFLEXÃO</div>
+								<div class="axis-val" id="irTempoMs">0 ms</div>
+								<span style="font-size:10px;color:var(--muted)" id="irLimiteLabel">Limite: 1500 ms</span>
+							</div>
+						</div>
+						<div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.6">
+							Feixe infravermelho calibrado com margem de segurança de <span class="limiar-txt">1,50s</span>
+							(1 bip de aviso) e recuperação automática de 3 segundos com cabeça erguida.
+						</div>
+					</article>
+
+					<!-- Card 4: Acelerômetro I2C (GPIO 21 SDA / GPIO 22 SCL) -->
+					<article class="card">
+						<div class="card-label">ϟ ACELERÔMETRO I2C · GPIO 21 / 22</div>
+						<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+							<h3>Inércia & Inclinação da Cabeça</h3>
+							<span class="painel-chip offline" id="accStatusChip" style="font-size:9px;padding:3px 8px">MPU-6050:
+								AGUARDANDO</span>
+						</div>
+						<div class="axes-grid">
+							<div class="axis-item">
+								<div class="axis-label">EIXO X (PITCH)</div>
+								<div class="axis-val" id="accPitchVal">0.0°</div>
+								<span style="font-size:9px;color:var(--muted)">Inclinação Frontal</span>
+							</div>
+							<div class="axis-item">
+								<div class="axis-label">EIXO Y (ROLL)</div>
+								<div class="axis-val" id="accRollVal">0.0°</div>
+								<span style="font-size:9px;color:var(--muted)">Inclinação Lateral</span>
+							</div>
+							<div class="axis-item">
+								<div class="axis-label">PESCADA DE SONO</div>
+								<div class="axis-val" id="accPescadaVal" style="color:#55ee77">NÃO</div>
+								<span style="font-size:9px;color:var(--muted)">Solavanco G</span>
+							</div>
+						</div>
+						<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px">
+							<span style="font-size:11px;color:var(--muted)">INCLINAÇÃO TOTAL DA CABEÇA:
+								<strong id="accInclinacaoVal" style="color:var(--cyan);font-family:'Space Mono'">0.0° / 32°</strong></span>
+							<button class="btn-tactical" id="btnCalibrarMpu" type="button" style="padding:4px 10px;font-size:10px"
+								title="Grava a postura atual do motorista (cabeça erguida) como referência zero">
+								<span class="material-symbols-outlined g-icon" style="margin-right:4px">straighten</span> Recalibrar
+							</button>
+						</div>
+						<div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.6">
+							Ângulos medidos em relação à postura calibrada (cabeça erguida). Inclinação acima de 32° ou
+							queda brusca ("pescada") também dispara a contagem de segurança.
+						</div>
+					</article>
+
+					<!-- Card 5: Atuadores de Segurança & Comandos da Central -->
+					<article class="card">
+						<div class="card-label">◫ ATUADORES DE SEGURANÇA & CONTROLE REMOTO</div>
+						<h3>Estado dos Dispositivos & Ações</h3>
+						<div class="axes-grid">
+							<div class="axis-item">
+								<div class="axis-label">BUZZER (GPIO 25)</div>
+								<div class="axis-val" id="buzzerStatusBadge" style="color:#55ee77">DESLIGADO</div>
+								<span style="font-size:9px;color:var(--muted)">Alarme Acústico 3.3V</span>
+							</div>
+							<div class="axis-item">
+								<div class="axis-label">RELÉ 1 (GPIO 18)</div>
+								<div class="axis-val" id="releStatusBadge" style="color:#55ee77">EM ESPERA</div>
+								<span style="font-size:9px;color:var(--muted)">Safe-Stop / Tração</span>
+							</div>
+							<div class="axis-item">
+								<div class="axis-label">RELÉ 2 (GPIO 19)</div>
+								<div class="axis-val" id="rele2StatusBadge" style="color:#55ee77">EM ESPERA</div>
+								<span style="font-size:9px;color:var(--muted)">Pisca-Alerta</span>
+							</div>
+						</div>
+
+						<!-- Comandos Interativos da Central Tech -->
+						<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+							<button class="btn-tactical danger" id="btnDispararTesteRemoto" style="flex:1">
+								<span><span class="material-symbols-outlined g-icon"
+										style="margin-right:4px">bolt</span> Disparar Alerta / Teste</span>
+							</button>
+							<button class="btn-tactical" id="btnSilenciarRemoto" style="flex:1">
+								<span><span class="material-symbols-outlined g-icon"
+										style="margin-right:4px">volume_off</span> Silenciar / Normalizar</span>
+							</button>
+						</div>
+					</article>
+
+					<!-- Card 6: Conectividade, Histórico e Configuração -->
+					<article class="card">
+						<div class="card-label">◉ CONECTIVIDADE & LOGS EM TEMPO REAL</div>
+						<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+							<h3>Registro Cronológico de Eventos</h3>
+							<span style="font-family:'Space Mono';font-size:11px;color:var(--cyan)">TOTAL ALARMES: <b
+									id="contadorTotalAlarmes" style="font-size:14px">0</b></span>
+						</div>
+
+						<!-- Terminal de Log -->
+						<div class="terminal-log-box" id="terminalLogBox" style="margin-top:12px">
+							<div class="log-entry NORMAL">
+								<span class="log-time">[00:00:00]</span>
+								<span class="log-msg"><span class="material-symbols-outlined g-icon"
+										style="font-size:13px;margin-right:5px;color:#55ee77">check_circle</span>
+									Central Tech conectada. Monitoramento operacional da cabine iniciado.</span>
+							</div>
+						</div>
+
+						<!-- Ações de Persistência e Exportação de Relatório -->
+						<div
+							style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px;flex-wrap:wrap">
+							<div style="display:flex;gap:6px">
+								<button class="btn-tactical" id="btnExportarLogs"
+									style="padding:4px 10px;font-size:10px"
+									title="Baixar relatório completo da sessão em formato JSON"><span
+										class="material-symbols-outlined g-icon"
+										style="margin-right:4px">download</span> Baixar Relatório (.JSON)</button>
+								<button class="btn-tactical" id="btnLimparLogs"
+									style="padding:4px 8px;font-size:10px;opacity:0.75"
+									title="Limpar histórico de eventos"><span class="material-symbols-outlined g-icon"
+										style="margin-right:4px">delete</span> Limpar</button>
+							</div>
+							<span style="font-size:9.5px;color:#55ee77;font-family:'Space Mono'">● Histórico Salvo
+								(Local + Nuvem)</span>
+						</div>
+
+						<!-- Configuração de Conexão & Teste Rápido de 4 segundos -->
+						<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+							<div style="display:flex;gap:8px;align-items:center">
+								<input type="text" id="inputBackendUrl" value=""
+									placeholder="Automático (vazio) ou http://IP-DO-PC:3001"
+									style="flex:1;background:rgba(2,11,18,0.7);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:'Space Mono';font-size:11px">
+								<button class="btn-tactical" id="btnReconectarBackend">Conectar</button>
+							</div>
+							<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+								<span style="font-size:10px;color:var(--muted)">TESTE RÁPIDO:</span>
+								<button class="btn-tactical" id="btnSimularCabecaBaixa"
+									style="padding:4px 10px;font-size:10px">Simular Cabeça Baixa Real (<span class="limiar-txt">1,50s</span>)</button>
+								<button class="btn-tactical" id="btnSimularCabecaErguida"
+									style="padding:4px 10px;font-size:10px">Erguer Cabeça</button>
+							</div>
+						</div>
+					</article>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<!-- SCRIPTS DE TELEMETRIA E SINCRONIZAÇÃO DA CENTRAL TECH -->
+	<script src="conexao-backend.js"></script>
+	<script>
+		// O servidor (ou a própria ESP32) define o limiar; estes valores só valem até a 1ª mensagem
+		var LIMIAR_PADRAO_MS = 1500;
+		var LIMIAR_SIMULACAO_RAPIDA_MS = 1500;
+		var ultimoEstado = null;
+
+		// Alternância entre Seleção de Frota e Cockpit da Cabine
+		var fleetView = document.getElementById('fleetSelectionView');
+		var cockpitView = document.getElementById('cockpitMonitorView');
+		var btnAcessarCabineGarcia = document.getElementById('btnAcessarCabineGarcia');
+		var btnVoltarFrota = document.getElementById('btnVoltarFrota');
+		var cardFrotaGarcia = document.getElementById('cardFrotaGarcia');
+		var garciaRoleSub = document.getElementById('garciaRoleSub');
+		var garciaBadgeStatus = document.getElementById('garciaBadgeStatus');
+		var garciaTelemetriaStatus = document.getElementById('garciaTelemetriaStatus');
+		var garciaBtnIcon = document.getElementById('garciaBtnIcon');
+		var garciaBtnText = document.getElementById('garciaBtnText');
+		var centralToastBanner = document.getElementById('centralToastBanner');
+		var centralToastMsg = document.getElementById('centralToastMsg');
+
+		var garciaViagemAtiva = null;
+		var toastTimeoutId = null;
+
+		function exibirToastCentral(mensagem) {
+			if (!centralToastBanner) return;
+			if (centralToastMsg) centralToastMsg.textContent = mensagem;
+			centralToastBanner.classList.add('show');
+			if (toastTimeoutId) clearTimeout(toastTimeoutId);
+			toastTimeoutId = setTimeout(function () {
+				centralToastBanner.classList.remove('show');
+			}, 4800);
+		}
+
+		// O cockpit fica sempre acessível; o card só muda o selo de status da viagem
+		function atualizarEstadoGarciaUI(ativo, comNotificacao) {
+			if (garciaViagemAtiva === !!ativo) return;
+			garciaViagemAtiva = !!ativo;
+			if (btnAcessarCabineGarcia) {
+				// O monitoramento só abre com a viagem ativada no app do motorista
+				btnAcessarCabineGarcia.className = garciaViagemAtiva ? 'btn-access-cabine' : 'btn-access-disabled';
+				if (garciaViagemAtiva) btnAcessarCabineGarcia.removeAttribute('disabled');
+				else btnAcessarCabineGarcia.setAttribute('disabled', 'disabled');
+			}
+			if (garciaViagemAtiva) {
+				if (cardFrotaGarcia) cardFrotaGarcia.className = 'driver-card active-route';
+				if (garciaRoleSub) garciaRoleSub.textContent = 'Condutor Titular · Wearable Smart Driver Ativo';
+				if (garciaBadgeStatus) {
+					garciaBadgeStatus.className = 'driver-badge-live';
+					garciaBadgeStatus.innerHTML = '<span class="pulse-dot"></span><span>EM OPERAÇÃO</span>';
+				}
+				if (garciaTelemetriaStatus) {
+					garciaTelemetriaStatus.style.color = '#55ee77';
+					garciaTelemetriaStatus.textContent = 'LINK OPERACIONAL AO VIVO';
+				}
+				if (garciaBtnIcon) garciaBtnIcon.textContent = 'monitor_heart';
+				if (garciaBtnText) garciaBtnText.textContent = 'Acessar Monitoramento da Cabine';
+				if (comNotificacao) {
+					exibirToastCentral('NOTIFICAÇÃO CENTRAL: CONDUTOR MATHEUS GARCIA INICIOU A VIAGEM! (SCANIA R-450 ATIVADO)');
+				}
+			} else {
+				if (cardFrotaGarcia) cardFrotaGarcia.className = 'driver-card disabled-route';
+				if (garciaRoleSub) garciaRoleSub.textContent = 'Condutor Titular · Aguardando Início de Viagem';
+				if (garciaBadgeStatus) {
+					garciaBadgeStatus.className = 'driver-badge-inactive';
+					garciaBadgeStatus.innerHTML = '<span class="material-symbols-outlined g-icon" style="font-size:12px;margin-right:2px">power_settings_new</span><span>STANDBY / OFFLINE</span>';
+				}
+				if (garciaTelemetriaStatus) {
+					garciaTelemetriaStatus.style.color = '#8ca4ad';
+					garciaTelemetriaStatus.textContent = 'EM ESPERA (CABINE INATIVA)';
+				}
+				if (garciaBtnIcon) garciaBtnIcon.textContent = 'lock';
+				if (garciaBtnText) garciaBtnText.textContent = 'Ative o Monitoramento no App';
+				// Viagem encerrada com o cockpit aberto: volta para a frota
+				if (cockpitView && cockpitView.classList.contains('active')) {
+					cockpitView.classList.remove('active');
+					fleetView.classList.remove('hidden');
+				}
+			}
+		}
+
+		function abrirCockpit() {
+			if (!garciaViagemAtiva) return;
+			fleetView.classList.add('hidden');
+			cockpitView.classList.add('active');
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		}
+
+		if (btnAcessarCabineGarcia) btnAcessarCabineGarcia.addEventListener('click', abrirCockpit);
+		if (cardFrotaGarcia) {
+			cardFrotaGarcia.style.cursor = 'pointer';
+			cardFrotaGarcia.addEventListener('click', function (e) {
+				if (e.target && e.target.closest && e.target.closest('#btnAcessarCabineGarcia')) return;
+				abrirCockpit();
+			});
+		}
+		if (btnVoltarFrota) {
+			btnVoltarFrota.addEventListener('click', function () {
+				cockpitView.classList.remove('active');
+				fleetView.classList.remove('hidden');
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			});
+		}
+
+		// Estado inicial do card enquanto o servidor não responde
+		try {
+			atualizarEstadoGarciaUI(localStorage.getItem('inovatech_turno_matheus_garcia') !== 'INATIVO', false);
+		} catch (e) {
+			atualizarEstadoGarciaUI(true, false);
+		}
+
+		// Elementos da Interface da Central
+		var cardStatusGeral = document.getElementById('cardStatusGeral');
+		var statusMotoristaTexto = document.getElementById('statusMotoristaTexto');
+		var tempoInclinacaoDisplay = document.getElementById('tempoInclinacaoDisplay');
+		var barraProgressoTempo = document.getElementById('barraProgressoTempo');
+		var precisaoTempoMsBadge = document.getElementById('precisaoTempoMsBadge');
+		var precisaoIrLiveVal = document.getElementById('precisaoIrLiveVal');
+		var descricaoEstadoCondutor = document.getElementById('descricaoEstadoCondutor');
+		var irNivelLogico = document.getElementById('irNivelLogico');
+		var irNivelSub = document.getElementById('irNivelSub');
+		var irTempoMs = document.getElementById('irTempoMs');
+		var irLimiteLabel = document.getElementById('irLimiteLabel');
+		var accPitchVal = document.getElementById('accPitchVal');
+		var accRollVal = document.getElementById('accRollVal');
+		var accPescadaVal = document.getElementById('accPescadaVal');
+		var accInclinacaoVal = document.getElementById('accInclinacaoVal');
+		var accStatusChip = document.getElementById('accStatusChip');
+		var buzzerStatusBadge = document.getElementById('buzzerStatusBadge');
+		var releStatusBadge = document.getElementById('releStatusBadge');
+		var rele2StatusBadge = document.getElementById('rele2StatusBadge');
+		var esp32StatusLabel = document.getElementById('esp32StatusLabel');
+		var esp32StatusChip = document.getElementById('esp32StatusChip');
+		var esp32PulseDot = document.getElementById('esp32PulseDot');
+		var backendStatusChip = document.getElementById('backendStatusChip');
+		var backendStatusLabel = document.getElementById('backendStatusLabel');
+		var contadorTotalAlarmes = document.getElementById('contadorTotalAlarmes');
+		var terminalLogBox = document.getElementById('terminalLogBox');
+		var inputBackendUrl = document.getElementById('inputBackendUrl');
+		var bannerAlertaAcidente = document.getElementById('bannerAlertaAcidente');
+
+		// Elementos do Mapa Satelital e GPS em Tempo Real
+		var centralMapIframe = document.getElementById('centralMapIframe');
+		var centralGpsLiveMap = document.getElementById('centralGpsLiveMap');
+		var centralMapBadgeAlvo = document.getElementById('centralMapBadgeAlvo');
+		var centralGpsCoordsDisplay = document.getElementById('centralGpsCoordsDisplay');
+		var centralGpsTrechoDisplay = document.getElementById('centralGpsTrechoDisplay');
+		var centralGpsSubTrechoDisplay = document.getElementById('centralGpsSubTrechoDisplay');
+		var centralGpsPrecisaoDisplay = document.getElementById('centralGpsPrecisaoDisplay');
+		var gpsLiveCoordsLabel = document.getElementById('gpsLiveCoordsLabel');
+		var gpsLiveSpeedLabel = document.getElementById('gpsLiveSpeedLabel');
+		var gpsPrecisaoBadge = document.getElementById('gpsPrecisaoBadge');
+		var ultimoGpsMapa = '';
+
+		function formatarSegundos(ms, casas) {
+			return (Math.max(0, ms) / 1000).toFixed(casas === undefined ? 2 : casas);
+		}
+
+		function atualizarTextosLimiar(limiarMs) {
+			var txt = formatarSegundos(limiarMs).replace('.', ',') + 's';
+			document.querySelectorAll('.limiar-txt').forEach(function (el) { el.textContent = txt; });
+			if (irLimiteLabel) irLimiteLabel.textContent = 'Limite: ' + limiarMs + ' ms';
+		}
+
+		function atualizarLocalizacaoGpsUI(gps) {
+			if (!gps || gps.lat === undefined || gps.lon === undefined) return;
+			var lat = Number(gps.lat);
+			var lon = Number(gps.lon);
+			var prec = gps.precisao || 5;
+			var real = gps.origem && gps.origem !== 'PADRAO_BR116';
+
+			if (centralGpsCoordsDisplay) centralGpsCoordsDisplay.innerHTML = 'LAT: ' + lat.toFixed(6) + '°<br>LON: ' + lon.toFixed(6) + '°';
+			if (gpsLiveCoordsLabel) gpsLiveCoordsLabel.textContent = 'LAT: ' + lat.toFixed(6) + '° | LON: ' + lon.toFixed(6) + '°';
+			if (gpsLiveSpeedLabel) gpsLiveSpeedLabel.textContent = 'VELOCIDADE: ' + (gps.velocidade || 0) + ' km/h';
+			if (gpsPrecisaoBadge) gpsPrecisaoBadge.textContent = 'GPS ATIVO · ' + prec + 'm PRECISÃO';
+			if (!real) return;
+
+			if (centralGpsPrecisaoDisplay) {
+				centralGpsPrecisaoDisplay.textContent = 'PRECISÃO: ±' + prec + ' METROS (GPS REAL DO CELULAR)';
+				centralGpsPrecisaoDisplay.style.color = '#55ee77';
+			}
+			if (centralGpsTrechoDisplay) centralGpsTrechoDisplay.textContent = 'POSIÇÃO AO VIVO DO MOTORISTA (TRANSMISSÃO REAL)';
+			if (centralGpsSubTrechoDisplay) {
+				var velTxt = (gps.velocidade > 0) ? (' · Vel: ' + gps.velocidade + ' km/h') : ' · Estacionado';
+				centralGpsSubTrechoDisplay.textContent = 'Sinal capturado do Smartphone' + velTxt;
+			}
+			if (centralMapBadgeAlvo) {
+				centralMapBadgeAlvo.innerHTML = '<span class="material-symbols-outlined g-icon" style="font-size:12px;margin-right:3px">my_location</span> CONDUTOR AO VIVO (GPS REAL)';
+				centralMapBadgeAlvo.style.borderColor = '#55ee77';
+				centralMapBadgeAlvo.style.color = '#55ee77';
+			}
+			// Só recarrega os mapas quando o veículo anda ~10 m (evita piscar o iframe)
+			var chave = lat.toFixed(4) + ',' + lon.toFixed(4);
+			if (chave !== ultimoGpsMapa) {
+				ultimoGpsMapa = chave;
+				var bbox = (lon - 0.005) + '%2C' + (lat - 0.0035) + '%2C' + (lon + 0.005) + '%2C' + (lat + 0.0035);
+				var novoSrc = 'https://www.openstreetmap.org/export/embed.html?bbox=' + bbox + '&layer=mapnik&marker=' + lat + '%2C' + lon;
+				if (centralMapIframe) centralMapIframe.src = novoSrc;
+				if (centralGpsLiveMap) centralGpsLiveMap.src = novoSrc;
+			}
+		}
+
+		// Escalonamento da Central
+		var centralEscalationPanel = document.getElementById('centralEscalationPanel');
+		var centralEscBadgeText = document.getElementById('centralEscBadgeText');
+		var centralEscTimer = document.getElementById('centralEscTimer');
+		var centralEscTitle = document.getElementById('centralEscTitle');
+		var centralEscDesc = document.getElementById('centralEscDesc');
+		var centralEscBarFill = document.getElementById('centralEscBarFill');
+		var satelliteMapContainer = document.getElementById('satelliteMapContainer');
+		var sosProtocolBoard = document.getElementById('sosProtocolBoard');
+		var sosVelocidadeVal = document.getElementById('sosVelocidadeVal');
+		var btnCentralConfirmarResgate = document.getElementById('btnCentralConfirmarResgate');
+		var btnCentralDesativarEscalonamento = document.getElementById('btnCentralDesativarEscalonamento');
+
+		var vozCritico10sAudio = new Audio('alerta-critico-10s.mp3');
+		var vozAcidente20sAudio = new Audio('alerta-acidente-20s.mp3');
+		var ultimoNivelEscalonamento = 0;
+
+		// Relógio ao vivo
+		function atualizarRelogioCentral() {
+			var el = document.getElementById('centralClockDisplay');
+			if (el) el.textContent = 'AO VIVO · ' + new Date().toLocaleTimeString('pt-BR');
+		}
+		setInterval(atualizarRelogioCentral, 1000);
+		atualizarRelogioCentral();
+
+		function limparEmojisTexto(str) {
+			return String(str || '').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, '').trim();
+		}
+
+		function escaparHtml(str) {
+			return String(str).replace(/[&<>"]/g, function (c) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+			});
+		}
+
+		function obterIconeLogGoogle(tipo) {
+			if (tipo === 'ALARME_ATIVADO') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#ff2a55">warning</span>';
+			if (tipo === 'PRE_ALERTA') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#ffaa00">bolt</span>';
+			if (tipo === 'COMANDO_CENTRAL') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:var(--cyan)">settings_remote</span>';
+			if (tipo === 'DESCONEXAO') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#ffaa00">wifi_off</span>';
+			if (tipo === 'CONEXAO') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:var(--cyan)">wifi</span>';
+			if (tipo === 'TURNO_MOTORISTA') return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:var(--cyan)">local_shipping</span>';
+			return '<span class="material-symbols-outlined g-icon" style="font-size:13px;margin-right:5px;color:#55ee77">check_circle</span>';
+		}
+
+		var idsEventosExibidos = {};
+		function adicionarLogLocal(tipo, msg, horaCustom, idEvento) {
+			if (!terminalLogBox) return;
+			if (idEvento) {
+				if (idsEventosExibidos[idEvento]) return;
+				idsEventosExibidos[idEvento] = true;
+			}
+			var entry = document.createElement('div');
+			entry.className = 'log-entry ' + tipo;
+			entry.innerHTML = '<span class="log-time">[' + escaparHtml(horaCustom || new Date().toLocaleTimeString('pt-BR')) + ']</span><span class="log-msg">' + obterIconeLogGoogle(tipo) + escaparHtml(limparEmojisTexto(msg)) + '</span>';
+			terminalLogBox.insertBefore(entry, terminalLogBox.firstChild);
+			if (terminalLogBox.children.length > 80) terminalLogBox.removeChild(terminalLogBox.lastChild);
+		}
+
+		function tocarAudioVoz(audioObj) {
+			try {
+				[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) { if (a !== audioObj) { a.pause(); a.currentTime = 0; } });
+				audioObj.currentTime = 0;
+				audioObj.playbackRate = 1.12;
+				audioObj.volume = 1.0;
+				audioObj.play().catch(function () { });
+			} catch (e) { }
+		}
+
+		// Som da Central: o navegador só libera áudio depois do 1º clique/tecla na página
+		var audioCentral = null;
+		function liberarSomCentral() {
+			try {
+				if (!audioCentral) audioCentral = new (window.AudioContext || window.webkitAudioContext)();
+				if (audioCentral.state === 'suspended') audioCentral.resume();
+				[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) {
+					a.muted = true;
+					a.play().then(function () { a.pause(); a.currentTime = 0; a.muted = false; }).catch(function () { a.muted = false; });
+				});
+			} catch (e) { }
+			document.removeEventListener('pointerdown', liberarSomCentral);
+			document.removeEventListener('keydown', liberarSomCentral);
+		}
+		document.addEventListener('pointerdown', liberarSomCentral);
+		document.addEventListener('keydown', liberarSomCentral);
+
+		// Sirene de alerta: dois tons alternados enquanto o motorista estiver em ALARME
+		var sireneTimer = null;
+		function tocarBipSirene() {
+			if (!audioCentral || audioCentral.state !== 'running') return;
+			if (!vozCritico10sAudio.paused || !vozAcidente20sAudio.paused) return; // Não cobre as vozes
+			var t = audioCentral.currentTime;
+			[[880, 0], [660, 0.32]].forEach(function (n) {
+				var osc = audioCentral.createOscillator();
+				var ganho = audioCentral.createGain();
+				osc.type = 'square';
+				osc.frequency.setValueAtTime(n[0], t + n[1]);
+				ganho.gain.setValueAtTime(0.18, t + n[1]);
+				ganho.gain.exponentialRampToValueAtTime(0.001, t + n[1] + 0.3);
+				osc.connect(ganho); ganho.connect(audioCentral.destination);
+				osc.start(t + n[1]); osc.stop(t + n[1] + 0.3);
+			});
+		}
+		function atualizarSireneCentral(emAlarme) {
+			if (emAlarme && !sireneTimer) { tocarBipSirene(); sireneTimer = setInterval(tocarBipSirene, 700); }
+			else if (!emAlarme && sireneTimer) { clearInterval(sireneTimer); sireneTimer = null; }
+		}
+
+		// ------------------------------------------------------------------------------
+		// INTERPOLAÇÃO A 60 FPS: o servidor manda o tempo exato e o navegador anima entre pacotes
+		// ------------------------------------------------------------------------------
+		var anim = {
+			status: 'NORMAL',
+			limiarMs: LIMIAR_PADRAO_MS,
+			baseCabecaMs: 0,       // performance.now() - tempo_cabeca_baixa_ms
+			baseSemRespostaMs: 0,  // performance.now() - tempo_sem_resposta_ms
+			baseRecuperacaoMs: 0,  // performance.now() - tempo_recuperacao_ms
+			escalonamento: { critico_ms: 9000, acidente_ms: 15000 },
+			recuperacaoLimiteMs: 3000,
+			travado: false
+		};
+
+		function renderizarCronometro(msExato) {
+			var lim = anim.limiarMs;
+			var ms = Math.max(0, Math.min(lim, Math.round(msExato)));
+			var perc = Math.min(100, (ms / lim) * 100);
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = formatarSegundos(ms) + 's / ' + formatarSegundos(lim) + 's';
+			if (barraProgressoTempo) barraProgressoTempo.style.width = perc.toFixed(1) + '%';
+			if (irTempoMs) irTempoMs.textContent = ms + ' ms';
+			if (precisaoTempoMsBadge) precisaoTempoMsBadge.textContent = 'PRECISÃO AO VIVO: ' + ms + ' ms (' + perc.toFixed(1) + '%)';
+		}
+
+		function renderizarRecuperacao(ms) {
+			var lim = anim.recuperacaoLimiteMs;
+			var seg = formatarSegundos(Math.min(ms, lim), 1);
+			if (statusMotoristaTexto) statusMotoristaTexto.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RECUPERANDO: ERGUIDA HÁ ' + seg + 's / ' + formatarSegundos(lim, 1) + 's';
+			if (tempoInclinacaoDisplay) tempoInclinacaoDisplay.textContent = seg + 's / ' + formatarSegundos(lim, 1) + 's (NORMALIZANDO)';
+			if (barraProgressoTempo) barraProgressoTempo.style.width = Math.min(100, (ms / lim) * 100).toFixed(1) + '%';
+		}
+
+		function quadroAnimacao() {
+			var agora = performance.now();
+			if (anim.status === 'PRE_ALERTA' && anim.baseCabecaMs) {
+				renderizarCronometro(agora - anim.baseCabecaMs);
+			}
+			if (anim.status === 'RECUPERANDO' && anim.baseRecuperacaoMs) {
+				renderizarRecuperacao(agora - anim.baseRecuperacaoMs);
+			}
+			if (anim.travado && anim.baseSemRespostaMs) {
+				atualizarPainelEscalonamentoUI(agora - anim.baseSemRespostaMs);
+			}
+			requestAnimationFrame(quadroAnimacao);
+		}
+		requestAnimationFrame(quadroAnimacao);
+
+		function atualizarPainelEscalonamentoUI(decorridoMs) {
+			if (!centralEscalationPanel) return;
+			var critico = anim.escalonamento.critico_ms;
+			var acidente = anim.escalonamento.acidente_ms;
+			var seg = formatarSegundos(decorridoMs, 1);
+			var nivel = decorridoMs >= acidente ? 3 : (decorridoMs >= critico ? 2 : 1);
+
+			if (nivel === 1) {
+				centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
+				if (centralEscTimer) centralEscTimer.textContent = 'RESPOSTA DO MOTORISTA: ' + seg + 's / ' + formatarSegundos(critico, 1) + 's';
+				if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / critico) * 100).toFixed(1) + '%';
+			} else if (nivel === 2) {
+				centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
+				if (centralEscTimer) centralEscTimer.textContent = 'ALERTA CRÍTICO: ' + seg + 's · POSSÍVEL ACIDENTE EM ' + formatarSegundos(acidente - decorridoMs, 1) + 's';
+				if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - critico) / (acidente - critico)) * 100).toFixed(1) + '%';
+			} else {
+				centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
+				if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA HÁ: ' + seg + 's · POSSÍVEL ACIDENTE CONFIRMADO';
+				if (centralEscBarFill) centralEscBarFill.style.width = '100%';
+				if (sosVelocidadeVal) {
+					// Safe-Stop: desaceleração de 64 km/h até 0 em 8 segundos
+					var velAtual = Math.max(0, Math.round(64 - ((decorridoMs - acidente) / 1000) * 8));
+					sosVelocidadeVal.textContent = 'Corte gradual de tração ativo · Velocidade: ' + velAtual + ' km/h ' + (velAtual === 0 ? '(VEÍCULO IMOBILIZADO COM SEGURANÇA)' : '(REDUZINDO...)') + ' · Pisca-Alerta LIGADO';
+				}
+			}
+
+			if (nivel !== ultimoNivelEscalonamento) {
+				ultimoNivelEscalonamento = nivel;
+				var sCritico = formatarSegundos(critico, 0);
+				var sAcidente = formatarSegundos(acidente, 0);
+				if (nivel === 1) {
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO CELULAR';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
+					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico (Buzzer/Relés) e a chamada no celular foram disparados. Se o condutor não confirmar nem mantiver a cabeça erguida por 3s, a Central entra em ALERTA CRÍTICO aos ' + sCritico + 's e em POSSÍVEL ACIDENTE aos ' + sAcidente + 's.';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
+					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
+					if (bannerAlertaAcidente) bannerAlertaAcidente.style.display = 'none';
+				} else if (nivel === 2) {
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (' + sCritico + 's SEM RESPOSTA)';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> MOTORISTA NÃO RESPONDE: LOCALIZAÇÃO SATELITAL TRANSMITIDA!';
+					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: o motorista não respondeu em ' + sCritico + ' segundos! Localização do Scania R-450 em destaque. Sem resposta até ' + sAcidente + 's, o protocolo Safe-Stop & Resgate SOS será executado.';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
+					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
+					tocarAudioVoz(vozCritico10sAudio);
+				} else {
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE (' + sAcidente + 's)';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
+					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: condutor sem resposta por ' + sAcidente + ' segundos! Desaceleração assistida (Relé 1 · GPIO 18), Pisca-Alerta (Relé 2 · GPIO 19) e coordenadas enviadas ao Resgate SAMU 192 / PRF.';
+					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
+					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';
+					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
+					if (bannerAlertaAcidente) bannerAlertaAcidente.style.display = 'block';
+					tocarAudioVoz(vozAcidente20sAudio);
+				}
+			}
+		}
+
+		function esconderPainelEscalonamento() {
+			anim.travado = false;
+			anim.baseSemRespostaMs = 0;
+			if (ultimoNivelEscalonamento === 0) return;
+			ultimoNivelEscalonamento = 0;
+			if (centralEscalationPanel) centralEscalationPanel.className = 'central-escalation-panel';
+			if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
+			if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
+			if (bannerAlertaAcidente) bannerAlertaAcidente.style.display = 'none';
+			if (btnCentralConfirmarResgate) {
+				btnCentralConfirmarResgate.style.display = 'none';
+				btnCentralConfirmarResgate.style.background = '';
+				btnCentralConfirmarResgate.style.borderColor = '';
+				btnCentralConfirmarResgate.innerHTML = '<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency</span> Confirmar Despacho de Resgate & Contato na Cabine</span>';
+			}
+			[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) { try { a.pause(); a.currentTime = 0; } catch (e) { } });
+		}
+
+		// ------------------------------------------------------------------------------
+		// ATUALIZAÇÃO DO PAINEL A PARTIR DO ESTADO DO SERVIDOR (fonte única da verdade)
+		// ------------------------------------------------------------------------------
+		function atualizarPainelComEstado(estado) {
+			if (!estado) return;
+			ultimoEstado = estado;
+			var agora = performance.now();
+
+			if (esp32StatusLabel && esp32StatusChip && esp32PulseDot) {
+				if (estado.online && estado.oculos_ligados === false) {
+					// Desligada pelo app: a placa está em repouso (só o Wi-Fi ligado, esperando o "Ligar")
+					esp32StatusLabel.textContent = 'ESP32: DESLIGADA (REPOUSO)';
+					esp32StatusChip.title = 'Óculos desligados pelo app. Para ligar: botão LIGAR no app, botão EN da placa ou reconectar o cabo.';
+					esp32StatusChip.className = 'painel-chip offline';
+					esp32PulseDot.className = 'pulse-dot danger';
+				} else if (estado.online) {
+					var wifi = estado.wifi || {};
+					esp32StatusLabel.textContent = 'ESP32: ONLINE · ' + (estado.fonte_conexao || 'REDE') + (wifi.rssi ? ' · ' + wifi.rssi + ' dBm' : '');
+					esp32StatusChip.title = wifi.ssid ? 'Rede: ' + wifi.ssid + ' · IP da ESP32: ' + wifi.ip : '';
+					esp32StatusChip.className = 'painel-chip online';
+					esp32PulseDot.className = 'pulse-dot';
+				} else {
+					esp32StatusLabel.textContent = estado.servidor === 'SIMULADOR_LOCAL' ? 'ESP32: SIMULAÇÃO LOCAL' : 'ESP32: OFFLINE / AGUARDANDO';
+					esp32StatusChip.className = 'painel-chip offline';
+					esp32PulseDot.className = 'pulse-dot danger';
+				}
+			}
+
+			// Card da frota acompanha o turno informado pelo App do Motorista
+			var mg = estado.motoristas && estado.motoristas.matheus_garcia;
+			if (mg) {
+				// Claro só com o monitoramento ativado no app; desativado fica cinza como os outros motoristas
+				var emViagem = mg.status === 'EM_VIAGEM';
+				var mudou = garciaViagemAtiva !== null && garciaViagemAtiva !== emViagem;
+				atualizarEstadoGarciaUI(emViagem, mudou && emViagem);
+				try { localStorage.setItem('inovatech_turno_matheus_garcia', mg.status === 'EM_VIAGEM' ? 'ATIVO' : 'INATIVO'); } catch (e) { }
+			}
+			if (estado.gps) atualizarLocalizacaoGpsUI(estado.gps);
+
+			anim.limiarMs = estado.limiar_seguranca_ms || LIMIAR_PADRAO_MS;
+			if (estado.escalonamento) anim.escalonamento = estado.escalonamento;
+			if (estado.recuperacao_limite_ms) anim.recuperacaoLimiteMs = estado.recuperacao_limite_ms;
+			atualizarTextosLimiar(anim.limiarMs);
+
+			var status = estado.estado || 'NORMAL';
+			var ir = (estado.sensor_ir !== undefined) ? Number(estado.sensor_ir) : 1;
+			var recuperando = status === 'ALARME_ATIVADO' && estado.alerta_travado && estado.tempo_recuperacao_ms > 0;
+
+			anim.status = recuperando ? 'RECUPERANDO' : status;
+			atualizarSireneCentral(status === 'ALARME_ATIVADO' && !recuperando);
+			anim.baseCabecaMs = status === 'PRE_ALERTA' ? agora - (estado.tempo_cabeca_baixa_ms || 0) : 0;
+			anim.baseRecuperacaoMs = recuperando ? agora - estado.tempo_recuperacao_ms : 0;
+
+			if (recuperando) {
+				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-recuperando';
+				if (statusMotoristaTexto) statusMotoristaTexto.style.color = '#55ee77';
+				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill';
+				renderizarRecuperacao(estado.tempo_recuperacao_ms);
+			} else if (status === 'NORMAL') {
+				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-normal';
+				if (statusMotoristaTexto) {
+					statusMotoristaTexto.style.color = '#08deeb';
+					statusMotoristaTexto.textContent = 'NORMAL: CABEÇA ERGUIDA';
+				}
+				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill';
+				renderizarCronometro(0);
+			} else if (status === 'PRE_ALERTA') {
+				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-pre-alerta';
+				if (statusMotoristaTexto) {
+					statusMotoristaTexto.style.color = '#ffaa00';
+					statusMotoristaTexto.textContent = estado.simulacao_ativa ? 'PRÉ-ALERTA: CABEÇA BAIXA (SIMULAÇÃO)' : 'PRÉ-ALERTA: CABEÇA BAIXA DETECTADA';
+				}
+				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill warning';
+				renderizarCronometro(estado.tempo_cabeca_baixa_ms || 0);
+			} else if (status === 'ALARME_ATIVADO') {
+				if (cardStatusGeral) cardStatusGeral.className = 'card card-alerta-principal estado-alarme';
+				if (statusMotoristaTexto) {
+					statusMotoristaTexto.style.color = '#ff2a55';
+					var origem = estado.origem_alerta === 'TESTE_REMOTO' ? ' (TESTE REMOTO)' : (estado.origem_alerta === 'SIMULACAO' ? ' (SIMULAÇÃO)' : '');
+					statusMotoristaTexto.textContent = 'PERIGO: CABEÇA BAIXA · ALERTA ATIVADO' + origem;
+				}
+				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill danger';
+				renderizarCronometro(anim.limiarMs);
+			}
+
+			if (descricaoEstadoCondutor) {
+				if (recuperando) descricaoEstadoCondutor.textContent = 'Cabeça erguida detectada. Mantendo por ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + 's o alerta é encerrado automaticamente.';
+				else if (status === 'ALARME_ATIVADO') descricaoEstadoCondutor.textContent = 'Alarme ativo: buzzer contínuo nos óculos, relés acionados e chamada de descanso no celular do motorista.';
+				else if (status === 'PRE_ALERTA') descricaoEstadoCondutor.textContent = 'Cabeça baixa detectada: bip de aviso nos óculos e pisca-alerta armado (Relé 2). Alarme contínuo em seguida.';
+				else descricaoEstadoCondutor.textContent = 'Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de ' + formatarSegundos(anim.limiarMs).replace('.', ',') + 's para evitar alarmes falsos ao checar painel e espelhos.';
+			}
+
+			// Painel de escalonamento (Fase 1 -> 2 -> 3) com o tempo exato do servidor
+			if (estado.alerta_travado) {
+				anim.travado = true;
+				anim.baseSemRespostaMs = agora - (estado.tempo_sem_resposta_ms || 0);
+				atualizarPainelEscalonamentoUI(estado.tempo_sem_resposta_ms || 0);
+			} else {
+				esconderPainelEscalonamento();
+			}
+
+			// Sensor IR (reserva do acelerômetro; sem sinal = ignorado pela ESP32)
+			var irSemSinal = estado.ir_confiavel === false;
+			if (irNivelLogico && irNivelSub) {
+				irNivelLogico.textContent = irSemSinal ? 'SEM SINAL' : (ir === 1 ? 'HIGH (1)' : 'LOW (0)');
+				irNivelLogico.style.color = irSemSinal ? '#8ca4ad' : (ir === 1 ? '#08deeb' : '#ffaa00');
+				irNivelSub.textContent = irSemSinal ? 'Reserva inativa · acelerômetro no comando' : (ir === 1 ? 'Postura Erguida' : 'Obstáculo / Queixo Próximo');
+			}
+			if (precisaoIrLiveVal) {
+				precisaoIrLiveVal.textContent = irSemSinal ? 'IR SEM SINAL (IGNORADO)' : (ir === 1 ? 'CABEÇA ERGUIDA (' + (estado.tempo_cabeca_baixa_ms || 0) + ' ms)' : 'CABEÇA BAIXA (' + (estado.tempo_cabeca_baixa_ms || 0) + ' ms)');
+				precisaoIrLiveVal.style.color = irSemSinal ? '#8ca4ad' : (ir === 1 ? '#55ee77' : '#ffaa00');
+			}
+
+			// Acelerômetro
+			var acc = estado.acelerometro;
+			if (acc) {
+				if (accPitchVal) accPitchVal.textContent = Number(acc.pitch || 0).toFixed(1) + '°';
+				if (accRollVal) accRollVal.textContent = Number(acc.roll || 0).toFixed(1) + '°';
+				if (accInclinacaoVal) {
+					var incl = Number(acc.inclinacao || 0);
+					accInclinacaoVal.textContent = incl.toFixed(1) + '° / 32°';
+					accInclinacaoVal.style.color = incl > 32 ? '#ff2a55' : (incl > 20 ? '#ffaa00' : 'var(--cyan)');
+				}
+				if (accPescadaVal) {
+					accPescadaVal.textContent = acc.pescada_detectada ? 'SIM (ALERTA)' : 'NÃO';
+					accPescadaVal.style.color = acc.pescada_detectada ? '#ff2a55' : '#55ee77';
+				}
+				if (accStatusChip) {
+					var mpuOk = acc.online && estado.online;
+					accStatusChip.textContent = mpuOk ? (acc.calibrado ? 'MPU-6050: ONLINE' : 'MPU-6050: SEM CALIBRAÇÃO') : (estado.online ? 'MPU-6050: DESCONECTADO' : 'MPU-6050: AGUARDANDO');
+					accStatusChip.className = 'painel-chip ' + (mpuOk && acc.calibrado ? 'online' : 'offline');
+				}
+			}
+
+			// Atuadores (estado físico real dos pinos da ESP32)
+			function pintarAtuador(el, ligado, txtLigado, txtDesligado) {
+				if (!el) return;
+				el.textContent = ligado ? txtLigado : txtDesligado;
+				el.style.color = ligado ? '#ff2a55' : '#55ee77';
+			}
+			pintarAtuador(buzzerStatusBadge, estado.buzzer === 1, 'LIGADO', 'DESLIGADO');
+			pintarAtuador(releStatusBadge, estado.rele === 1, 'ACIONADO', 'EM ESPERA');
+			pintarAtuador(rele2StatusBadge, estado.rele_2 === 1, 'ACIONADO', 'EM ESPERA');
+
+			if (contadorTotalAlarmes && estado.contadores) {
+				contadorTotalAlarmes.textContent = estado.contadores.totalAlarmesSessao || 0;
+			}
+		}
+
+		// ------------------------------------------------------------------------------
+		// CONEXÃO COM O SERVIDOR (WebSocket + REST automático, ver conexao-backend.js)
+		// ------------------------------------------------------------------------------
+		var simuladorLocal = SmartDriverLink.criarSimuladorLocal(atualizarPainelComEstado);
+
+		var link = SmartDriverLink.criarLink({
+			origem: 'CENTRAL_TECH',
+			aoReceber: function (msg) {
+				if (msg.estado) atualizarPainelComEstado(msg.estado);
+				if (msg.tipo === 'ESTADO_INICIAL' && Array.isArray(msg.eventos)) {
+					msg.eventos.slice().reverse().forEach(function (ev) {
+						adicionarLogLocal(ev.tipo, ev.mensagem, ev.horaFormatada, ev.id);
+					});
+				}
+				if (msg.tipo === 'NOVO_EVENTO' && msg.evento) {
+					adicionarLogLocal(msg.evento.tipo, msg.evento.mensagem, msg.evento.horaFormatada, msg.evento.id);
+				}
+				if (msg.tipo === 'GPS_UPDATE' && msg.gps) atualizarLocalizacaoGpsUI(msg.gps);
+				if (msg.tipo === 'ERRO_COMANDO' && msg.mensagem) exibirToastCentral(msg.mensagem);
+			},
+			aoMudarStatus: function (status, base) {
+				var rotulos = {
+					PROCURANDO: 'BACKEND: PROCURANDO SERVIDOR...',
+					WS: 'BACKEND: AO VIVO',
+					REST: 'BACKEND: CONECTADO (REST)',
+					OFFLINE: 'BACKEND: OFFLINE · MODO SIMULAÇÃO LOCAL'
+				};
+				var ehNuvem = base && base.indexOf('onrender.com') !== -1;
+				if (backendStatusLabel) backendStatusLabel.textContent = rotulos[status] + (base && status !== 'OFFLINE' ? (ehNuvem ? ' · NUVEM' : ' · LOCAL') : '');
+				if (backendStatusChip) backendStatusChip.className = 'painel-chip ' + (status === 'WS' || status === 'REST' ? 'online' : 'offline');
+				if (backendStatusChip && base) backendStatusChip.title = base;
+				if (inputBackendUrl && base && document.activeElement !== inputBackendUrl) inputBackendUrl.placeholder = 'Automático: ' + base;
+				if (status === 'WS') adicionarLogLocal('CONEXAO', 'Link em tempo real estabelecido com ' + base);
+				if (status === 'OFFLINE') adicionarLogLocal('DESCONEXAO', 'Nenhum servidor encontrado. Tentando novamente... (simulação local disponível)');
+			}
+		});
+
+		function enviarComandoParaBackend(cmd, extras) {
+			if (link.conectado()) {
+				link.comando(cmd, extras);
+				return true;
+			}
+			return false;
+		}
+
+		// Botões de comando da Central
+		function simularAlerta(duracaoMs) {
+			if (!enviarComandoParaBackend('SIMULAR_ALERTA', { duracao_ms: duracaoMs })) {
+				simuladorLocal.iniciar(duracaoMs);
+			}
+		}
+
+		function normalizar() {
+			simuladorLocal.parar();
+			enviarComandoParaBackend('NORMALIZAR');
+		}
+
+		function ligarBotao(id, acao) {
+			var el = document.getElementById(id);
+			if (el) el.addEventListener('click', acao);
+		}
+
+		ligarBotao('btnSimularAlertaCentral', function () { simularAlerta(LIMIAR_SIMULACAO_RAPIDA_MS); });
+		ligarBotao('btnSimularCabecaBaixa', function () { simularAlerta(LIMIAR_PADRAO_MS); });
+		ligarBotao('btnNormalizarCentral', normalizar);
+		ligarBotao('btnSimularCabecaErguida', normalizar);
+		ligarBotao('btnSilenciarRemoto', normalizar);
+		ligarBotao('btnCentralDesativarEscalonamento', normalizar);
+		ligarBotao('btnDispararTesteRemoto', function () {
+			if (!enviarComandoParaBackend('DISPARAR_TESTE')) exibirToastCentral('Sem conexão com o servidor: o teste remoto precisa da ESP32 conectada.');
+		});
+		ligarBotao('btnCalibrarMpu', function () {
+			if (enviarComandoParaBackend('CALIBRAR_MPU')) exibirToastCentral('Recalibrando o acelerômetro: o motorista deve manter a cabeça erguida por 1 segundo.');
+			else exibirToastCentral('Sem conexão com o servidor para enviar a calibração.');
+		});
+
+		if (btnCentralConfirmarResgate) {
+			btnCentralConfirmarResgate.addEventListener('click', function () {
+				adicionarLogLocal('COMANDO_CENTRAL', 'Operador da Central confirmou despacho de Resgate SAMU 192 / PRF e corte seguro.');
+				btnCentralConfirmarResgate.innerHTML = '<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RESGATE SAMU 192 / FROTA CONFIRMADO COM SUCESSO</span>';
+				btnCentralConfirmarResgate.style.background = '#10b981';
+				btnCentralConfirmarResgate.style.borderColor = '#55ee77';
+			});
+		}
+
+		// Exportar e Limpar Logs
+		ligarBotao('btnExportarLogs', function () {
+			var relatorio = {
+				sistema: 'CENTRAL TECH — RELATÓRIO OFICIAL DE TELEMETRIA',
+				data_exportacao: new Date().toLocaleString('pt-BR'),
+				veiculo: 'SCANIA R-450 (INO-2026)',
+				condutor: 'Matheus Garcia',
+				servidor: link.base(),
+				total_alarmes_sessao: parseInt(contadorTotalAlarmes ? contadorTotalAlarmes.textContent : '0', 10) || 0,
+				ultimo_estado: ultimoEstado,
+				eventos: []
+			};
+			function baixar() {
+				var blob = new Blob([JSON.stringify(relatorio, null, 2)], { type: 'application/json' });
+				var url = URL.createObjectURL(blob);
+				var a = document.createElement('a');
+				a.href = url;
+				a.download = 'relatorio_central_tech_' + Date.now() + '.json';
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+			}
+			if (!link.base()) return baixar();
+			fetch(link.base() + '/api/events', { cache: 'no-store' })
+				.then(function (r) { return r.json(); })
+				.then(function (d) { relatorio.eventos = d.eventos || []; })
+				.catch(function () { })
+				.then(baixar);
+		});
+
+		ligarBotao('btnLimparLogs', function () {
+			if (confirm('Deseja limpar os registros exibidos na Central?')) {
+				if (terminalLogBox) terminalLogBox.innerHTML = '';
+				adicionarLogLocal('NORMAL', 'Registros reinicializados pelo operador.');
+			}
+		});
+
+		ligarBotao('btnReconectarBackend', function () {
+			link.trocarServidor(inputBackendUrl ? inputBackendUrl.value : '');
+		});
+
+		// Inicializa conexão
+		try {
+			var urlSalva = localStorage.getItem('inovatech_backend_url');
+			if (inputBackendUrl && urlSalva) inputBackendUrl.value = urlSalva;
+		} catch (e) { }
+		link.iniciar();
+	</script>
+<script>setTimeout(function(){try{document.getElementById('cockpitMonitorView').classList.add('active');document.getElementById('fleetSelectionView').classList.add('hidden');var m=document.getElementById('centralGpsLiveMap');if(m)m.scrollIntoView({block:'center'});}catch(e){}},1500);</script></body>
+
+</html>

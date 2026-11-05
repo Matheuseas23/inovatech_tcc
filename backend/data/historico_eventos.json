@@ -1,802 +1,802 @@
 [
   {
-    "id": "evt_1792598572633_1e6i",
-    "timestamp": "2026-10-21T16:02:52.633Z",
-    "horaFormatada": "13:02:52",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792598571785_cma9",
-    "timestamp": "2026-10-21T16:02:51.786Z",
-    "horaFormatada": "13:02:51",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792597319285_ldp7",
-    "timestamp": "2026-10-21T15:42:01.243Z",
-    "horaFormatada": "12:42:01",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792597075235_1npa",
-    "timestamp": "2026-10-21T15:37:55.235Z",
-    "horaFormatada": "12:37:55",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!",
-    "detalhes": "Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192."
-  },
-  {
-    "id": "evt_1792597065232_owie",
-    "timestamp": "2026-10-21T15:37:45.232Z",
-    "horaFormatada": "12:37:45",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792597055148_a2n0",
-    "timestamp": "2026-10-21T15:37:35.149Z",
-    "horaFormatada": "12:37:35",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (1,5s)!",
-    "detalhes": "Alerta Físico e Virtual acionados."
-  },
-  {
-    "id": "evt_1792597054735_j3i3",
-    "timestamp": "2026-10-21T15:37:34.735Z",
-    "horaFormatada": "12:37:34",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2780ms"
-  },
-  {
-    "id": "evt_1792597052293_0otp",
-    "timestamp": "2026-10-21T15:37:32.295Z",
-    "horaFormatada": "12:37:32",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792596866623_ft7f",
-    "timestamp": "2026-10-21T15:34:26.623Z",
-    "horaFormatada": "12:34:26",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792596855313_yu0u",
-    "timestamp": "2026-10-21T15:34:15.313Z",
-    "horaFormatada": "12:34:15",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!",
-    "detalhes": "Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192."
-  },
-  {
-    "id": "evt_1792596845476_h2ws",
-    "timestamp": "2026-10-21T15:34:05.476Z",
-    "horaFormatada": "12:34:05",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792596835340_cybm",
-    "timestamp": "2026-10-21T15:33:55.340Z",
-    "horaFormatada": "12:33:55",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (1,5s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792596835254_ifrf",
-    "timestamp": "2026-10-21T15:33:55.254Z",
-    "horaFormatada": "12:33:55",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1580ms"
-  },
-  {
-    "id": "evt_1792596822173_nbjg",
-    "timestamp": "2026-10-21T15:33:42.174Z",
-    "horaFormatada": "12:33:42",
-    "tipo": "NORMAL",
-    "mensagem": "ESP32 conectada via USB Serial (COM5)",
-    "detalhes": "Leitura em tempo real ativa."
-  },
-  {
-    "id": "evt_1792596745700_p38e",
-    "timestamp": "2026-10-21T15:32:25.701Z",
-    "horaFormatada": "12:32:25",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792596743662_ecqs",
-    "timestamp": "2026-10-21T15:32:23.663Z",
-    "horaFormatada": "12:32:23",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792596444244_a81o",
-    "timestamp": "2026-10-21T15:27:24.256Z",
-    "horaFormatada": "12:27:24",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792596218111_4a9m",
-    "timestamp": "2026-10-21T15:23:38.111Z",
-    "horaFormatada": "12:23:38",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!",
-    "detalhes": "Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192."
-  },
-  {
-    "id": "evt_1792596208203_u9g9",
-    "timestamp": "2026-10-21T15:23:28.203Z",
-    "horaFormatada": "12:23:28",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792596198535_ldj8",
-    "timestamp": "2026-10-21T15:23:18.535Z",
-    "horaFormatada": "12:23:18",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (1,5s)!",
-    "detalhes": "Alerta Físico e Virtual acionados."
-  },
-  {
-    "id": "evt_1792596197484_hod5",
-    "timestamp": "2026-10-21T15:23:17.484Z",
-    "horaFormatada": "12:23:17",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 980ms"
-  },
-  {
-    "id": "evt_1792596197120_84a3",
-    "timestamp": "2026-10-21T15:23:17.121Z",
-    "horaFormatada": "12:23:17",
-    "tipo": "NORMAL",
-    "mensagem": "ESP32 conectada via USB Serial (COM5)",
-    "detalhes": "Leitura em tempo real ativa."
-  },
-  {
-    "id": "evt_1792591900281_reo8",
-    "timestamp": "2026-10-21T14:11:40.283Z",
-    "horaFormatada": "11:11:40",
-    "tipo": "NORMAL",
-    "mensagem": "ESP32 conectada via USB Serial (COM5)",
-    "detalhes": "Leitura em tempo real ativa."
-  },
-  {
-    "id": "evt_1792585268179_yydk",
-    "timestamp": "2026-10-21T12:21:08.184Z",
-    "horaFormatada": "09:21:08",
-    "tipo": "NORMAL",
-    "mensagem": "ESP32 conectada via USB Serial (COM5)",
-    "detalhes": "Leitura em tempo real ativa."
-  },
-  {
-    "id": "evt_1792584436681_9czi",
-    "timestamp": "2026-10-21T12:07:16.681Z",
-    "horaFormatada": "09:07:16",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792584435919_hufy",
-    "timestamp": "2026-10-21T12:07:15.919Z",
-    "horaFormatada": "09:07:15",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792584429162_makm",
-    "timestamp": "2026-10-21T12:07:09.162Z",
-    "horaFormatada": "09:07:09",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792584419070_jxd0",
-    "timestamp": "2026-10-21T12:06:59.070Z",
-    "horaFormatada": "09:06:59",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792584414325_hltp",
-    "timestamp": "2026-10-21T12:06:54.327Z",
-    "horaFormatada": "09:06:54",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 260ms"
-  },
-  {
-    "id": "evt_1792584375916_68k6",
-    "timestamp": "2026-10-21T12:06:15.918Z",
-    "horaFormatada": "09:06:15",
-    "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
-  },
-  {
-    "id": "evt_1792584375423_uugr",
-    "timestamp": "2026-10-21T12:06:15.423Z",
-    "horaFormatada": "09:06:15",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 390ms"
-  },
-  {
-    "id": "evt_1792584361827_mxdg",
-    "timestamp": "2026-10-21T12:06:01.827Z",
-    "horaFormatada": "09:06:01",
-    "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
-  },
-  {
-    "id": "evt_1792584358327_kjro",
-    "timestamp": "2026-10-21T12:05:58.329Z",
-    "horaFormatada": "09:05:58",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 780ms"
-  },
-  {
-    "id": "evt_1792584283823_yzug",
-    "timestamp": "2026-10-21T12:04:43.898Z",
-    "horaFormatada": "09:04:43",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792584138000_a5l8",
-    "timestamp": "2026-10-21T12:02:18.000Z",
-    "horaFormatada": "09:02:18",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792584086991_3zc2",
-    "timestamp": "2026-10-21T12:01:26.991Z",
-    "horaFormatada": "09:01:26",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792584086318_qclg",
-    "timestamp": "2026-10-21T12:01:26.318Z",
-    "horaFormatada": "09:01:26",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792584084912_5726",
-    "timestamp": "2026-10-21T12:01:24.912Z",
-    "horaFormatada": "09:01:24",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792584074834_ddi8",
-    "timestamp": "2026-10-21T12:01:14.834Z",
-    "horaFormatada": "09:01:14",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792584071328_eiye",
-    "timestamp": "2026-10-21T12:01:11.328Z",
-    "horaFormatada": "09:01:11",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 210ms"
-  },
-  {
-    "id": "evt_1792584054260_89zp",
-    "timestamp": "2026-10-21T12:00:54.260Z",
-    "horaFormatada": "09:00:54",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792584054095_970l",
-    "timestamp": "2026-10-21T12:00:54.095Z",
-    "horaFormatada": "09:00:54",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792584053499_eavx",
-    "timestamp": "2026-10-21T12:00:53.499Z",
-    "horaFormatada": "09:00:53",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792584043959_m63x",
-    "timestamp": "2026-10-21T12:00:43.959Z",
-    "horaFormatada": "09:00:43",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792584039826_m37y",
-    "timestamp": "2026-10-21T12:00:39.826Z",
-    "horaFormatada": "09:00:39",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 630ms"
-  },
-  {
-    "id": "evt_1792584029511_tb82",
-    "timestamp": "2026-10-21T12:00:29.511Z",
-    "horaFormatada": "09:00:29",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792584029111_h8x3",
-    "timestamp": "2026-10-21T12:00:29.111Z",
-    "horaFormatada": "09:00:29",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792584000412_1b0j",
-    "timestamp": "2026-10-21T12:00:00.412Z",
-    "horaFormatada": "09:00:00",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!",
-    "detalhes": "Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192."
-  },
-  {
-    "id": "evt_1792583990336_fd6u",
-    "timestamp": "2026-10-21T11:59:50.336Z",
-    "horaFormatada": "08:59:50",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792583980814_fux1",
-    "timestamp": "2026-10-21T11:59:40.814Z",
-    "horaFormatada": "08:59:40",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792583976831_cyzx",
-    "timestamp": "2026-10-21T11:59:36.832Z",
-    "horaFormatada": "08:59:36",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2450ms"
-  },
-  {
-    "id": "evt_1792583910742_78wc",
-    "timestamp": "2026-10-21T11:58:30.742Z",
-    "horaFormatada": "08:58:30",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792583910515_pbij",
-    "timestamp": "2026-10-21T11:58:30.515Z",
-    "horaFormatada": "08:58:30",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792583909838_48y7",
-    "timestamp": "2026-10-21T11:58:29.838Z",
-    "horaFormatada": "08:58:29",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792583899919_56hs",
-    "timestamp": "2026-10-21T11:58:19.922Z",
-    "horaFormatada": "08:58:19",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792583896332_m8kn",
-    "timestamp": "2026-10-21T11:58:16.337Z",
-    "horaFormatada": "08:58:16",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 130ms"
-  },
-  {
-    "id": "evt_1792583820537_2add",
-    "timestamp": "2026-10-21T11:57:00.537Z",
-    "horaFormatada": "08:57:00",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792583819857_0y66",
-    "timestamp": "2026-10-21T11:56:59.857Z",
-    "horaFormatada": "08:56:59",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792583814136_xler",
-    "timestamp": "2026-10-21T11:56:54.136Z",
-    "horaFormatada": "08:56:54",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792583809417_pwhb",
-    "timestamp": "2026-10-21T11:56:49.417Z",
-    "horaFormatada": "08:56:49",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 1950ms"
-  },
-  {
-    "id": "evt_1792583796256_khjc",
-    "timestamp": "2026-10-21T11:56:36.256Z",
-    "horaFormatada": "08:56:36",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792583795124_h3ui",
-    "timestamp": "2026-10-21T11:56:35.125Z",
-    "horaFormatada": "08:56:35",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792583791087_xn78",
-    "timestamp": "2026-10-21T11:56:31.087Z",
-    "horaFormatada": "08:56:31",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792583781235_xqmm",
-    "timestamp": "2026-10-21T11:56:21.235Z",
-    "horaFormatada": "08:56:21",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792583777545_0ahv",
-    "timestamp": "2026-10-21T11:56:17.550Z",
-    "horaFormatada": "08:56:17",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 140ms"
-  },
-  {
-    "id": "evt_1792583743932_gedo",
-    "timestamp": "2026-10-21T11:55:43.932Z",
-    "horaFormatada": "08:55:43",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida: Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792583743478_ipdd",
-    "timestamp": "2026-10-21T11:55:43.478Z",
-    "horaFormatada": "08:55:43",
-    "tipo": "COMANDO_CENTRAL",
-    "mensagem": "Confirmação Recebida (WS): Alerta Desativado pelo Motorista / Central",
-    "detalhes": ""
-  },
-  {
-    "id": "evt_1792583318011_0rv2",
-    "timestamp": "2026-10-21T11:48:38.011Z",
-    "horaFormatada": "08:48:38",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792583314476_c8at",
-    "timestamp": "2026-10-21T11:48:34.477Z",
-    "horaFormatada": "08:48:34",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "💥 POSSÍVEL ACIDENTE DETECTADO (20s SEM RESPOSTA)! Protocolo Autônomo Safe-Stop & Resgate SOS Acionado na Central!",
-    "detalhes": "Desaceleração veicular via Relé (GPIO 18), Pisca-Alerta e envio de GPS para Resgate/SAMU 192."
-  },
-  {
-    "id": "evt_1792583309159_e841",
-    "timestamp": "2026-10-21T11:48:29.159Z",
-    "horaFormatada": "08:48:29",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792583309077_zrsk",
-    "timestamp": "2026-10-21T11:48:29.077Z",
-    "horaFormatada": "08:48:29",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "🚨 ALERTA CRÍTICO NA CENTRAL (10s SEM RESPOSTA): Motorista não desativou o alerta no celular!",
-    "detalhes": "Iniciando contagem crítica de +10s para protocolo de Possível Acidente."
-  },
-  {
-    "id": "evt_1792583308995_ygt3",
-    "timestamp": "2026-10-21T11:48:29.006Z",
-    "horaFormatada": "08:48:29",
-    "tipo": "ALARME_ATIVADO",
-    "mensagem": "PERIGO: CABEÇA BAIXA DETECTADA (3,0s)!",
-    "detalhes": "Alerta Físico (Buzzer/Relé) e Virtual no Celular acionados. Aguardando motorista desativar!"
-  },
-  {
-    "id": "evt_1792583290878_07he",
-    "timestamp": "2026-10-21T11:48:10.879Z",
-    "horaFormatada": "08:48:10",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 2960ms"
-  },
-  {
-    "id": "evt_1792583156096_xehm",
-    "timestamp": "2026-10-21T11:45:56.097Z",
-    "horaFormatada": "08:45:56",
-    "tipo": "NORMAL",
-    "mensagem": "ESP32 conectada via USB Serial (COM5)",
-    "detalhes": "Leitura em tempo real ativa."
-  },
-  {
-    "id": "evt_1792581773701_ttex",
-    "timestamp": "2026-10-21T11:22:53.703Z",
-    "horaFormatada": "08:22:53",
-    "tipo": "NORMAL",
-    "mensagem": "ESP32 conectada via USB Serial (COM5)",
-    "detalhes": "Leitura em tempo real ativa."
-  },
-  {
-    "id": "evt_1792581301610_xum8",
-    "timestamp": "2026-10-21T11:15:01.656Z",
-    "horaFormatada": "08:15:01",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792581294027_md5j",
-    "timestamp": "2026-10-21T11:14:54.027Z",
-    "horaFormatada": "08:14:54",
+    "id": "evt_1792769286663_nl6r",
+    "timestamp": "2026-10-23T15:28:06.663Z",
+    "horaFormatada": "12:28:06",
     "tipo": "TURNO_MOTORISTA",
-    "mensagem": "Condutor Matheus Garcia: Turno Iniciado (REST)",
-    "detalhes": ""
+    "mensagem": "Condutor Matheus Garcia: Viagem Iniciada",
+    "detalhes": "Origem: App do Motorista via nuvem"
   },
   {
-    "id": "evt_1792581266572_k035",
-    "timestamp": "2026-10-21T11:14:26.572Z",
-    "horaFormatada": "08:14:26",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792581260589_qxbl",
-    "timestamp": "2026-10-21T11:14:20.589Z",
-    "horaFormatada": "08:14:20",
+    "id": "evt_1792769284759_t9km",
+    "timestamp": "2026-10-23T15:28:04.760Z",
+    "horaFormatada": "12:28:04",
     "tipo": "TURNO_MOTORISTA",
-    "mensagem": "Condutor Matheus Garcia: Turno Iniciado (REST)",
-    "detalhes": ""
+    "mensagem": "Condutor Matheus Garcia: Viagem Pausada",
+    "detalhes": "Origem: App do Motorista via nuvem"
   },
   {
-    "id": "evt_1792543974455_ngnk",
-    "timestamp": "2026-10-21T00:52:54.465Z",
-    "horaFormatada": "21:52:54",
+    "id": "evt_1792769127221_oeyp",
+    "timestamp": "2026-10-23T15:25:27.221Z",
+    "horaFormatada": "12:25:27",
     "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
     "detalhes": "Último pacote recebido há mais de 6 segundos."
   },
   {
-    "id": "evt_1792543943494_9m4m",
-    "timestamp": "2026-10-21T00:52:23.514Z",
-    "horaFormatada": "21:52:23",
+    "id": "evt_1792769089981_pggu",
+    "timestamp": "2026-10-23T15:24:49.981Z",
+    "horaFormatada": "12:24:49",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -22 dBm"
+  },
+  {
+    "id": "evt_1792769069004_rh1x",
+    "timestamp": "2026-10-23T15:24:29.004Z",
+    "horaFormatada": "12:24:29",
     "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
     "detalhes": "Último pacote recebido há mais de 6 segundos."
   },
   {
-    "id": "evt_1792543846412_df2t",
-    "timestamp": "2026-10-21T00:50:46.430Z",
-    "horaFormatada": "21:50:46",
+    "id": "evt_1792769060713_s0p0",
+    "timestamp": "2026-10-23T15:24:20.713Z",
+    "horaFormatada": "12:24:20",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -32 dBm"
+  },
+  {
+    "id": "evt_1792769022873_42qk",
+    "timestamp": "2026-10-23T15:23:42.873Z",
+    "horaFormatada": "12:23:42",
     "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
     "detalhes": "Último pacote recebido há mais de 6 segundos."
   },
   {
-    "id": "evt_1792543755751_e6no",
-    "timestamp": "2026-10-21T00:49:15.751Z",
-    "horaFormatada": "21:49:15",
+    "id": "evt_1792769016666_ivdz",
+    "timestamp": "2026-10-23T15:23:36.667Z",
+    "horaFormatada": "12:23:36",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -37 dBm"
+  },
+  {
+    "id": "evt_1792769006812_jfwv",
+    "timestamp": "2026-10-23T15:23:26.814Z",
+    "horaFormatada": "12:23:26",
     "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
     "detalhes": "Último pacote recebido há mais de 6 segundos."
   },
   {
-    "id": "evt_1792543748109_kzle",
-    "timestamp": "2026-10-21T00:49:08.109Z",
-    "horaFormatada": "21:49:08",
+    "id": "evt_1792768916128_9zej",
+    "timestamp": "2026-10-23T15:21:56.128Z",
+    "horaFormatada": "12:21:56",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -50 dBm"
+  },
+  {
+    "id": "evt_1792768909305_mobl",
+    "timestamp": "2026-10-23T15:21:49.305Z",
+    "horaFormatada": "12:21:49",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792768877728_54in",
+    "timestamp": "2026-10-23T15:21:17.728Z",
+    "horaFormatada": "12:21:17",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -40 dBm"
+  },
+  {
+    "id": "evt_1792768849046_t71t",
+    "timestamp": "2026-10-23T15:20:49.046Z",
+    "horaFormatada": "12:20:49",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792768836456_r0cx",
+    "timestamp": "2026-10-23T15:20:36.456Z",
+    "horaFormatada": "12:20:36",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -40 dBm"
+  },
+  {
+    "id": "evt_1792768805682_nkla",
+    "timestamp": "2026-10-23T15:20:05.682Z",
+    "horaFormatada": "12:20:05",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792768805081_g1bn",
+    "timestamp": "2026-10-23T15:20:05.081Z",
+    "horaFormatada": "12:20:05",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Iniciada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792768798074_t31a",
+    "timestamp": "2026-10-23T15:19:58.074Z",
+    "horaFormatada": "12:19:58",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -23 dBm"
+  },
+  {
+    "id": "evt_1792768778782_ez6b",
+    "timestamp": "2026-10-23T15:19:38.782Z",
+    "horaFormatada": "12:19:38",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792768770260_08cy",
+    "timestamp": "2026-10-23T15:19:30.260Z",
+    "horaFormatada": "12:19:30",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -51 dBm"
+  },
+  {
+    "id": "evt_1792768672088_0s56",
+    "timestamp": "2026-10-23T15:17:52.091Z",
+    "horaFormatada": "12:17:52",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792768662714_aee7",
+    "timestamp": "2026-10-23T15:17:42.714Z",
+    "horaFormatada": "12:17:42",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -40 dBm"
+  },
+  {
+    "id": "evt_1792768545690_k0kf",
+    "timestamp": "2026-10-23T15:15:45.691Z",
+    "horaFormatada": "12:15:45",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792768535681_cwgc",
+    "timestamp": "2026-10-23T15:15:35.684Z",
+    "horaFormatada": "12:15:35",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -38 dBm"
+  },
+  {
+    "id": "evt_1792767038948_sl5h",
+    "timestamp": "2026-10-23T14:50:38.949Z",
+    "horaFormatada": "11:50:38",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792766841449_un9t",
+    "timestamp": "2026-10-23T14:47:21.449Z",
+    "horaFormatada": "11:47:21",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Pausada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792766836432_cxoy",
+    "timestamp": "2026-10-23T14:47:16.432Z",
+    "horaFormatada": "11:47:16",
     "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
   },
   {
-    "id": "evt_1792543747879_t8sx",
-    "timestamp": "2026-10-21T00:49:07.885Z",
-    "horaFormatada": "21:49:07",
+    "id": "evt_1792766832474_47dv",
+    "timestamp": "2026-10-23T14:47:12.474Z",
+    "horaFormatada": "11:47:12",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792766827140_xks4",
+    "timestamp": "2026-10-23T14:47:07.140Z",
+    "horaFormatada": "11:47:07",
+    "tipo": "NORMAL",
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
+  },
+  {
+    "id": "evt_1792766823258_42jn",
+    "timestamp": "2026-10-23T14:47:03.258Z",
+    "horaFormatada": "11:47:03",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792766814100_1uqd",
+    "timestamp": "2026-10-23T14:46:54.100Z",
+    "horaFormatada": "11:46:54",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Iniciada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792766802697_b56o",
+    "timestamp": "2026-10-23T14:46:42.697Z",
+    "horaFormatada": "11:46:42",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Pausada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792766783722_s9l2",
+    "timestamp": "2026-10-23T14:46:23.723Z",
+    "horaFormatada": "11:46:23",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação automática: motorista manteve a cabeça erguida por 3s",
+    "detalhes": "Alarmes físicos, chamada no celular e escalonamento encerrados."
+  },
+  {
+    "id": "evt_1792766769692_qcvu",
+    "timestamp": "2026-10-23T14:46:09.692Z",
+    "horaFormatada": "11:46:09",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "POSSÍVEL ACIDENTE (15s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!",
+    "detalhes": "Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192."
+  },
+  {
+    "id": "evt_1792766763771_ojid",
+    "timestamp": "2026-10-23T14:46:03.772Z",
+    "horaFormatada": "11:46:03",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!",
+    "detalhes": "Protocolo de Possível Acidente em 6s."
+  },
+  {
+    "id": "evt_1792766754584_cf3y",
+    "timestamp": "2026-10-23T14:45:54.584Z",
+    "horaFormatada": "11:45:54",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792766745023_qzl8",
+    "timestamp": "2026-10-23T14:45:45.030Z",
+    "horaFormatada": "11:45:45",
+    "tipo": "NORMAL",
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
+  },
+  {
+    "id": "evt_1792766728383_qz5k",
+    "timestamp": "2026-10-23T14:45:28.383Z",
+    "horaFormatada": "11:45:28",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "POSSÍVEL ACIDENTE (15s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!",
+    "detalhes": "Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192."
+  },
+  {
+    "id": "evt_1792766723280_f4ss",
+    "timestamp": "2026-10-23T14:45:23.280Z",
+    "horaFormatada": "11:45:23",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -31 dBm"
+  },
+  {
+    "id": "evt_1792766722523_tbi9",
+    "timestamp": "2026-10-23T14:45:22.523Z",
+    "horaFormatada": "11:45:22",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!",
+    "detalhes": "Protocolo de Possível Acidente em 6s."
+  },
+  {
+    "id": "evt_1792766720214_q2tw",
+    "timestamp": "2026-10-23T14:45:20.214Z",
+    "horaFormatada": "11:45:20",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792766716104_sx16",
+    "timestamp": "2026-10-23T14:45:16.104Z",
+    "horaFormatada": "11:45:16",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792766674761_5kc4",
+    "timestamp": "2026-10-23T14:44:34.762Z",
+    "horaFormatada": "11:44:34",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Iniciada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792766546900_1a5u",
+    "timestamp": "2026-10-23T14:42:26.900Z",
+    "horaFormatada": "11:42:26",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Pausada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792766540146_leh9",
+    "timestamp": "2026-10-23T14:42:20.146Z",
+    "horaFormatada": "11:42:20",
+    "tipo": "NORMAL",
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
+  },
+  {
+    "id": "evt_1792766535807_gxit",
+    "timestamp": "2026-10-23T14:42:15.808Z",
+    "horaFormatada": "11:42:15",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792766487997_woxy",
+    "timestamp": "2026-10-23T14:41:27.997Z",
+    "horaFormatada": "11:41:27",
+    "tipo": "NORMAL",
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
+  },
+  {
+    "id": "evt_1792766472440_eqq4",
+    "timestamp": "2026-10-23T14:41:12.440Z",
+    "horaFormatada": "11:41:12",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "POSSÍVEL ACIDENTE (15s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!",
+    "detalhes": "Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192."
+  },
+  {
+    "id": "evt_1792766466444_t61k",
+    "timestamp": "2026-10-23T14:41:06.444Z",
+    "horaFormatada": "11:41:06",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!",
+    "detalhes": "Protocolo de Possível Acidente em 6s."
+  },
+  {
+    "id": "evt_1792766457388_f8yy",
+    "timestamp": "2026-10-23T14:40:57.388Z",
+    "horaFormatada": "11:40:57",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792766455042_dey1",
+    "timestamp": "2026-10-23T14:40:55.042Z",
+    "horaFormatada": "11:40:55",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação automática: motorista manteve a cabeça erguida por 3s",
+    "detalhes": "Alarmes físicos, chamada no celular e escalonamento encerrados."
+  },
+  {
+    "id": "evt_1792766445116_5a0o",
+    "timestamp": "2026-10-23T14:40:45.116Z",
+    "horaFormatada": "11:40:45",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792766423238_pwk6",
+    "timestamp": "2026-10-23T14:40:23.238Z",
+    "horaFormatada": "11:40:23",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação automática: motorista manteve a cabeça erguida por 3s",
+    "detalhes": "Alarmes físicos, chamada no celular e escalonamento encerrados."
+  },
+  {
+    "id": "evt_1792766418171_p2kz",
+    "timestamp": "2026-10-23T14:40:18.171Z",
+    "horaFormatada": "11:40:18",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -37 dBm"
+  },
+  {
+    "id": "evt_1792766417824_sjm2",
+    "timestamp": "2026-10-23T14:40:17.824Z",
+    "horaFormatada": "11:40:17",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792766401419_jpsf",
+    "timestamp": "2026-10-23T14:40:01.421Z",
+    "horaFormatada": "11:40:01",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "POSSÍVEL ACIDENTE (15s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!",
+    "detalhes": "Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192."
+  },
+  {
+    "id": "evt_1792766395356_cwwr",
+    "timestamp": "2026-10-23T14:39:55.356Z",
+    "horaFormatada": "11:39:55",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!",
+    "detalhes": "Protocolo de Possível Acidente em 6s."
+  },
+  {
+    "id": "evt_1792766386460_1suo",
+    "timestamp": "2026-10-23T14:39:46.460Z",
+    "horaFormatada": "11:39:46",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792766349572_w61a",
+    "timestamp": "2026-10-23T14:39:09.574Z",
+    "horaFormatada": "11:39:09",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Iniciada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792766044628_4eoj",
+    "timestamp": "2026-10-23T14:34:04.628Z",
+    "horaFormatada": "11:34:04",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Pausada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792766004302_e0pb",
+    "timestamp": "2026-10-23T14:33:24.302Z",
+    "horaFormatada": "11:33:24",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -17 dBm"
+  },
+  {
+    "id": "evt_1792766003993_ihk9",
+    "timestamp": "2026-10-23T14:33:23.993Z",
+    "horaFormatada": "11:33:23",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792765991567_johc",
+    "timestamp": "2026-10-23T14:33:11.567Z",
+    "horaFormatada": "11:33:11",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação automática: motorista manteve a cabeça erguida por 3s",
+    "detalhes": "Alarmes físicos, chamada no celular e escalonamento encerrados."
+  },
+  {
+    "id": "evt_1792765985735_lcdz",
+    "timestamp": "2026-10-23T14:33:05.735Z",
+    "horaFormatada": "11:33:05",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765980764_j9mi",
+    "timestamp": "2026-10-23T14:33:00.764Z",
+    "horaFormatada": "11:33:00",
+    "tipo": "NORMAL",
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
+  },
+  {
+    "id": "evt_1792765972150_ljkz",
+    "timestamp": "2026-10-23T14:32:52.150Z",
+    "horaFormatada": "11:32:52",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765961551_kqmn",
+    "timestamp": "2026-10-23T14:32:41.551Z",
+    "horaFormatada": "11:32:41",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação automática: motorista manteve a cabeça erguida por 3s",
+    "detalhes": "Alarmes físicos, chamada no celular e escalonamento encerrados."
+  },
+  {
+    "id": "evt_1792765956304_342x",
+    "timestamp": "2026-10-23T14:32:36.304Z",
+    "horaFormatada": "11:32:36",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "POSSÍVEL ACIDENTE (15s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!",
+    "detalhes": "Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192."
+  },
+  {
+    "id": "evt_1792765951151_rhyw",
+    "timestamp": "2026-10-23T14:32:31.152Z",
+    "horaFormatada": "11:32:31",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!",
+    "detalhes": "Protocolo de Possível Acidente em 6s."
+  },
+  {
+    "id": "evt_1792765941204_suam",
+    "timestamp": "2026-10-23T14:32:21.205Z",
+    "horaFormatada": "11:32:21",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765852105_xbg5",
+    "timestamp": "2026-10-23T14:30:52.105Z",
+    "horaFormatada": "11:30:52",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação automática: motorista manteve a cabeça erguida por 3s",
+    "detalhes": "Alarmes físicos, chamada no celular e escalonamento encerrados."
+  },
+  {
+    "id": "evt_1792765841234_gpu3",
+    "timestamp": "2026-10-23T14:30:41.234Z",
+    "horaFormatada": "11:30:41",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "POSSÍVEL ACIDENTE (15s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!",
+    "detalhes": "Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192."
+  },
+  {
+    "id": "evt_1792765835171_3hoy",
+    "timestamp": "2026-10-23T14:30:35.171Z",
+    "horaFormatada": "11:30:35",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!",
+    "detalhes": "Protocolo de Possível Acidente em 6s."
+  },
+  {
+    "id": "evt_1792765826169_tiv8",
+    "timestamp": "2026-10-23T14:30:26.170Z",
+    "horaFormatada": "11:30:26",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765818837_denz",
+    "timestamp": "2026-10-23T14:30:18.837Z",
+    "horaFormatada": "11:30:18",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação automática: motorista manteve a cabeça erguida por 3s",
+    "detalhes": "Alarmes físicos, chamada no celular e escalonamento encerrados."
+  },
+  {
+    "id": "evt_1792765809821_0pw7",
+    "timestamp": "2026-10-23T14:30:09.821Z",
+    "horaFormatada": "11:30:09",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765787136_mxmn",
+    "timestamp": "2026-10-23T14:29:47.136Z",
+    "horaFormatada": "11:29:47",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -30 dBm"
+  },
+  {
+    "id": "evt_1792765773882_ms9p",
+    "timestamp": "2026-10-23T14:29:33.882Z",
+    "horaFormatada": "11:29:33",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792765766621_n0lt",
+    "timestamp": "2026-10-23T14:29:26.621Z",
+    "horaFormatada": "11:29:26",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -58 dBm"
+  },
+  {
+    "id": "evt_1792765765691_prqq",
+    "timestamp": "2026-10-23T14:29:25.695Z",
+    "horaFormatada": "11:29:25",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792765752976_kdub",
+    "timestamp": "2026-10-23T14:29:12.976Z",
+    "horaFormatada": "11:29:12",
+    "tipo": "NORMAL",
+    "mensagem": "Recuperação automática: motorista manteve a cabeça erguida por 3s",
+    "detalhes": "Alarmes físicos, chamada no celular e escalonamento encerrados."
+  },
+  {
+    "id": "evt_1792765749893_zosf",
+    "timestamp": "2026-10-23T14:29:09.893Z",
+    "horaFormatada": "11:29:09",
+    "tipo": "CONEXAO",
+    "mensagem": "ESP32 conectada ao servidor (NUVEM)",
+    "detalhes": "Rede: REDMI Note 15 5G · IP 10.115.194.101 · -45 dBm"
+  },
+  {
+    "id": "evt_1792765711455_mxdc",
+    "timestamp": "2026-10-23T14:28:31.455Z",
+    "horaFormatada": "11:28:31",
+    "tipo": "DESCONEXAO",
+    "mensagem": "Alerta: Conexão com a ESP32 perdida (Timeout)",
+    "detalhes": "Último pacote recebido há mais de 6 segundos."
+  },
+  {
+    "id": "evt_1792765698652_4tya",
+    "timestamp": "2026-10-23T14:28:18.652Z",
+    "horaFormatada": "11:28:18",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "POSSÍVEL ACIDENTE (15s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!",
+    "detalhes": "Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192."
+  },
+  {
+    "id": "evt_1792765692511_8oce",
+    "timestamp": "2026-10-23T14:28:12.511Z",
+    "horaFormatada": "11:28:12",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!",
+    "detalhes": "Protocolo de Possível Acidente em 6s."
+  },
+  {
+    "id": "evt_1792765683634_4qrv",
+    "timestamp": "2026-10-23T14:28:03.634Z",
+    "horaFormatada": "11:28:03",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: CABEÇA BAIXA POR 1.5s!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765680627_4j1m",
+    "timestamp": "2026-10-23T14:28:00.627Z",
+    "horaFormatada": "11:28:00",
     "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 190ms"
+    "mensagem": "Aviso: Cabeça baixa detectada (contagem de segurança iniciada)",
+    "detalhes": "Tolerância: 1.5s com 1 bip de aviso e pisca-alerta armado."
   },
   {
-    "id": "evt_1792543733807_cf7e",
-    "timestamp": "2026-10-21T00:48:53.839Z",
-    "horaFormatada": "21:48:53",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792543715554_r6lk",
-    "timestamp": "2026-10-21T00:48:35.570Z",
-    "horaFormatada": "21:48:35",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792543673903_yra4",
-    "timestamp": "2026-10-21T00:47:54.731Z",
-    "horaFormatada": "21:47:54",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792543642183_uom4",
-    "timestamp": "2026-10-21T00:47:22.212Z",
-    "horaFormatada": "21:47:22",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792543612891_hxtr",
-    "timestamp": "2026-10-21T00:46:52.925Z",
-    "horaFormatada": "21:46:52",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792543571693_eea1",
-    "timestamp": "2026-10-21T00:46:11.739Z",
-    "horaFormatada": "21:46:11",
-    "tipo": "DESCONEXAO",
-    "mensagem": "Alerta: Conexão com o ESP32 perdida (Timeout)",
-    "detalhes": "Último pacote recebido há mais de 6 segundos."
-  },
-  {
-    "id": "evt_1792543521904_dexv",
-    "timestamp": "2026-10-21T00:45:21.904Z",
-    "horaFormatada": "21:45:21",
+    "id": "evt_1792765672020_wxeu",
+    "timestamp": "2026-10-23T14:27:52.020Z",
+    "horaFormatada": "11:27:52",
     "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
   },
   {
-    "id": "evt_1792543518461_rp6x",
-    "timestamp": "2026-10-21T00:45:18.461Z",
-    "horaFormatada": "21:45:18",
+    "id": "evt_1792765670802_gsry",
+    "timestamp": "2026-10-23T14:27:50.802Z",
+    "horaFormatada": "11:27:50",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Iniciada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792765669470_cbmn",
+    "timestamp": "2026-10-23T14:27:49.470Z",
+    "horaFormatada": "11:27:49",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: CABEÇA BAIXA POR 1.5s!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765669454_csgf",
+    "timestamp": "2026-10-23T14:27:49.454Z",
+    "horaFormatada": "11:27:49",
+    "tipo": "TURNO_MOTORISTA",
+    "mensagem": "Condutor Matheus Garcia: Viagem Pausada",
+    "detalhes": "Origem: App do Motorista via nuvem"
+  },
+  {
+    "id": "evt_1792765666702_q8ec",
+    "timestamp": "2026-10-23T14:27:46.702Z",
+    "horaFormatada": "11:27:46",
+    "tipo": "NORMAL",
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
+  },
+  {
+    "id": "evt_1792765664540_o01h",
+    "timestamp": "2026-10-23T14:27:44.542Z",
+    "horaFormatada": "11:27:44",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: CABEÇA BAIXA POR 1.5s!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765663369_58ly",
+    "timestamp": "2026-10-23T14:27:43.369Z",
+    "horaFormatada": "11:27:43",
     "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 263ms"
+    "mensagem": "Aviso: Cabeça baixa detectada (contagem de segurança iniciada)",
+    "detalhes": "Tolerância: 1.5s com 1 bip de aviso e pisca-alerta armado."
   },
   {
-    "id": "evt_1792543509310_z662",
-    "timestamp": "2026-10-21T00:45:09.311Z",
-    "horaFormatada": "21:45:09",
+    "id": "evt_1792765657506_td0y",
+    "timestamp": "2026-10-23T14:27:37.506Z",
+    "horaFormatada": "11:27:37",
     "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
   },
   {
-    "id": "evt_1792543509014_cjlx",
-    "timestamp": "2026-10-21T00:45:09.021Z",
-    "horaFormatada": "21:45:09",
+    "id": "evt_1792765655048_2hoi",
+    "timestamp": "2026-10-23T14:27:35.048Z",
+    "horaFormatada": "11:27:35",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: CABEÇA BAIXA POR 1.5s!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
+  },
+  {
+    "id": "evt_1792765653144_vugv",
+    "timestamp": "2026-10-23T14:27:33.144Z",
+    "horaFormatada": "11:27:33",
     "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 20ms"
+    "mensagem": "Aviso: Cabeça baixa detectada (contagem de segurança iniciada)",
+    "detalhes": "Tolerância: 1.5s com 1 bip de aviso e pisca-alerta armado."
   },
   {
-    "id": "evt_1792543477045_rv0c",
-    "timestamp": "2026-10-21T00:44:37.045Z",
-    "horaFormatada": "21:44:37",
+    "id": "evt_1792765650024_vo5c",
+    "timestamp": "2026-10-23T14:27:30.024Z",
+    "horaFormatada": "11:27:30",
     "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
+    "mensagem": "Alerta desativado (APP_MOTORISTA via nuvem)",
+    "detalhes": "Confirmação recebida: alarmes físicos e virtuais encerrados."
   },
   {
-    "id": "evt_1792543476778_tekt",
-    "timestamp": "2026-10-21T00:44:36.778Z",
-    "horaFormatada": "21:44:36",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 90ms"
+    "id": "evt_1792765638586_h6zn",
+    "timestamp": "2026-10-23T14:27:18.586Z",
+    "horaFormatada": "11:27:18",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "POSSÍVEL ACIDENTE (15s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!",
+    "detalhes": "Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192."
   },
   {
-    "id": "evt_1792543476747_8lq8",
-    "timestamp": "2026-10-21T00:44:36.747Z",
-    "horaFormatada": "21:44:36",
-    "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
+    "id": "evt_1792765632475_ecxv",
+    "timestamp": "2026-10-23T14:27:12.476Z",
+    "horaFormatada": "11:27:12",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "ALERTA CRÍTICO NA CENTRAL (9s SEM RESPOSTA): Motorista não confirmou o alerta no celular!",
+    "detalhes": "Protocolo de Possível Acidente em 6s."
   },
   {
-    "id": "evt_1792543475992_eted",
-    "timestamp": "2026-10-21T00:44:35.992Z",
-    "horaFormatada": "21:44:35",
-    "tipo": "PRE_ALERTA",
-    "mensagem": "Aviso: Cabeça Baixa Detectada (Iniciando contagem de segurança)",
-    "detalhes": "Tempo decorrido: 190ms"
-  },
-  {
-    "id": "evt_1792543474944_h1zw",
-    "timestamp": "2026-10-21T00:44:34.944Z",
-    "horaFormatada": "21:44:34",
-    "tipo": "NORMAL",
-    "mensagem": "Postura Normalizada: Motorista confirmou alerta",
-    "detalhes": "Alarme físico e virtual encerrados."
+    "id": "evt_1792765623446_1klb",
+    "timestamp": "2026-10-23T14:27:03.446Z",
+    "horaFormatada": "11:27:03",
+    "tipo": "ALARME_ATIVADO",
+    "mensagem": "PERIGO: CABEÇA BAIXA POR 1.5s!",
+    "detalhes": "Alerta físico (Buzzer/Relés) e chamada no celular acionados. Aguardando o motorista."
   }
 ]
