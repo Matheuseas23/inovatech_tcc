@@ -1849,6 +1849,43 @@
 			}
 		}
 
+		/* Jogo do Gemini Canvas rodando ao vivo na seção #game */
+		.game-frame {
+			position: relative;
+			margin-top: 18px;
+			width: 100%;
+			aspect-ratio: 16 / 9;
+			min-height: 460px;
+			max-height: 82vh;
+			border: 1px solid rgba(8, 222, 235, 0.35);
+			border-radius: 16px;
+			overflow: hidden;
+			background: #030712;
+			box-shadow: 0 14px 38px rgba(0, 0, 0, 0.40);
+		}
+		.game-frame iframe {
+			display: block;
+			width: 100%;
+			height: 100%;
+			border: 0;
+		}
+		.game-frame:fullscreen { border-radius: 0; border: 0; max-height: none; }
+		.game-frame-actions {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 10px 14px;
+			margin-top: 14px;
+		}
+		.game-frame-hint {
+			color: var(--muted);
+			font-size: 10px;
+			line-height: 1.6;
+		}
+		@media (max-width: 800px) {
+			.game-frame { aspect-ratio: auto; height: 78vh; min-height: 520px; }
+		}
+
 		/* ==============================================================================
 		   PAINEL DE CONTROLE DA CENTRAL — ESTILOS DARK-TECH COCKPIT
 		   ============================================================================== */
@@ -3659,7 +3696,7 @@
 					</article>
 				</div>
 			</section>
-			<section id="game" class="view"><div class="eyebrow">INOVA TECH / SIMULADOR INTERATIVO</div><h2>Smart Driver: O Jogo</h2><p style="color:var(--muted);font-size:11px;max-width:620px;line-height:1.8">Uma experiência interativa desenvolvida na plataforma GDevelop para vivenciar os desafios da fadiga na estrada e comprovar como o sistema InovaTech protege a vida do operador.</p><div class="game-layout"><div class="manual-video" style="min-height:300px"><div style="position:absolute;bottom:16px;left:18px;color:var(--cyan);font-size:10px">▶ VÍDEO DEMO DO JOGO · 00:38</div></div><article class="card" style="display:flex;flex-direction:column;justify-content:space-between"><div><div class="card-label">◉ CONTEXTO & HISTÓRIA</div><h3>A Jornada Noturna: Sobreviva ao Turno</h3><p style="margin-top:12px;line-height:1.8">Assuma o controle de um veículo pesado em uma rota rodoviária noturna. Conforme o turno avança, a fadiga se acumula: a visão embaça, microsonos começam a fechar os olhos do condutor e o caminhão desvia da faixa.</p><p style="margin-top:12px;line-height:1.8">Equipado com o óculos <strong>InovaTech Smart Driver</strong>, o jogador recebe alertas sonoros milissegundos antes do perigo se tornar um acidente. Sua missão: manter o foco e chegar seguro ao destino!</p></div><div style="margin-top:24px"><a href="https://gdevelop.io" target="_blank" rel="noopener noreferrer" class="btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:8px"><span>▶ JOGAR NO GDEVELOP</span></a></div></article></div><div class="grid" style="margin-top:24px"><article class="card"><div class="card-label">ϟ MECÂNICA DO SIMULADOR</div><h3>Telemetria de Fadiga</h3><p>Simulação da barra de PERCLOS e monitor de BPM em tempo real durante a pilotagem na estrada.</p></article><article class="card"><div class="card-label">⌁ CONTROLES DO JOGO</div><h3>Teclado & Dispositivos</h3><p>Setas direcionais (ou A/D) para manter a faixa de rolagem; Barra de espaço para responder ao alerta de atenção do óculos.</p></article><article class="card"><div class="card-label">◫ PLATAFORMA GDEVELOP</div><h3>Execução Web Instantânea</h3><p>Desenvolvido com o motor 2D/3D leve do GDevelop em HTML5, rodando direto no navegador sem necessidade de instalação.</p></article></div></section>
+			<section id="game" class="view"><div class="eyebrow">INOVA TECH / SIMULADOR INTERATIVO</div><h2>Smart Driver: O Jogo</h2><p style="color:var(--muted);font-size:11px;max-width:620px;line-height:1.8">Uma simulação 3D que roda direto no navegador para vivenciar os desafios da fadiga e da distração na estrada e mostrar como os óculos inteligentes protegem a vida do motorista.</p><div class="game-frame" id="gameFrame"><iframe id="gameIframe" src="jogo.html" title="Vigilância 3D: A Estrada do Foco (jogo)" loading="lazy" allow="fullscreen; autoplay" allowfullscreen></iframe></div><div class="game-frame-actions"><button type="button" class="btn" onclick="abrirJogoTelaCheia()">⛶ JOGAR EM TELA CHEIA</button><a href="jogo.html" target="_blank" rel="noopener" class="btn" style="text-decoration:none">↗ ABRIR EM NOVA ABA</a><span class="game-frame-hint">Clique dentro do jogo antes de usar o teclado. Ligue o som: os óculos apitam quando a fadiga sobe.</span></div><article class="card" style="margin-top:24px"><div class="card-label">◉ CONTEXTO & HISTÓRIA</div><h3>Vigilância 3D: A Estrada do Foco</h3><p style="margin-top:12px;line-height:1.8">Você dirige por uma rodovia noturna desviando de carros, cones e detritos. Com o tempo, o sono se acumula e a visão escurece; de repente, o celular apita e tira sua atenção da pista. Para chegar ao fim, é preciso vencer dois chefes: o <strong>Caminhoneiro Cansado</strong>, na Fase 1, e <strong>A Entidade da Fadiga</strong>, na Serra Nebulosa.</p><p style="margin-top:12px;line-height:1.8">Os óculos <strong>Sentinel-X</strong> acompanham o nível de sono e de distração e disparam um alerta sonoro antes que o perigo vire acidente. Sua missão: reagir ao alerta, recuperar o foco e chegar seguro ao destino!</p></article><div class="grid" style="margin-top:24px"><article class="card"><div class="card-label">ϟ MECÂNICA DO SIMULADOR</div><h3>Fadiga & Distração</h3><p>As barras de sono e de distração visual sobem durante a viagem. Acima do limite, os óculos apitam e a tela pisca em vermelho.</p></article><article class="card"><div class="card-label">⌁ CONTROLES DO JOGO</div><h3>Teclado & Toque</h3><p>Setas (← / →) ou A / D trocam de faixa; ESPAÇO reajusta o foco quando os óculos apitam. No celular, use os botões na tela.</p></article><article class="card"><div class="card-label">◫ TECNOLOGIA</div><h3>3D no Navegador</h3><p>Criado no Gemini Canvas com Three.js (WebGL) e sons gerados na hora pela Web Audio API, sem instalar nada.</p></article></div></section>
 		</main>
 
 	<!-- MODAL DE AUTENTICAÇÃO MILITAR / COCKPIT DO PAINEL DE CONTROLE (inovatech26) -->
@@ -4137,6 +4174,16 @@ document.getElementById('portalAccessModal').addEventListener('click', function 
 document.addEventListener('keydown', function (e) {
 	if (e.key === 'Escape') fecharPortalSeletor();
 });
+
+// Jogo do Gemini Canvas: tela cheia no quadro; sem suporte (iPhone), abre em nova aba
+function abrirJogoTelaCheia() {
+	const quadro = document.getElementById('gameFrame');
+	const pedir = quadro.requestFullscreen || quadro.webkitRequestFullscreen;
+	if (!pedir) { window.open('jogo.html', '_blank'); return; }
+	Promise.resolve(pedir.call(quadro))
+		.then(() => document.getElementById('gameIframe').focus())
+		.catch(() => window.open('jogo.html', '_blank'));
+}
 
 </script>
 </body>

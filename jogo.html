@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vigilância 3D: A Estrada do Foco - Projeto TCC</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .font-orbitron { font-family: 'Orbitron', sans-serif; }
+    
+    /* Overlay de efeito de visão escura para o sono */
+    #vignetteOverlay {
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    #alarmFlash {
+      animation: pulseGlow 0.4s infinite alternate;
+      pointer-events: none;
+    }
+
+    @keyframes pulseGlow {
+      from { box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.2); }
+      to { box-shadow: inset 0 0 120px rgba(239, 68, 68, 0.85); }
+    }
+
+    /* HUD de Óculos Inteligente */
+    .hud-glass-frame {
+      clip-path: polygon(5% 0%, 95% 0%, 100% 30%, 95% 100%, 5% 100%, 0% 30%);
+    }
+
+    .glass-active-glow {
+      box-shadow: 0 0 25px rgba(16, 185, 129, 0.5);
+      border-color: #10B981;
+    }
+
+    .glass-danger-glow {
+      box-shadow: 0 0 35px rgba(239, 68, 68, 0.9);
+      border-color: #EF4444;
+      animation: glassPulse 0.3s infinite alternate;
+    }
+
+    @keyframes glassPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.03); }
+    }
+
+    /* Animação para notificação de distração */
+    .distraction-popup {
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.5) translateY(50px); opacity: 0; }
+      to { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    /* Dentro do quadro do site (iframe baixo): as telas de menu rolam em vez de cortar */
+    #screenStart, #screenGameOver, #screenVictory {
+      overflow-y: auto;
+      justify-content: flex-start;
+    }
+    #screenStart > div, #screenGameOver > div, #screenVictory > div {
+      margin-top: auto;
+      margin-bottom: auto;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-white overflow-hidden select-none">
+
+  <!-- Container Principal do Canvas 3D -->
+  <div id="game-container" class="relative w-full h-screen bg-black">
+    <canvas id="three-canvas" class="w-full h-full block"></canvas>
+
+    <!-- Camadas Visuais de Efeito de Sono/Fadiga -->
+    <div id="vignetteOverlay" class="absolute inset-0 opacity-0 bg-black pointer-events-none"></div>
+    <div id="alarmFlash" class="absolute inset-0 hidden pointer-events-none border-4 border-red-600 border-opacity-70"></div>
+
+    <!-- Interface HUD Principal -->
+    <div id="hudLayer" class="absolute inset-0 flex flex-col justify-between p-4 md:p-6 pointer-events-none hidden">
+      
+      <!-- Topo: Painel de Informações do Jogo -->
+      <div class="flex flex-wrap justify-between items-start gap-4 w-full">
+        
+        <!-- Vida e Velocidade -->
+        <div class="bg-gray-900/80 backdrop-blur border border-cyan-500/40 p-3 rounded-xl min-w-[220px] shadow-lg shadow-cyan-950/30">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-orbitron text-cyan-400">VEÍCULO (HP)</span>
+            <span id="hpText" class="text-sm font-bold text-emerald-400">100%</span>
+          </div>
+          <div class="w-full bg-gray-800 h-3 rounded-full overflow-hidden p-0.5 border border-gray-700">
+            <div id="hpBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300" style="width: 100%;"></div>
+          </div>
+
+          <div class="flex justify-between items-center mt-3 mb-1">
+            <span class="text-xs font-orbitron text-cyan-400">DISTÂNCIA / FASE</span>
+            <span id="phaseTag" class="text-xs font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-500/30">FASE 1</span>
+          </div>
+          <div class="text-xl font-orbitron font-bold text-white tracking-wider"><span id="scoreText">0</span> <span class="text-xs text-gray-400">KM</span></div>
+        </div>
+
+        <!-- HUD Central do Boss (Aparece em Batalhas de Chefe) -->
+        <div id="bossHud" class="hidden flex-1 max-w-md mx-auto bg-red-950/80 backdrop-blur border-2 border-red-600 p-3 rounded-xl text-center shadow-xl shadow-red-900/50">
+          <div class="flex justify-between items-center mb-1">
+            <span id="bossName" class="text-xs font-orbitron font-bold text-red-400 tracking-wider">BOSS: CAMINHONEIRO CANSADO</span>
+            <span id="bossHpText" class="text-xs font-bold text-red-200">100%</span>
+          </div>
+          <div class="w-full bg-gray-900 h-3 rounded-full overflow-hidden p-0.5 border border-red-800">
+            <div id="bossHpBar" class="bg-gradient-to-r from-red-600 to-orange-500 h-full rounded-full transition-all duration-200" style="width: 100%;"></div>
+          </div>
+        </div>
+
+        <!--HUD Direito: HUD DOS ÓCULOS SENTINEL-X -->
+        <div id="glassesHudContainer" class="bg-gray-900/90 backdrop-blur border-2 border-emerald-500/60 p-3.5 rounded-2xl min-w-[260px] glass-active-glow transition-all duration-300">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              <span class="text-xs font-orbitron tracking-wide text-emerald-300">ÓCULOS SENTINEL-X</span>
+            </div>
+            <span id="glassesStatusBadge" class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/40">MONITORANDO</span>
+          </div>
+
+          <!-- Barra de Fadiga (Sono) -->
+          <div class="mb-2">
+            <div class="flex justify-between text-[11px] font-bold mb-0.5">
+              <span class="text-indigo-300">NÍVEL DE SONO / FADIGA</span>
+              <span id="fatigueValueText" class="text-indigo-400">0%</span>
+            </div>
+            <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden border border-gray-700">
+              <div id="fatigueBar" class="bg-indigo-500 h-full transition-all duration-200" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Barra de Distração -->
+          <div>
+            <div class="flex justify-between text-[11px] font-bold mb-0.5">
+              <span class="text-amber-300">DISTRAÇÃO VISUAL</span>
+              <span id="distractionValueText" class="text-amber-400">0%</span>
+            </div>
+            <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden border border-gray-700">
+              <div id="distractionBar" class="bg-amber-500 h-full transition-all duration-200" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Instrução de Tecla de Atalho -->
+          <div class="mt-2.5 pt-2 border-t border-gray-800 text-center">
+            <span class="text-[11px] text-gray-300 font-medium">Aperte <span class="bg-gray-800 border border-gray-600 text-yellow-400 px-1.5 py-0.5 rounded font-orbitron text-xs">ESPAÇO</span> para Reajustar Foco</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pop-up Aleatório de Distração (Ex: Notificação de Celular) -->
+      <div id="distractionPopup" class="hidden distraction-popup self-center bg-gray-900/95 border-2 border-amber-500 p-4 rounded-2xl shadow-2xl text-center max-w-xs pointer-events-auto">
+        <div class="text-amber-400 font-bold text-sm mb-1 flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          NOTIFICAÇÃO NO CELULAR!
+        </div>
+        <p class="text-xs text-gray-300 mb-3">Sua atenção desviou da pista! Pressione ESPAÇO ou toque no botão de Foco imediatamente!</p>
+        <button id="btnDismissDistraction" class="w-full bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold py-2 rounded-xl text-xs font-orbitron transition">
+          REAJUSTAR OLHAR (ESPAÇO)
+        </button>
+      </div>
+
+      <!-- Alerta Grande na Tela em Caso de Alarme -->
+      <div id="alarmWarningBanner" class="hidden self-center bg-red-600/90 text-white font-orbitron font-black text-center py-2 px-6 rounded-full border-2 border-red-300 shadow-2xl animate-bounce text-sm md:text-base tracking-widest">
+        ⚠️ ÓCULOS APITANDO! APERTE ESPAÇO PARA REAJUSTAR O FOCO! ⚠️
+      </div>
+
+      <!-- Controles para Dispositivos Móveis e Touch Screens -->
+      <div class="flex justify-between items-end gap-2 w-full pointer-events-auto md:hidden">
+        <div class="flex gap-2">
+          <button id="btnTouchLeft" class="bg-gray-800/80 active:bg-cyan-600 text-white font-bold p-4 rounded-2xl border border-gray-600 text-xl shadow-lg">⬅️</button>
+          <button id="btnTouchRight" class="bg-gray-800/80 active:bg-cyan-600 text-white font-bold p-4 rounded-2xl border border-gray-600 text-xl shadow-lg">➡️</button>
+        </div>
+        <button id="btnTouchFocus" class="flex-1 bg-gradient-to-r from-amber-500 to-emerald-500 active:from-amber-600 text-gray-950 font-orbitron font-black py-4 px-2 rounded-2xl border border-white/40 text-sm shadow-xl tracking-wider">
+          👁️ FOCO / REAJUSTAR
+        </button>
+      </div>
+
+    </div>
+
+    <!-- TELAS DE MENU (Overlay) -->
+
+    <!-- 1. Tela Inicial / Apresentação do TCC -->
+    <div id="screenStart" class="absolute inset-0 bg-gray-950/95 backdrop-blur-md flex flex-col justify-center items-center p-6 text-center z-30">
+      <div class="max-w-2xl bg-gray-900 border border-cyan-500/40 p-6 md:p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+        <div class="absolute -right-12 -top-12 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <span class="bg-cyan-950 text-cyan-400 font-orbitron text-xs font-bold px-3 py-1 rounded-full border border-cyan-500/30 uppercase tracking-widest mb-4 inline-block">
+          PROJETO DE TCC - ENSINO MÉDIO
+        </span>
+        
+        <h1 class="text-3xl md:text-5xl font-orbitron font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 mb-2">
+          VIGILÂNCIA 3D
+        </h1>
+        <h2 class="text-base md:text-lg text-gray-300 font-medium mb-6">A Estrada do Foco & Segurança ao Volante</h2>
+
+        <div class="bg-gray-950/70 p-4 rounded-2xl border border-gray-800 text-left text-xs md:text-sm text-gray-300 space-y-2 mb-6">
+          <p><strong class="text-emerald-400">Objetivo do Protótipo:</strong> Demonstrar a importância dos óculos inteligentes na detecção precoce de micro-sonos e distrações visuais para prevenir acidentes fatais nas estradas.</p>
+          <p><strong class="text-amber-400">Como Jogar:</strong></p>
+          <ul class="list-disc list-inside space-y-1 text-gray-400 pl-1">
+            <li>Controle o carro com as <span class="text-white font-bold">Setas (←/→)</span> ou <span class="text-white font-bold">A/D</span>.</li>
+            <li>Desvie dos carros, cones e perigos na pista.</li>
+            <li>Quando a fadiga subir ou o celular apitar, os <strong class="text-emerald-400">Óculos Sentinel-X</strong> emitirão um <strong class="text-red-400">Alerta Sonoro (Beep)</strong>.</li>
+            <li>Aperte <span class="text-yellow-400 font-bold font-orbitron">ESPAÇO</span> imediatamente ao ouvir o som para restaurar seu foco!</li>
+          </ul>
+        </div>
+
+        <button id="btnStartGame" class="w-full bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-gray-950 font-orbitron font-black text-lg py-4 rounded-2xl shadow-xl shadow-cyan-950/50 hover:scale-[1.02] transition-all">
+          INICIAR SIMULAÇÃO
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Tela de Game Over (Com Estatísticas de TCC) -->
+    <div id="screenGameOver" class="absolute inset-0 bg-gray-950/95 backdrop-blur-md flex flex-col justify-center items-center p-6 text-center z-30 hidden">
+      <div class="max-w-xl bg-gray-900 border border-red-500/50 p-6 md:p-8 rounded-3xl shadow-2xl">
+        <div class="w-16 h-16 bg-red-950 text-red-500 border border-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl font-bold">
+          ⚠️
+        </div>
+        
+        <h2 class="text-3xl font-orbitron font-black text-red-500 mb-2">COLISÃO DETECTADA</h2>
+        <p class="text-sm text-gray-300 mb-6">A fadiga ou a distração comprometeram os tempos de reação na estrada.</p>
+
+        <div class="bg-red-950/30 border border-red-900/50 p-4 rounded-2xl text-left text-xs md:text-sm text-red-200 space-y-2 mb-6">
+          <p class="font-bold text-red-400 font-orbitron">📊 Dados Educativos do TCC:</p>
+          <p>• Segundo dados de trânsito, dirigir com sono duplica os riscos de acidentes, sendo equivalente a dirigir sob efeito de álcool.</p>
+          <p>• 1 a 2 segundos de micro-sono a 100 km/h equivalem a percorrer mais de 50 metros totalmente 'às cegas'.</p>
+          <p>• O uso de alertas sonoros ativos em wearable glasses reduz acidentes de sonolência em mais de 70%.</p>
+        </div>
+
+        <button id="btnRestartGame" class="w-full bg-red-600 hover:bg-red-500 text-white font-orbitron font-bold py-3.5 rounded-2xl transition">
+          TENTAR NOVAMENTE
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Tela de Vitória Final -->
+    <div id="screenVictory" class="absolute inset-0 bg-gray-950/95 backdrop-blur-md flex flex-col justify-center items-center p-6 text-center z-30 hidden">
+      <div class="max-w-xl bg-gray-900 border border-emerald-500/50 p-6 md:p-8 rounded-3xl shadow-2xl">
+        <div class="w-16 h-16 bg-emerald-950 text-emerald-400 border border-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl font-bold">
+          🏆
+        </div>
+
+        <h2 class="text-3xl font-orbitron font-black text-emerald-400 mb-2">PERCURSO CONCLUÍDO!</h2>
+        <p class="text-sm text-gray-300 mb-4">Você concluiu a rodovia com total segurança graças ao auxílio dos óculos inteligentes!</p>
+
+        <div class="bg-emerald-950/30 border border-emerald-900/50 p-4 rounded-2xl text-left text-xs md:text-sm text-emerald-200 space-y-2 mb-6">
+          <p class="font-bold text-emerald-300 font-orbitron">🎯 Conclusão do Projeto de TCC:</p>
+          <p>A simulação provou que o sistema de monitoramento contínuo com alarme perceptivo garante que o motorista retome a atenção antes de acidentes graves.</p>
+          <p class="font-bold text-white mt-2">Tecnologia, Inovação e Vidas Salvas no Trânsito!</p>
+        </div>
+
+        <button id="btnVictoryRestart" class="w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-orbitron font-black py-3.5 rounded-2xl transition">
+          JOGAR NOVAMENTE
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CÓDIGO DO JOGO EM THREE.JS & SINTETIZADOR DE ÁUDIO WEB -->
+  <script>
+    /* =========================================================================
+     * SINTETIZADOR DE ÁUDIO WEB AUDIO API (Efeitos Sonoros Sem Mídia Externa)
+     * ========================================================================= */
+    class SoundSystem {
+      constructor() {
+        this.ctx = null;
+        this.alarmOsc = null;
+        this.alarmGain = null;
+        this.isAlarming = false;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+      }
+
+      // Som do Óculos Inteligente (Alerta Sonoro / Beep)
+      startGlassesAlarm() {
+        if (this.isAlarming || !this.ctx) return;
+        this.isAlarming = true;
+
+        this.alarmOsc = this.ctx.createOscillator();
+        this.alarmGain = this.ctx.createGain();
+
+        this.alarmOsc.type = 'square';
+        this.alarmOsc.frequency.setValueAtTime(880, this.ctx.currentTime); // Nota A5
+        
+        // Efeito de bipe intermitente
+        const now = this.ctx.currentTime;
+        this.alarmGain.gain.setValueAtTime(0.15, now);
+
+        // Alternar frequência rapidamente para som de aviso tecnológico
+        let isHigh = false;
+        this.alarmInterval = setInterval(() => {
+          if (this.alarmOsc && this.ctx) {
+            this.alarmOsc.frequency.setValueAtTime(isHigh ? 880 : 1200, this.ctx.currentTime);
+            isHigh = !isHigh;
+          }
+        }, 120);
+
+        this.alarmOsc.connect(this.alarmGain);
+        this.alarmGain.connect(this.ctx.destination);
+        this.alarmOsc.start();
+      }
+
+      stopGlassesAlarm() {
+        if (!this.isAlarming) return;
+        this.isAlarming = false;
+        clearInterval(this.alarmInterval);
+        if (this.alarmOsc) {
+          this.alarmOsc.stop();
+          this.alarmOsc.disconnect();
+          this.alarmOsc = null;
+        }
+      }
+
+      // Som ao Clicar/Apertar ESPAÇO para Foco Reajustado
+      playFocusChime() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, this.ctx.currentTime); // C5
+        osc.frequency.exponentialRampToValueAtTime(1046.50, this.ctx.currentTime + 0.2); // C6
+
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.25);
+      }
+
+      // Som de Colisão
+      playCrashSound() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.4);
+
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.4);
+      }
+    }
+
+    const audioSys = new SoundSystem();
+
+    /* =========================================================================
+     * ESTADO GLOBAL E CONFIGURAÇÃO DO JOGO
+     * ========================================================================= */
+    const GAME_STATES = { MENU: 0, PLAYING: 1, GAMEOVER: 2, VICTORY: 3 };
+    let currentState = GAME_STATES.MENU;
+
+    const LANES = [-3.2, 0, 3.2]; // Posições X das 3 faixas da pista
+    let currentLane = 1; // Faixa central
+
+    let playerHp = 100;
+    let distanceTraveled = 0;
+    let fatigueLevel = 0; // 0 a 100
+    let distractionLevel = 0; // 0 a 100
+    let currentPhase = 1;
+
+    let isAlarmActive = false;
+    let bossActive = false;
+    let bossHp = 100;
+    let bossMesh = null;
+    let bossType = null; // 'truck' ou 'phantom'
+
+    // Coleções de Objetos 3D
+    let scene, camera, renderer;
+    let playerCar;
+    let roadSegments = [];
+    let obstacles = [];
+    let sceneryObjects = [];
+
+    // Timers e Ajustes
+    let lastTime = 0;
+    let distractionTimer = 0;
+
+    /* =========================================================================
+     * INICIALIZAÇÃO DA CENA THREE.JS
+     * ========================================================================= */
+    function init3D() {
+      const container = document.getElementById('game-container');
+      
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a0f1d);
+      scene.fog = new THREE.FogExp2(0x0a0f1d, 0.015);
+
+      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 3.8, 7.5);
+      camera.lookAt(0, 1.2, -5);
+
+      renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+
+      // Iluminação
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(20, 40, 20);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      // Criar Carro do Jogador
+      createPlayerCar();
+
+      // Construir Rodovia Inicial
+      for (let i = 0; i < 15; i++) {
+        spawnRoadSegment(-i * 20);
+      }
+
+      // Eventos de Redimensionamento
+      window.addEventListener('resize', onWindowResize);
+    }
+
+    /* =========================================================================
+     * CONSTRUTORES DE MODELOS 3D (Procedurais em Geometrias Nativas)
+     * ========================================================================= */
+
+    // Carro Esportivo Sleek do Jogador
+    function createPlayerCar() {
+      const carGroup = new THREE.Group();
+
+      // Corpo principal
+      const bodyGeo = new THREE.BoxGeometry(1.6, 0.6, 3.4);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x00d2ff, roughness: 0.2, metalness: 0.8 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 0.5;
+      body.castShadow = true;
+      carGroup.add(body);
+
+      // Teto/Cabine
+      const cabinGeo = new THREE.BoxGeometry(1.2, 0.5, 1.8);
+      const cabinMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.1 });
+      const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+      cabin.position.set(0, 0.9, -0.2);
+      carGroup.add(cabin);
+
+      // Faróis traseiros luminosos
+      const tailLightGeo = new THREE.BoxGeometry(1.4, 0.1, 0.1);
+      const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xff0044 });
+      const tailLight = new THREE.Mesh(tailLightGeo, tailLightMat);
+      tailLight.position.set(0, 0.6, 1.7);
+      carGroup.add(tailLight);
+
+      // Rodas
+      const wheelGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16);
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.8 });
+      
+      const wheelPositions = [
+        [-0.85, 0.3, -1.0], [0.85, 0.3, -1.0],
+        [-0.85, 0.3, 1.0],  [0.85, 0.3, 1.0]
+      ];
+
+      wheelPositions.forEach(pos => {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(...pos);
+        carGroup.add(wheel);
+      });
+
+      playerCar = carGroup;
+      playerCar.position.set(LANES[currentLane], 0, 0);
+      scene.add(playerCar);
+    }
+
+    // Segmentos da Pista de Corrida
+    function spawnRoadSegment(zPos) {
+      const segmentGroup = new THREE.Group();
+
+      // Asfalto
+      const roadGeo = new THREE.PlaneGeometry(12, 20);
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+      const road = new THREE.Mesh(roadGeo, roadMat);
+      road.rotation.x = -Math.PI / 2;
+      road.receiveShadow = true;
+      segmentGroup.add(road);
+
+      // Linhas Divisórias das Faixas
+      [-1.6, 1.6].forEach(xOffset => {
+        const lineGeo = new THREE.PlaneGeometry(0.15, 6);
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+        const line = new THREE.Mesh(lineGeo, lineMat);
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(xOffset, 0.01, 0);
+        segmentGroup.add(line);
+      });
+
+      // Postes / Barreiras Laterais
+      [-6.2, 6.2].forEach(xOffset => {
+        const barrierGeo = new THREE.BoxGeometry(0.3, 0.8, 20);
+        const barrierMat = new THREE.MeshStandardMaterial({ color: 0x475569 });
+        const barrier = new THREE.Mesh(barrierGeo, barrierMat);
+        barrier.position.set(xOffset, 0.4, 0);
+        segmentGroup.add(barrier);
+      });
+
+      segmentGroup.position.z = zPos;
+      scene.add(segmentGroup);
+      roadSegments.push(segmentGroup);
+
+      // Gerar Cenário Ao Redor (Árvores/Postes)
+      if (Math.random() > 0.4) {
+        spawnTree(segmentGroup.position.z);
+      }
+    }
+
+    // Árvores Decorativas na Lateral
+    function spawnTree(zPos) {
+      const side = Math.random() > 0.5 ? 1 : -1;
+      const treeGroup = new THREE.Group();
+
+      const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 2, 8);
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03 });
+      const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+      trunk.position.y = 1;
+      treeGroup.add(trunk);
+
+      const leavesGeo = new THREE.ConeGeometry(1.2, 3, 8);
+      const leavesMat = new THREE.MeshStandardMaterial({ color: 0x065f46 });
+      const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+      leaves.position.y = 3;
+      treeGroup.add(leaves);
+
+      treeGroup.position.set(side * (8 + Math.random() * 4), 0, zPos);
+      scene.add(treeGroup);
+      sceneryObjects.push(treeGroup);
+    }
+
+    // Obstáculo: Carros Tráfego Lentidão
+    function spawnObstacleCar(zPos) {
+      const lane = Math.floor(Math.random() * 3);
+      const carGroup = new THREE.Group();
+
+      const bodyGeo = new THREE.BoxGeometry(1.5, 0.7, 3);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: Math.random() > 0.5 ? 0xef4444 : 0x8b5cf6 });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 0.5;
+      carGroup.add(body);
+
+      carGroup.position.set(LANES[lane], 0, zPos);
+      carGroup.userData = { type: 'car', radius: 1.2 };
+      scene.add(carGroup);
+      obstacles.push(carGroup);
+    }
+
+    // Obstáculo: Cones de Sinalização
+    function spawnCone(zPos) {
+      const lane = Math.floor(Math.random() * 3);
+      const coneGeo = new THREE.ConeGeometry(0.4, 0.9, 12);
+      const coneMat = new THREE.MeshStandardMaterial({ color: 0xf97316 });
+      const cone = new THREE.Mesh(coneGeo, coneMat);
+      cone.position.set(LANES[lane], 0.45, zPos);
+      cone.userData = { type: 'cone', radius: 0.6 };
+      scene.add(cone);
+      obstacles.push(cone);
+    }
+
+    /* =========================================================================
+     * SISTEMA DE BOSSES (CHEFES DE FASE)
+     * ========================================================================= */
+    function spawnBoss(type) {
+      bossActive = true;
+      bossType = type;
+      bossHp = 100;
+
+      document.getElementById('bossHud').classList.remove('hidden');
+
+      if (type === 'truck') {
+        document.getElementById('bossName').innerText = "BOSS 1: CAMINHONEIRO CANSADO";
+        
+        // Criar Caminhão Bi-trem Gigante
+        const truckGroup = new THREE.Group();
+        const cabGeo = new THREE.BoxGeometry(2.2, 2.2, 5);
+        const cabMat = new THREE.MeshStandardMaterial({ color: 0xd97706 });
+        const cab = new THREE.Mesh(cabGeo, cabMat);
+        cab.position.y = 1.1;
+        truckGroup.add(cab);
+
+        truckGroup.position.set(LANES[1], 0, -40);
+        truckGroup.userData = { laneTarget: 1, timer: 0 };
+        bossMesh = truckGroup;
+        scene.add(bossMesh);
+      } 
+      else if (type === 'phantom') {
+        document.getElementById('bossName').innerText = "BOSS FINAL: A ENTIDADE DA FADIGA";
+        
+        // Criar Fantasma/Nuvem de Fadiga Espectral
+        const phantomGroup = new THREE.Group();
+        const pGeo = new THREE.IcosahedronGeometry(2, 2);
+        const pMat = new THREE.MeshBasicMaterial({ color: 0x818cf8, wireframe: true });
+        const phantom = new THREE.Mesh(pGeo, pMat);
+        phantom.position.y = 2;
+        phantomGroup.add(phantom);
+
+        phantomGroup.position.set(LANES[1], 0, -35);
+        phantomGroup.userData = { timer: 0 };
+        bossMesh = phantomGroup;
+        scene.add(bossMesh);
+      }
+    }
+
+    function updateBossLogic(delta) {
+      if (!bossActive || !bossMesh) return;
+
+      if (bossType === 'truck') {
+        // Movimento errático trocando de faixas
+        bossMesh.userData.timer += delta;
+        if (bossMesh.userData.timer > 2.5) {
+          bossMesh.userData.timer = 0;
+          bossMesh.userData.laneTarget = Math.floor(Math.random() * 3);
+        }
+
+        // Suavizar movimentação lateral
+        const targetX = LANES[bossMesh.userData.laneTarget];
+        bossMesh.position.x += (targetX - bossMesh.position.x) * 0.05;
+
+        // Manter a uma distância do jogador
+        bossMesh.position.z = -25;
+
+        // Lançar detritos no jogador
+        if (Math.random() < 0.02) {
+          const cone = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6), new THREE.MeshBasicMaterial({color: 0x92400e}));
+          cone.position.set(bossMesh.position.x, 0.3, bossMesh.position.z + 2);
+          cone.userData = { type: 'debris', radius: 0.8 };
+          scene.add(cone);
+          obstacles.push(cone);
+        }
+      } 
+      else if (bossType === 'phantom') {
+        bossMesh.rotation.y += delta * 1.5;
+        bossMesh.position.x = Math.sin(Date.now() * 0.003) * 3.5;
+        bossMesh.position.z = -20;
+
+        // Aumentar o ganho de fadiga significativamente no boss final
+        fatigueLevel = Math.min(100, fatigueLevel + delta * 6);
+      }
+
+      // Reduzir HP do Boss conforme o jogador mantém a atenção sem bater
+      bossHp -= delta * 3.5;
+      document.getElementById('bossHpBar').style.width = `${Math.max(0, bossHp)}%`;
+      document.getElementById('bossHpText').innerText = `${Math.ceil(Math.max(0, bossHp))}%`;
+
+      // Derrota do Boss
+      if (bossHp <= 0) {
+        defeatBoss();
+      }
+    }
+
+    function defeatBoss() {
+      bossActive = false;
+      scene.remove(bossMesh);
+      bossMesh = null;
+      document.getElementById('bossHud').classList.add('hidden');
+
+      if (currentPhase === 1) {
+        // Avançar para Fase 2
+        currentPhase = 2;
+        document.getElementById('phaseTag').innerText = "FASE 2: SERRA NEBULOSA";
+        scene.fog.color.setHex(0x030712);
+        scene.background.setHex(0x030712);
+      } else {
+        // Vitória do Jogo!
+        setGameState(GAME_STATES.VICTORY);
+      }
+    }
+
+    /* =========================================================================
+     * MECÂNICA DOS ÓCULOS INTELIGENTES (SENTINEL-X) & FADIGA/DISTRAÇÃO
+     * ========================================================================= */
+    function updateFatigueAndDistraction(delta) {
+      if (currentState !== GAME_STATES.PLAYING) return;
+
+      // 1. Ganho Gradual de Fadiga (Sono)
+      const fatigueRate = currentPhase === 1 ? 2.5 : 4.5;
+      fatigueLevel = Math.min(100, fatigueLevel + delta * fatigueRate);
+
+      // Efeito visual de visão afunilada/escura conforme o sono aumenta
+      const vignette = document.getElementById('vignetteOverlay');
+      vignette.style.opacity = (fatigueLevel / 100) * 0.85;
+
+      // 2. Eventos Aleatórios de Distração (Ex: Celular)
+      distractionTimer += delta;
+      if (distractionTimer > 12 && Math.random() < 0.3) {
+        distractionTimer = 0;
+        triggerDistractionEvent();
+      }
+
+      // 3. Checar Limiares de Alarme dos Óculos
+      const isCritical = fatigueLevel > 65 || distractionLevel > 50;
+
+      const glassesHud = document.getElementById('glassesHudContainer');
+      const glassesBadge = document.getElementById('glassesStatusBadge');
+      const alarmBanner = document.getElementById('alarmWarningBanner');
+      const alarmFlash = document.getElementById('alarmFlash');
+
+      if (isCritical) {
+        if (!isAlarmActive) {
+          isAlarmActive = true;
+          audioSys.startGlassesAlarm();
+        }
+        glassesHud.classList.remove('glass-active-glow');
+        glassesHud.classList.add('glass-danger-glow');
+        glassesBadge.innerText = "⚠️ ALERTA DE PERIGO";
+        glassesBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-500/60 animate-pulse";
+        alarmBanner.classList.remove('hidden');
+        alarmFlash.classList.remove('hidden');
+      } else {
+        if (isAlarmActive) {
+          isAlarmActive = false;
+          audioSys.stopGlassesAlarm();
+        }
+        glassesHud.classList.remove('glass-danger-glow');
+        glassesHud.classList.add('glass-active-glow');
+        glassesBadge.innerText = "MONITORANDO";
+        glassesBadge.className = "text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/40";
+        alarmBanner.classList.add('hidden');
+        alarmFlash.classList.add('hidden');
+      }
+
+      // Atualizar Barras de UI
+      document.getElementById('fatigueBar').style.width = `${fatigueLevel}%`;
+      document.getElementById('fatigueValueText').innerText = `${Math.floor(fatigueLevel)}%`;
+
+      document.getElementById('distractionBar').style.width = `${distractionLevel}%`;
+      document.getElementById('distractionValueText').innerText = `${Math.floor(distractionLevel)}%`;
+
+      // Dano por desatenção crítica prolongada sem reação
+      if (fatigueLevel >= 98 || distractionLevel >= 98) {
+        takeDamage(0.5);
+      }
+    }
+
+    function triggerDistractionEvent() {
+      distractionLevel = 80;
+      document.getElementById('distractionPopup').classList.remove('hidden');
+    }
+
+    function resetFocus() {
+      if (currentState !== GAME_STATES.PLAYING) return;
+
+      audioSys.playFocusChime();
+      fatigueLevel = 0;
+      distractionLevel = 0;
+      document.getElementById('distractionPopup').classList.add('hidden');
+
+      if (isAlarmActive) {
+        isAlarmActive = false;
+        audioSys.stopGlassesAlarm();
+      }
+    }
+
+    /* =========================================================================
+     * LOOP PRINCIPAL DE ATUALIZAÇÃO E RENDERIZAÇÃO
+     * ========================================================================= */
+    function animate(time) {
+      requestAnimationFrame(animate);
+
+      const delta = Math.min((time - lastTime) / 1000, 0.1);
+      lastTime = time;
+
+      if (currentState === GAME_STATES.PLAYING) {
+        // Mover Pista e Cenário para Simular Velocidade
+        const speed = 25 * delta;
+        distanceTraveled += speed * 0.05;
+        document.getElementById('scoreText').innerText = Math.floor(distanceTraveled);
+
+        // Movimentação Suave das Faixas do Carro
+        const targetX = LANES[currentLane];
+        playerCar.position.x += (targetX - playerCar.position.x) * 0.15;
+        playerCar.rotation.z = (playerCar.position.x - targetX) * 0.08;
+
+        // Atualizar Rodovia Recorrente
+        roadSegments.forEach(segment => {
+          segment.position.z += speed;
+          if (segment.position.z > 10) {
+            segment.position.z -= 300;
+          }
+        });
+
+        // Atualizar Árvores / Cenários
+        sceneryObjects.forEach(obj => {
+          obj.position.z += speed;
+          if (obj.position.z > 10) {
+            obj.position.z -= 300;
+          }
+        });
+
+        // Atualizar e Mover Obstáculos
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          const obs = obstacles[i];
+          obs.position.z += speed;
+
+          // Checar Colisão com o Carro do Jogador
+          const dist = playerCar.position.distanceTo(obs.position);
+          if (dist < (obs.userData.radius || 1.0)) {
+            audioSys.playCrashSound();
+            takeDamage(20);
+            scene.remove(obs);
+            obstacles.splice(i, 1);
+            continue;
+          }
+
+          // Remover Obstáculos Aos Quais o Jogador Sobreviveu
+          if (obs.position.z > 10) {
+            scene.remove(obs);
+            obstacles.splice(i, 1);
+          }
+        }
+
+        // Spawn de Novos Obstáculos
+        if (!bossActive && Math.random() < 0.025) {
+          if (Math.random() > 0.4) spawnObstacleCar(-180);
+          else spawnCone(-180);
+        }
+
+        // Lógica de Ativação dos Bosses Conforme a Distância
+        if (!bossActive) {
+          if (currentPhase === 1 && distanceTraveled > 80) {
+            spawnBoss('truck');
+          } else if (currentPhase === 2 && distanceTraveled > 220) {
+            spawnBoss('phantom');
+          }
+        } else {
+          updateBossLogic(delta);
+        }
+
+        // Atualizar Fadiga e Óculos Inteligentes
+        updateFatigueAndDistraction(delta);
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    /* =========================================================================
+     * SISTEMA DE DANO E GERENCIAMENTO DE ESTADOS
+     * ========================================================================= */
+    function takeDamage(amount) {
+      playerHp = Math.max(0, playerHp - amount);
+      document.getElementById('hpBar').style.width = `${playerHp}%`;
+      document.getElementById('hpText').innerText = `${Math.ceil(playerHp)}%`;
+
+      if (playerHp <= 0) {
+        setGameState(GAME_STATES.GAMEOVER);
+      }
+    }
+
+    function setGameState(newState) {
+      currentState = newState;
+      audioSys.stopGlassesAlarm();
+
+      // Esconder todas as telas overlay
+      document.getElementById('screenStart').classList.add('hidden');
+      document.getElementById('screenGameOver').classList.add('hidden');
+      document.getElementById('screenVictory').classList.add('hidden');
+      document.getElementById('hudLayer').classList.add('hidden');
+
+      if (newState === GAME_STATES.PLAYING) {
+        document.getElementById('hudLayer').classList.remove('hidden');
+        resetGameVars();
+      } else if (newState === GAME_STATES.GAMEOVER) {
+        document.getElementById('screenGameOver').classList.remove('hidden');
+      } else if (newState === GAME_STATES.VICTORY) {
+        document.getElementById('screenVictory').classList.remove('hidden');
+      }
+    }
+
+    function resetGameVars() {
+      playerHp = 100;
+      distanceTraveled = 0;
+      fatigueLevel = 0;
+      distractionLevel = 0;
+      currentPhase = 1;
+      currentLane = 1;
+      bossActive = false;
+
+      document.getElementById('hpBar').style.width = "100%";
+      document.getElementById('hpText').innerText = "100%";
+      document.getElementById('phaseTag').innerText = "FASE 1: RODOVIA";
+      document.getElementById('bossHud').classList.add('hidden');
+
+      // Limpar obstáculos existentes
+      obstacles.forEach(obs => scene.remove(obs));
+      obstacles = [];
+
+      if (bossMesh) {
+        scene.remove(bossMesh);
+        bossMesh = null;
+      }
+    }
+
+    /* =========================================================================
+     * ENTRADAS DE CONTROLE (TECLADO & TOQUE MÓVEL)
+     * ========================================================================= */
+    function setupControls() {
+      window.addEventListener('keydown', (e) => {
+        if (currentState !== GAME_STATES.PLAYING) return;
+
+        // Dentro do site, as setas não podem rolar a página de fora
+        if (e.key.startsWith('Arrow')) e.preventDefault();
+
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+          if (currentLane > 0) currentLane--;
+        } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+          if (currentLane < 2) currentLane++;
+        } else if (e.code === 'Space') {
+          e.preventDefault();
+          resetFocus();
+        }
+      });
+
+      // Botoes de Controle por Toque na Tela
+      document.getElementById('btnTouchLeft').addEventListener('click', () => {
+        if (currentLane > 0) currentLane--;
+      });
+
+      document.getElementById('btnTouchRight').addEventListener('click', () => {
+        if (currentLane < 2) currentLane++;
+      });
+
+      document.getElementById('btnTouchFocus').addEventListener('click', () => {
+        resetFocus();
+      });
+
+      document.getElementById('btnDismissDistraction').addEventListener('click', () => {
+        resetFocus();
+      });
+
+      // Botões das Telas de Menu
+      document.getElementById('btnStartGame').addEventListener('click', () => {
+        audioSys.init();
+        setGameState(GAME_STATES.PLAYING);
+      });
+
+      document.getElementById('btnRestartGame').addEventListener('click', () => {
+        setGameState(GAME_STATES.PLAYING);
+      });
+
+      document.getElementById('btnVictoryRestart').addEventListener('click', () => {
+        setGameState(GAME_STATES.PLAYING);
+      });
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    /* =========================================================================
+     * INICIALIZAÇÃO NO CARREGAMENTO
+     * ========================================================================= */
+    window.onload = function() {
+      init3D();
+      setupControls();
+      requestAnimationFrame(animate);
+    };
+  </script>
+</body>
+</html>

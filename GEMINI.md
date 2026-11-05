@@ -118,7 +118,7 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 6. **`#references` (Referências & Artigos Científicos)**:
    - 4 cards temáticos embasando cientificamente o projeto: ABRAMET, USP, SciELO e PRF.
 7. **`#game` (O Jogo - Smart Driver)**:
-   - Simulador interativo "A Jornada Noturna: Sobreviva ao Turno" desenvolvido no GDevelop.
+   - Jogo 3D "Vigilância 3D: A Estrada do Foco" (feito no Gemini Canvas, Three.js) rodando ao vivo num iframe a partir de `jogo.html`, com botões de tela cheia e nova aba (alterado em 05/11/2026).
 
 ---
 
@@ -188,7 +188,7 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 - **Data e Horário de Homologação**: Segunda-feira, 20 de Outubro de 2026, 00:30 BRT.
 - **Divisão do Sistema em 3 Páginas Autônomas (Zero pastas externas)**:
   1. **`index.html` (Apresentação do Projeto para o Professor/Banca)**:
-     - Portal público contendo: Home com Hero e vídeo, Manual de Operações, Ecossistema com tabela de custos, Quem Somos (Equipe com Instagram oficial de cada membro), Referências Científicas e O Jogo no GDevelop.
+     - Portal público contendo: Home com Hero e vídeo, Manual de Operações, Ecossistema com tabela de custos, Quem Somos (Equipe com Instagram oficial de cada membro), Referências Científicas e O Jogo (jogo 3D ao vivo, `jogo.html`).
      - O painel de controle e telemetria pesada de rede foram removidos desta página para garantir que professores acessando via QR Code vejam unicamente o site de apresentação acadêmica do TCC, com navegação fluida e sem consumir banda da rede escolar.
      - **Modal Seletor de Acesso (`#portalAccessModal`)** — *alterado em 05/11/2026*: o site abre **direto na apresentação**; a caixinha só aparece pelo botão **"Central / App do Motorista"** (ícone `lock`) da Home (`abrirPortalSeletor()`). Tem 2 opções:
        - *[ Central Tech (Torre de Controle) ]*: Exibe ícone de cadeado (`lock`), solicita senha `inovatech26` e redireciona para `central.html`.
