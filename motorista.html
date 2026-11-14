@@ -367,6 +367,33 @@
 			display: none;
 		}
 
+		/* A tela de chamada rola se o conteúdo passar da altura (fase 3 com o quadro de emergência) */
+		.driver-fullscreen-call {
+			overflow-y: auto;
+		}
+
+		/* Na fase 3 a xícara grande sai para o quadro de emergência e os botões caberem na tela */
+		.driver-fullscreen-call.fase-3 .coffee-ring-wrapper,
+		.driver-fullscreen-call.fase-3 .driver-call-message {
+			display: none;
+		}
+
+		.btn-desativar-emergencia {
+			padding: 12px 10px;
+			border-radius: 10px;
+			border: 2px solid #55ee77;
+			background: rgba(16, 185, 129, 0.9);
+			color: #ffffff;
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			font-weight: 700;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 6px;
+			cursor: pointer;
+		}
+
 		.driver-voz-status {
 			padding: 8px;
 			border-radius: 8px;
@@ -630,6 +657,9 @@
 					<a href="tel:191"><span class="material-symbols-outlined g-icon">local_police</span>PRF 191</a>
 				</div>
 				<small>A Central já recebeu sua localização. Se precisar, toque para ligar.</small>
+				<button type="button" class="btn-desativar-emergencia" id="btnDesativarEmergencia">
+					<span class="material-symbols-outlined g-icon">check_circle</span> ESTOU BEM · DESATIVAR ALERTA
+				</button>
 			</div>
 		</div>
 
@@ -1213,6 +1243,7 @@
 			var subiu = nivel > nivelChamadaApp;
 			nivelChamadaApp = nivel;
 			if (driverEmergenciaBox) driverEmergenciaBox.hidden = nivel < 3;
+			driverFullscreenCall.classList.toggle('fase-3', nivel >= 3);
 			if (!nivel) return;
 			padraoVibracaoChamada = VIBRACAO_FASE[nivel] || VIBRACAO_FASE[1];
 			if (!subiu || nivel < 2) return;
@@ -1306,7 +1337,7 @@
 			if (driverVozBotoes) driverVozBotoes.hidden = true;
 			// "Socorro": o servidor reabre a emergência e a voz da fase 3 fala ("Chamando o socorro agora")
 			if (resposta === 'BEM') tocarVoz(vozRespostaBemAudio);
-			mostrarStatusVoz(resposta === 'BEM' ? 'Resposta: está bem. Boa viagem!' :
+			mostrarStatusVoz(resposta === 'BEM' ? 'OK. Pare para descansar, se for necessário.' :
 				resposta === 'SOCORRO' ? 'Resposta: não. O alerta voltou.' : 'Sem resposta: a Central foi avisada.');
 			esconderPerguntaDepois(6000);
 			if (link.conectado()) link.comando('RESPOSTA_VOZ', { resposta: resposta });
@@ -1392,6 +1423,9 @@
 		}
 
 		if (btnDriverAcceptRest) btnDriverAcceptRest.addEventListener('click', confirmarAlertaMotorista);
+		// Depois do possível acidente (fase 3), o motorista pode desativar o alerta direto no quadro de emergência
+		var btnDesativarEmergencia = document.getElementById('btnDesativarEmergencia');
+		if (btnDesativarEmergencia) btnDesativarEmergencia.addEventListener('click', confirmarAlertaMotorista);
 		if (btnDriverDismissCall) btnDriverDismissCall.addEventListener('click', confirmarAlertaMotorista);
 
 		// Modo Tela Apagada (Viagem Noturna)
