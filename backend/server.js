@@ -399,6 +399,7 @@ function encerrarAlerta(mensagem, detalhes = '') {
 
 // Pergunta "Você está bem?" no celular depois que o alerta se encerrou pela postura
 let timerPerguntaBemEstar = null;
+let alertaAntesDaPergunta = null; // { decorridoMs, nivel } do alerta que acabou pela postura
 function abrirPerguntaBemEstar() {
   if (!PERGUNTA_POR_VOZ_APOS_ALERTA) return;
   estado.pergunta_bem_estar = { id: Date.now(), aberta: true };
@@ -427,6 +428,8 @@ setInterval(() => {
   if (inicioRecuperacaoMs) {
     estado.tempo_recuperacao_ms = agora - inicioRecuperacaoMs;
     if (estado.tempo_recuperacao_ms >= RECUPERACAO_MS) {
+      // Guarda onde o alerta parou: se o motorista responder "não", ele continua daqui
+      alertaAntesDaPergunta = { decorridoMs: agora - inicioSemRespostaMs, nivel: estado.nivel_escalonamento };
       encerrarAlerta('Recuperação automática: motorista manteve a cabeça erguida por 3s',
         'Alarmes físicos, chamada no celular e escalonamento encerrados.');
       abrirPerguntaBemEstar();
@@ -716,11 +719,16 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
     if (resposta === 'BEM') {
       registrarEvento('NORMAL', 'Motorista respondeu por voz: está bem');
     } else if (resposta === 'SOCORRO') {
-      // Pedido de socorro: reabre a emergência direto na fase 3 (Central em vermelho + ligação automática)
+      // Respondeu "não": o alerta volta de onde parou (mesmo tempo e mesma fase; não liga de novo se já ligou).
+      // Não se encerra mais pela cabeça erguida: só a Central ou o motorista (botão) encerram.
+      const anterior = alertaAntesDaPergunta || { decorridoMs: 0, nivel: 1 };
       pararSimulacao();
-      dispararAlerta('SOCORRO_VOZ', 'MOTORISTA PEDIU SOCORRO POR VOZ!', 'Emergência reaberta direto no protocolo SOS.');
-      inicioSemRespostaMs = Date.now() - ESCALONAMENTO.acidente_ms;
+      dispararAlerta('SOCORRO_VOZ', 'Motorista respondeu NÃO: alerta retomado', 'O alerta continua de onde parou.');
+      inicioSemRespostaMs = Date.now() - anterior.decorridoMs;
+      estado.tempo_sem_resposta_ms = anterior.decorridoMs;
+      estado.nivel_escalonamento = Math.max(1, anterior.nivel);
       estado.resposta_motorista = 'SOCORRO';
+      transmitirEstado('ESCALONAMENTO_EMERGENCIA');
     } else {
       registrarEvento('PRE_ALERTA', 'Motorista não respondeu à pergunta "Você está bem?"');
     }

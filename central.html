@@ -1557,11 +1557,9 @@
 				anim.travado = true;
 				anim.baseSemRespostaMs = agora - (estado.tempo_sem_resposta_ms || 0);
 				atualizarPainelEscalonamentoUI(estado.tempo_sem_resposta_ms || 0);
-				// Fase 3: resposta do motorista à pergunta por voz "Você está bem?"
-				if (centralEscDesc && estado.nivel_escalonamento >= 3) {
-					if (estado.resposta_motorista === 'SOCORRO') centralEscDesc.textContent = 'MOTORISTA PEDIU SOCORRO POR VOZ!';
-					else if (estado.resposta_motorista === 'SEM_RESPOSTA') centralEscDesc.textContent = 'Motorista não respondeu à pergunta. Socorro mantido.';
-					else if (estado.aguardando_resposta_voz) centralEscDesc.textContent = 'Motorista ergueu a cabeça. Perguntando por voz se está bem...';
+				// Motorista respondeu "não" à pergunta por voz "Você está bem?": o alerta voltou
+				if (centralEscDesc && estado.resposta_motorista === 'SOCORRO') {
+					centralEscDesc.textContent = 'Motorista respondeu NÃO à pergunta "Você está bem?". Alerta retomado.';
 				}
 			} else {
 				esconderPainelEscalonamento();

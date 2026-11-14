@@ -1181,9 +1181,9 @@
 			} catch (e) { }
 
 			tocarToqueChamada();
-			// Pedido de socorro por voz já abre na fase 3: quem fala é a voz de emergência, não a do café
-			var pedidoSocorro = ultimoEstadoRecebido && ultimoEstadoRecebido.origem_alerta === 'SOCORRO_VOZ';
-			if (!pedidoSocorro) tocarVozFemininaCafe();
+			// Alerta retomado já na fase 2 ou 3 (motorista respondeu "não"): quem fala é a voz da fase
+			var nivelAoAbrir = (ultimoEstadoRecebido && ultimoEstadoRecebido.nivel_escalonamento) || 1;
+			if (nivelAoAbrir < 2) tocarVozFemininaCafe();
 			if (callRingtoneTimer) clearInterval(callRingtoneTimer);
 			callRingtoneTimer = setInterval(tocarToqueChamada, 1600);
 
@@ -1315,7 +1315,7 @@
 			// "Socorro": o servidor reabre a emergência e a voz da fase 3 fala ("Chamando o socorro agora")
 			if (resposta === 'BEM') tocarVoz(vozRespostaBemAudio);
 			mostrarStatusVoz(resposta === 'BEM' ? 'Resposta: está bem. Boa viagem!' :
-				resposta === 'SOCORRO' ? 'Pedido de socorro enviado à Central.' : 'Sem resposta: a Central foi avisada.');
+				resposta === 'SOCORRO' ? 'Resposta: não. O alerta voltou.' : 'Sem resposta: a Central foi avisada.');
 			esconderPerguntaDepois(6000);
 			if (link.conectado()) link.comando('RESPOSTA_VOZ', { resposta: resposta });
 		}
