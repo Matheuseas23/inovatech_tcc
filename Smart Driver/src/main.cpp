@@ -137,14 +137,15 @@ const unsigned long ALARME_MINIMO_PESCADA_MS = 2000; // Alarme de pescada dura n
 // procurando algo mexendo a cabeça = 44 a 77 °/s. 35 °/s fica no meio, com folga dos dois lados.
 const float LIMIAR_MOVIMENTO_GRAUS_S    = 35.0; // Rotação acima disso = movimento voluntário
 const unsigned long JANELA_MOVIMENTO_MS = 600;  // Depois de mexer, espera a cabeça assentar
-const unsigned long CONFIRMA_PESCADA_MS = 500;  // Pescada vale se a cabeça assentar parada em até 0,5 s
+const unsigned long CONFIRMA_PESCADA_MS = 1200; // Janela depois da queda brusca para a cabeça assentar
+const unsigned long PESCADA_PARADA_MS   = 400;  // ...e ficar PARADA lá embaixo esse tempo (olhada rápida no painel não conta)
 
 // Calibração guiada por bipes (sem PC por perto, ex.: power bank nas costas):
 // ao ligar, 1 bip -> 4 s para pôr os óculos e olhar para frente -> 2 bips = calibrado.
 // Cabeça mexendo durante a medição = 1 bip longo e nova tentativa em 2 s.
 const unsigned long ESPERA_CALIBRACAO_MS     = 4000;
 const unsigned long NOVA_TENTATIVA_CALIB_MS  = 2000;
-const float AGITACAO_MAX_CALIBRACAO_G        = 0.08; // Cabeça parada fica bem abaixo disso
+const float AGITACAO_MAX_CALIBRACAO_G        = 0.12; // Cabeça parada no rosto mede ~0,09 g (14/11): 0,08 falhava
 
 // TESTE (23/10/2026): os sensores só valem com o monitoramento ativado no app do motorista.
 // Ao ativar, o buzzer toca "pan, pan-ran-ran-pan... pan, pan" e os sensores entram em ação.
@@ -928,15 +929,24 @@ void loop() {
   bool movimentoAtivo = ultimoMovimentoMs && agora - ultimoMovimentoMs < JANELA_MOVIMENTO_MS;
   bool inclinadoDemais = cabecaInclinada && (alarmeAtivo || !movimentoAtivo);
 
-  // Pescada: queda brusca que "assenta" parada lá embaixo em até 0,5 s (quem pega algo segue se mexendo)
-  if (mpu.valida && mpu.pescada) pescadaCandidataMs = agora;
+  // Pescada: queda brusca que fica PARADA lá embaixo por 0,4 s seguidos (medido em 14/11: uma olhada
+  // rápida no painel para um instante antes de voltar e disparava; quem pega algo segue se mexendo)
+  if (mpu.valida && mpu.pescada && !pescadaCandidataMs) pescadaCandidataMs = agora;
   bool pescadaSono = false;
+  static unsigned long pescadaParadaDesdeMs = 0;
   if (pescadaCandidataMs) {
     if (agora - pescadaCandidataMs > CONFIRMA_PESCADA_MS) {
       pescadaCandidataMs = 0;
+      pescadaParadaDesdeMs = 0;
     } else if (mpu.inclinacao > PESCADA_INCLINACAO_MIN && mpu.giro < LIMIAR_MOVIMENTO_GRAUS_S) {
-      pescadaSono = true;
-      pescadaCandidataMs = 0;
+      if (!pescadaParadaDesdeMs) pescadaParadaDesdeMs = agora;
+      if (agora - pescadaParadaDesdeMs >= PESCADA_PARADA_MS) {
+        pescadaSono = true;
+        pescadaCandidataMs = 0;
+        pescadaParadaDesdeMs = 0;
+      }
+    } else {
+      pescadaParadaDesdeMs = 0; // Mexeu ou voltou: recomeça a contagem de "parada"
     }
   }
 
@@ -1337,7 +1347,9 @@ int montarPayload(const DadosTelemetria &d, uint32_t seq, char *buf, size_t cap)
     d.tempoCabecaBaixaMs, LIMIAR_CABECA_BAIXA_MS,
     d.buzzer, d.rele1, d.rele1, d.rele2, d.testeAtivo ? 1 : 0,
     d.estado,
-    d.pitch, d.roll, d.inclinacao, d.giro,
+    // O GY-521 está montado girado 90° na haste: abaixar a cabeça aparece no eixo "roll" do chip.
+    // Para a Central mostrar certo, troca os eixos (pitch = cabeça para frente, positivo para baixo).
+    -d.roll, d.pitch, d.inclinacao, d.giro,
     d.pescadaDetectada ? "true" : "false", d.mpuOnline ? "true" : "false",
     d.mpuCalibrado ? "true" : "false", statusMpu,
     ssid.c_str(), conectado ? WiFi.RSSI() : 0, ip.c_str());
