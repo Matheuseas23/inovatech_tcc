@@ -353,6 +353,20 @@
 			color: #ffffff;
 		}
 
+		.driver-pergunta-box {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			padding: 10px;
+			border: 1px solid #ffdd66;
+			border-radius: 10px;
+			background: rgba(2, 11, 18, 0.6);
+		}
+
+		.driver-pergunta-box[hidden] {
+			display: none;
+		}
+
 		.driver-voz-status {
 			padding: 8px;
 			border-radius: 8px;
@@ -616,12 +630,6 @@
 					<a href="tel:191"><span class="material-symbols-outlined g-icon">local_police</span>PRF 191</a>
 				</div>
 				<small>A Central já recebeu sua localização. Toque para abrir o discador.</small>
-				<!-- Pergunta por voz depois que o motorista ergue a cabeça (mãos livres) -->
-				<div class="driver-voz-status" id="driverVozStatus" hidden></div>
-				<div class="driver-voz-botoes" id="driverVozBotoes" hidden>
-					<button type="button" id="btnRespostaBem">ESTOU BEM</button>
-					<button type="button" id="btnRespostaSocorro">PRECISO DE SOCORRO</button>
-				</div>
 			</div>
 		</div>
 
@@ -736,6 +744,15 @@
 			<p style="font-size:11px;color:var(--muted);line-height:1.6;margin:0" id="driverFeedbackMsg">
 				Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.
 			</p>
+
+			<!-- Pergunta por voz "Você está bem?" depois que o alerta se encerra pela postura (mãos livres) -->
+			<div class="driver-pergunta-box" id="driverPerguntaBox" hidden>
+				<div class="driver-voz-status" id="driverVozStatus"></div>
+				<div class="driver-voz-botoes" id="driverVozBotoes">
+					<button type="button" id="btnRespostaBem">ESTOU BEM</button>
+					<button type="button" id="btnRespostaSocorro">PRECISO DE SOCORRO</button>
+				</div>
+			</div>
 
 			<!-- BOTÕES DE CONTINGÊNCIA / SIMULAÇÃO DE ALERTA DO MOTORISTA (EMBAIXO DA SITUAÇÃO ATUAL) -->
 			<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(8,222,235,0.25)">
@@ -1164,7 +1181,9 @@
 			} catch (e) { }
 
 			tocarToqueChamada();
-			tocarVozFemininaCafe();
+			// Pedido de socorro por voz já abre na fase 3: quem fala é a voz de emergência, não a do café
+			var pedidoSocorro = ultimoEstadoRecebido && ultimoEstadoRecebido.origem_alerta === 'SOCORRO_VOZ';
+			if (!pedidoSocorro) tocarVozFemininaCafe();
 			if (callRingtoneTimer) clearInterval(callRingtoneTimer);
 			callRingtoneTimer = setInterval(tocarToqueChamada, 1600);
 
@@ -1204,8 +1223,8 @@
 
 		// ------------------------------------------------------------------------------
 		// COMANDO DE VOZ (mãos livres: o CTB proíbe segurar ou manusear o celular dirigindo)
-		// Fases 1 e 2: dizer "estou acordado" desliga o alerta.
-		// Fase 3 + cabeça erguida: pergunta "Você está bem?" e ouve "sim" ou "não / socorro".
+		// Quando o alerta se encerra pela postura (cabeça erguida), o servidor pede a pergunta:
+		// a voz fala "Você está bem?" e SÓ DEPOIS o microfone abre (o som do microfone não cobre a voz).
 		// "desliga o comando de voz" = COMANDO_DE_VOZ_ATIVO = false
 		// ------------------------------------------------------------------------------
 		var COMANDO_DE_VOZ_ATIVO = true;
@@ -1218,13 +1237,14 @@
 		// "Não" vem antes: "não estou bem" é pedido de socorro (na dúvida, fica do lado seguro)
 		var PALAVRAS_SOCORRO = /(^|\s)(n[aã]o|socorro|ajuda|me ajud|machucad|ferid)/;
 		var PALAVRAS_BEM = /(^|\s)(sim(?=$|[\s.,!?])|estou bem|t[oô] bem|tudo bem|tudo certo|estou acordad|t[oô] acordad)/;
-		var PALAVRAS_ACORDADO = /(estou acordad|t[oô] acordad|estou bem|t[oô] bem|estou alerta)/;
 		var escuta = null;
-		var modoEscuta = '';           // 'ACORDADO' (fases 1 e 2) | 'PERGUNTA' (fase 3)
+		var modoEscuta = '';
 		var perguntaEmAndamento = false;
 		var tentativasPergunta = 0;
+		var ultimaPerguntaId = null;
 		var driverVozStatus = document.getElementById('driverVozStatus');
 		var driverVozBotoes = document.getElementById('driverVozBotoes');
+		var driverPerguntaBox = document.getElementById('driverPerguntaBox');
 
 		// Pedido com um toque (ao iniciar a viagem): no alerta o microfone já abre sozinho
 		function pedirPermissaoMicrofone() {
@@ -1235,9 +1255,13 @@
 		}
 
 		function mostrarStatusVoz(texto) {
-			if (!driverVozStatus) return;
-			driverVozStatus.hidden = !texto;
-			driverVozStatus.textContent = texto || '';
+			if (driverPerguntaBox) driverPerguntaBox.hidden = !texto;
+			if (driverVozStatus) driverVozStatus.textContent = texto || '';
+		}
+		var timerEsconderPergunta = null;
+		function esconderPerguntaDepois(ms) {
+			clearTimeout(timerEsconderPergunta);
+			timerEsconderPergunta = setTimeout(function () { if (!perguntaEmAndamento) mostrarStatusVoz(''); }, ms);
 		}
 
 		function pararEscuta() {
@@ -1283,22 +1307,23 @@
 		}
 
 		function responderPergunta(resposta) {
+			if (!perguntaEmAndamento) return;
 			pararEscuta();
 			perguntaEmAndamento = false;
-			tocarVoz(resposta === 'BEM' ? vozRespostaBemAudio : vozRespostaSocorroAudio);
-			mostrarStatusVoz(resposta === 'BEM' ? 'Resposta: está bem. Encerrando o alerta...' :
-				resposta === 'SOCORRO' ? 'Pedido de socorro enviado à Central.' : 'Sem resposta: o socorro continua a caminho.');
-			if (driverVozBotoes) driverVozBotoes.hidden = resposta === 'BEM';
+			if (driverVozBotoes) driverVozBotoes.hidden = true;
+			// "Socorro": o servidor reabre a emergência e a voz da fase 3 fala ("Chamando o socorro agora")
+			if (resposta === 'BEM') tocarVoz(vozRespostaBemAudio);
+			mostrarStatusVoz(resposta === 'BEM' ? 'Resposta: está bem. Boa viagem!' :
+				resposta === 'SOCORRO' ? 'Pedido de socorro enviado à Central.' : 'Sem resposta: a Central foi avisada.');
+			esconderPerguntaDepois(6000);
 			if (link.conectado()) link.comando('RESPOSTA_VOZ', { resposta: resposta });
-			else if (resposta === 'BEM') simuladorLocal.parar();
 		}
 
 		function fazerPerguntaBem() {
 			perguntaEmAndamento = true;
 			tentativasPergunta++;
 			pararEscuta();
-			// Silêncio no toque de chamada para o microfone ouvir o motorista
-			if (callRingtoneTimer) { clearInterval(callRingtoneTimer); callRingtoneTimer = null; }
+			clearTimeout(timerEsconderPergunta);
 			if (driverVozBotoes) driverVozBotoes.hidden = false;
 			mostrarStatusVoz('Pergunta: você está bem?');
 			vozPerguntaBemAudio.onended = function () {
@@ -1318,29 +1343,20 @@
 			tocarVoz(vozPerguntaBemAudio);
 		}
 
-		// Chamada a cada estado do servidor: decide se ouve "estou acordado" ou faz a pergunta
+		// Chamada a cada estado do servidor: faz a pergunta uma vez por alerta encerrado pela postura
 		function atualizarEscutaPorVoz(estado) {
 			if (!COMANDO_DE_VOZ_ATIVO) return;
-			var nivel = estado.alerta_travado ? (estado.nivel_escalonamento || 1) : 0;
-			if (estado.aguardando_resposta_voz) {
-				if (!perguntaEmAndamento) { tentativasPergunta = 0; fazerPerguntaBem(); }
-				return;
-			}
-			if (!estado.alerta_travado) {
+			var p = estado.pergunta_bem_estar;
+			if (p && p.aberta && p.id !== ultimaPerguntaId) {
+				ultimaPerguntaId = p.id;
+				tentativasPergunta = 0;
+				fazerPerguntaBem();
+			} else if (perguntaEmAndamento && (!p || !p.aberta || estado.alerta_travado)) {
+				// Respondida em outro lugar, prazo esgotado ou alerta novo: para de perguntar
 				perguntaEmAndamento = false;
-				if (driverVozBotoes) driverVozBotoes.hidden = true;
-				mostrarStatusVoz('');
-			}
-			var chamadaAberta = driverFullscreenCall.classList.contains('active');
-			if (nivel >= 1 && nivel < 3 && chamadaAberta) {
-				if (modoEscuta !== 'ACORDADO') {
-					ouvir('ACORDADO', 600000, function (texto) {
-						if (PALAVRAS_ACORDADO.test(texto)) { confirmarAlertaMotorista(); return true; }
-						return false;
-					});
-				}
-			} else if (modoEscuta === 'ACORDADO') {
 				pararEscuta();
+				try { vozPerguntaBemAudio.pause(); } catch (e) { }
+				mostrarStatusVoz('');
 			}
 		}
 
@@ -1348,10 +1364,6 @@
 		var btnRespostaSocorro = document.getElementById('btnRespostaSocorro');
 		if (btnRespostaBem) btnRespostaBem.addEventListener('click', function () { responderPergunta('BEM'); });
 		if (btnRespostaSocorro) btnRespostaSocorro.addEventListener('click', function () { responderPergunta('SOCORRO'); });
-		if (vozDisponivel) {
-			var subChamada = document.getElementById('driverCallEscalationSub');
-			if (subChamada) subChamada.textContent = 'Erga a cabeça por 3 segundos ou diga "ESTOU ACORDADO": o alerta desliga sozinho, sem tocar no celular.';
-		}
 
 		function fecharChamadaTelaCheia() {
 			// Só limpa se a chamada estiver aberta (evita cortar a voz de "boa viagem" a cada pacote)
