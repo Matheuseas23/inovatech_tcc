@@ -1232,6 +1232,9 @@
 		var btnCentralConfirmarResgate = document.getElementById('btnCentralConfirmarResgate');
 		var btnCentralDesativarEscalonamento = document.getElementById('btnCentralDesativarEscalonamento');
 
+		// Vozes das fases 2 e 3 desligadas a pedido do Matheus (14/11): na Central toca só a sirene.
+		// "volta as vozes da Central" = VOZES_CENTRAL = true
+		var VOZES_CENTRAL = false;
 		var vozCritico10sAudio = new Audio('alerta-critico-10s.mp3');
 		var vozAcidente20sAudio = new Audio('alerta-acidente-20s.mp3');
 		var ultimoNivelEscalonamento = 0;
@@ -1405,9 +1408,9 @@
 				var sCritico = formatarSegundos(critico, 0);
 				var sAcidente = formatarSegundos(acidente, 0);
 				if (nivel === 1) {
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · ALERTA';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> MOTORISTA COM SONO';
-					if (centralEscDesc) centralEscDesc.textContent = 'Óculos e celular alertando o motorista.';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO CELULAR';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
+					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico (Buzzer/Relés) e a chamada no celular foram disparados. Se o condutor não confirmar nem mantiver a cabeça erguida por 3s, a Central entra em ALERTA CRÍTICO aos ' + sCritico + 's e em POSSÍVEL ACIDENTE aos ' + sAcidente + 's.';
 					if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
 					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
@@ -1419,7 +1422,7 @@
 					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
 					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
-					tocarAudioVoz(vozCritico10sAudio);
+					if (VOZES_CENTRAL) tocarAudioVoz(vozCritico10sAudio);
 				} else {
 					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · SOS';
 					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> POSSÍVEL ACIDENTE';
@@ -1428,7 +1431,7 @@
 					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
 					if (bannerAlertaAcidente) bannerAlertaAcidente.style.display = 'block';
-					tocarAudioVoz(vozAcidente20sAudio);
+					if (VOZES_CENTRAL) tocarAudioVoz(vozAcidente20sAudio);
 				}
 			}
 		}
