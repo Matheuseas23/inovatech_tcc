@@ -834,8 +834,18 @@
 		var vozRetomarAudio = new Audio('alerta-retomar-viagem.mp3');
 		[vozPausaInicioAudio, vozPausaFimAudio, vozRetomarAudio].forEach(function (a) { a.preload = 'auto'; });
 
+		// Uma voz por vez: antes de falar, interrompe qualquer outra que esteja tocando
+		function pararTodasAsVozes(exceto) {
+			[vozCafeAudio, vozInicioAudio, vozPausaInicioAudio, vozPausaFimAudio, vozRetomarAudio].forEach(function (a) {
+				if (a === exceto) return;
+				try { a.pause(); a.currentTime = 0; } catch (e) { }
+			});
+			if ('speechSynthesis' in window) { try { window.speechSynthesis.cancel(); } catch (e) { } }
+		}
+
 		function tocarVoz(audio) {
 			try {
+				pararTodasAsVozes(audio);
 				audio.pause();
 				audio.currentTime = 0;
 				audio.playbackRate = 1.05;
@@ -983,35 +993,11 @@
 		}
 
 		function tocarVozInicioViagem() {
-			try {
-				vozInicioAudio.pause();
-				vozInicioAudio.currentTime = 0;
-				vozInicioAudio.playbackRate = 1.05;
-				vozInicioAudio.volume = 1.0;
-				vozInicioAudio.play().catch(function () {
-					if ('speechSynthesis' in window) {
-						var msg = new SpeechSynthesisUtterance('Conectado à Central Tech. Lembrete: ligue os faróis. Dirija com cuidado e boa viagem!');
-						msg.lang = 'pt-BR';
-						window.speechSynthesis.speak(msg);
-					}
-				});
-			} catch (e) { }
+			tocarVoz(vozInicioAudio);
 		}
 
 		function tocarVozFemininaCafe() {
-			try {
-				vozCafeAudio.pause();
-				vozCafeAudio.currentTime = 0;
-				vozCafeAudio.playbackRate = 1.05;
-				vozCafeAudio.volume = 1.0;
-				vozCafeAudio.play().catch(function () {
-					if ('speechSynthesis' in window) {
-						var msg = new SpeechSynthesisUtterance('Atenção motorista! Cansaço detectado. Pare o veículo e descanse em uma área segura.');
-						msg.lang = 'pt-BR';
-						window.speechSynthesis.speak(msg);
-					}
-				});
-			} catch (e) { }
+			tocarVoz(vozCafeAudio);
 		}
 
 		// Mantém a tela acesa durante a viagem (o Android libera o bloqueio ao trocar de aba)
