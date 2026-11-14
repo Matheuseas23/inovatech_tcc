@@ -1236,7 +1236,7 @@
 		var vozRespostaSocorroAudio = new Audio('alerta-resposta-socorro.mp3');
 		// "Não" vem antes: "não estou bem" é pedido de socorro (na dúvida, fica do lado seguro)
 		var PALAVRAS_SOCORRO = /(^|\s)(n[aã]o|socorro|ajuda|me ajud|machucad|ferid)/;
-		var PALAVRAS_BEM = /(^|\s)(sim(?=$|[\s.,!?])|estou bem|t[oô] bem|tudo bem|tudo certo|estou acordad|t[oô] acordad)/;
+		var PALAVRAS_BEM = /(^|\s)(sim(?=$|[\s.,!?])|estou bem|t[oô] bem|t[aá] bem|tudo bem|tudo certo|estou acordad|t[oô] acordad)/;
 		var escuta = null;
 		var modoEscuta = '';
 		var perguntaEmAndamento = false;
@@ -1285,6 +1285,7 @@
 				r.lang = 'pt-BR';
 				r.interimResults = true;
 				r.maxAlternatives = 3;
+				r.continuous = true; // Fica aberto enquanto ela pergunta e ele responde (menos bipes de reabrir)
 				r.onresult = function (ev) {
 					for (var i = ev.resultIndex; i < ev.results.length; i++) {
 						for (var j = 0; j < ev.results[i].length; j++) {
@@ -1325,22 +1326,31 @@
 			pararEscuta();
 			clearTimeout(timerEsconderPergunta);
 			if (driverVozBotoes) driverVozBotoes.hidden = false;
-			mostrarStatusVoz('Pergunta: você está bem?');
+			mostrarStatusVoz(vozDisponivel ? 'Microfone aberto · Pergunta: você está bem?' : 'Pergunta: você está bem? (use os botões abaixo)');
+			// Ordem igual a uma ligação: o microfone abre (bip do Android), ela pergunta e o motorista responde.
+			// O microfone também ouve a pergunta dela: as palavras da pergunta são descontadas antes de interpretar.
+			ouvir('PERGUNTA', 11000, function (texto) {
+				var resposta = semEcoDaPergunta(texto);
+				if (PALAVRAS_SOCORRO.test(resposta)) { responderPergunta('SOCORRO'); return true; }
+				if (PALAVRAS_BEM.test(resposta)) { responderPergunta('BEM'); return true; }
+				return false;
+			}, function () {
+				if (!perguntaEmAndamento) return;
+				if (tentativasPergunta < 2) fazerPerguntaBem();
+				else responderPergunta('SEM_RESPOSTA');
+			});
 			vozPerguntaBemAudio.onended = function () {
 				vozPerguntaBemAudio.onended = null;
-				if (!perguntaEmAndamento) return;
-				mostrarStatusVoz(vozDisponivel ? 'Ouvindo... diga SIM ou NÃO' : 'Microfone indisponível: use os botões abaixo');
-				ouvir('PERGUNTA', 8000, function (texto) {
-					if (PALAVRAS_SOCORRO.test(texto)) { responderPergunta('SOCORRO'); return true; }
-					if (PALAVRAS_BEM.test(texto)) { responderPergunta('BEM'); return true; }
-					return false;
-				}, function () {
-					if (!perguntaEmAndamento) return;
-					if (tentativasPergunta < 2) fazerPerguntaBem();
-					else responderPergunta('SEM_RESPOSTA');
-				});
+				if (perguntaEmAndamento && vozDisponivel) mostrarStatusVoz('Ouvindo... diga SIM ou NÃO');
 			};
-			tocarVoz(vozPerguntaBemAudio);
+			// Espera o bip do microfone terminar antes de falar
+			setTimeout(function () { if (perguntaEmAndamento) tocarVoz(vozPerguntaBemAudio); }, vozDisponivel ? 700 : 0);
+		}
+
+		// Tira da transcrição o que a própria voz da pergunta falou ("Você está bem? Responda sim ou não")
+		var ECO_PERGUNTA = /voc[eê]\s+(es)?t[aá]\s+bem|est[aá]\s+bem|respond[ae]|sim\s+ou\s+n[aã]o/g;
+		function semEcoDaPergunta(texto) {
+			return texto.replace(ECO_PERGUNTA, ' ').replace(/[?!.,]/g, ' ').replace(/\s+/g, ' ').trim();
 		}
 
 		// Chamada a cada estado do servidor: faz a pergunta uma vez por alerta encerrado pela postura
