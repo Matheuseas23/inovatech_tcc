@@ -319,8 +319,58 @@
 		}
 
 		.btn-pausa[hidden],
-		.pausa-opcoes[hidden] {
+		.pausa-opcoes[hidden],
+		.descanso-seletor[hidden] {
 			display: none;
+		}
+
+		.descanso-seletor {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 10px;
+			padding: 12px;
+			background: rgba(2, 11, 18, 0.7);
+			border: 1px solid rgba(255, 170, 0, 0.6);
+			border-radius: 10px;
+		}
+
+		.descanso-titulo {
+			font-size: 10px;
+			color: var(--muted);
+			letter-spacing: 1px;
+		}
+
+		.descanso-controle {
+			display: flex;
+			align-items: center;
+			gap: 18px;
+		}
+
+		.descanso-controle strong {
+			min-width: 120px;
+			text-align: center;
+			font-family: 'Space Mono', monospace;
+			font-size: 22px;
+			color: #ffffff;
+		}
+
+		.descanso-controle button {
+			width: 48px;
+			height: 48px;
+			border-radius: 50%;
+			background: rgba(255, 170, 0, 0.12);
+			border: 1px solid #ffaa00;
+			color: #ffcc55;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			touch-action: manipulation;
+		}
+
+		.descanso-controle button:disabled {
+			opacity: 0.35;
 		}
 
 		.pausa-opcoes {
@@ -525,11 +575,28 @@
 				<button type="button" data-motivo="CAFE" data-minutos="15">
 					<span class="material-symbols-outlined g-icon">local_cafe</span><strong>CAFÉ</strong><small>15 min</small>
 				</button>
-				<button type="button" data-motivo="DESCANSO" data-minutos="30">
-					<span class="material-symbols-outlined g-icon">bedtime</span><strong>DESCANSO</strong><small>30 min</small>
+				<button type="button" data-motivo="DESCANSO" data-escolher-tempo="1">
+					<span class="material-symbols-outlined g-icon">bedtime</span><strong>DESCANSO</strong><small>escolher tempo</small>
 				</button>
 				<button type="button" data-motivo="REFEICAO" data-minutos="60">
 					<span class="material-symbols-outlined g-icon">restaurant</span><strong>REFEIÇÃO</strong><small>60 min</small>
+				</button>
+			</div>
+			<!-- Descanso: o motorista escolhe quanto tempo vai descansar (30 min a 11 h) -->
+			<div class="descanso-seletor" id="descansoSeletor" hidden>
+				<span class="descanso-titulo">TEMPO DE DESCANSO</span>
+				<div class="descanso-controle">
+					<button type="button" id="btnDescansoMenos" aria-label="Diminuir 30 minutos">
+						<span class="material-symbols-outlined g-icon">remove</span>
+					</button>
+					<strong id="descansoValor">1 h</strong>
+					<button type="button" id="btnDescansoMais" aria-label="Aumentar 30 minutos">
+						<span class="material-symbols-outlined g-icon">add</span>
+					</button>
+				</div>
+				<button type="button" class="btn-pausa" id="btnIniciarDescanso">
+					<span class="material-symbols-outlined g-icon">bedtime</span>
+					<span>INICIAR DESCANSO</span>
 				</button>
 			</div>
 		</section>
@@ -665,6 +732,7 @@
 				localStorage.setItem('inovatech_pausa_matheus_garcia', pausaAtual ? JSON.stringify(pausaAtual) : '');
 			} catch (e) { }
 			if (pausaOpcoes) pausaOpcoes.hidden = true;
+			if (descansoSeletor) descansoSeletor.hidden = true;
 			if (btnPausar) btnPausar.hidden = !turnoAtivo;
 			if (driverTimerLabel) driverTimerLabel.textContent = 'CRONÔMETRO DE TOLERÂNCIA:';
 
@@ -711,7 +779,8 @@
 
 		function formatarRelogio(ms) {
 			var s = Math.floor(Math.abs(ms) / 1000);
-			return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+			var mmss = String(Math.floor(s / 60) % 60).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+			return s >= 3600 ? Math.floor(s / 3600) + ':' + mmss : mmss;
 		}
 
 		// Contagem regressiva da pausa (1x por segundo); ao acabar, avisa uma vez e espera o motorista retomar
@@ -786,27 +855,65 @@
 		}
 
 		// Botão PAUSAR abre as opções; escolher uma desliga sensores e alertas até o motorista retomar
+		var descansoSeletor = document.getElementById('descansoSeletor');
+		var descansoValor = document.getElementById('descansoValor');
+		var btnDescansoMenos = document.getElementById('btnDescansoMenos');
+		var btnDescansoMais = document.getElementById('btnDescansoMais');
+		var DESCANSO_MIN = 30, DESCANSO_MAX = 660, DESCANSO_PASSO = 30; // 30 min a 11 h (descanso entre jornadas)
+		var descansoMinutos = 60;
+
+		function formatarDuracao(minutos) {
+			var h = Math.floor(minutos / 60), m = minutos % 60;
+			if (!h) return m + ' min';
+			return h + ' h' + (m ? ' ' + m + ' min' : '');
+		}
+
+		function mostrarDescansoEscolhido() {
+			if (descansoValor) descansoValor.textContent = formatarDuracao(descansoMinutos);
+			if (btnDescansoMenos) btnDescansoMenos.disabled = descansoMinutos <= DESCANSO_MIN;
+			if (btnDescansoMais) btnDescansoMais.disabled = descansoMinutos >= DESCANSO_MAX;
+		}
+
+		function iniciarPausa(motivo, minutos) {
+			if (statusViagem !== 'EM_VIAGEM') return;
+			if (descansoSeletor) descansoSeletor.hidden = true;
+			definirStatusViagem('PAUSA', { motivo: motivo, rotulo: ROTULOS_PAUSA[motivo], minutos: minutos, inicioMs: Date.now() });
+			tocarBipDuplo(880, 523.25);
+			tocarVoz(vozPausaInicioAudio);
+			enviarTurnoAoServidor();
+		}
+
 		if (btnPausar) {
 			btnPausar.addEventListener('click', function () {
 				if (pausaOpcoes) pausaOpcoes.hidden = !pausaOpcoes.hidden;
+				if (descansoSeletor) descansoSeletor.hidden = true;
 			});
 		}
 		if (pausaOpcoes) {
 			pausaOpcoes.addEventListener('click', function (e) {
 				var botao = e.target.closest('button[data-motivo]');
-				if (!botao || statusViagem !== 'EM_VIAGEM') return;
-				var motivo = botao.getAttribute('data-motivo');
-				definirStatusViagem('PAUSA', {
-					motivo: motivo,
-					rotulo: ROTULOS_PAUSA[motivo],
-					minutos: Number(botao.getAttribute('data-minutos')),
-					inicioMs: Date.now()
-				});
-				tocarBipDuplo(880, 523.25);
-				tocarVoz(vozPausaInicioAudio);
-				enviarTurnoAoServidor();
+				if (!botao) return;
+				// Descanso abre a escolha do tempo; café e refeição já começam a pausa
+				if (botao.hasAttribute('data-escolher-tempo')) {
+					if (descansoSeletor) descansoSeletor.hidden = !descansoSeletor.hidden;
+					mostrarDescansoEscolhido();
+					return;
+				}
+				iniciarPausa(botao.getAttribute('data-motivo'), Number(botao.getAttribute('data-minutos')));
 			});
 		}
+		if (btnDescansoMenos) btnDescansoMenos.addEventListener('click', function () {
+			descansoMinutos = Math.max(DESCANSO_MIN, descansoMinutos - DESCANSO_PASSO);
+			mostrarDescansoEscolhido();
+		});
+		if (btnDescansoMais) btnDescansoMais.addEventListener('click', function () {
+			descansoMinutos = Math.min(DESCANSO_MAX, descansoMinutos + DESCANSO_PASSO);
+			mostrarDescansoEscolhido();
+		});
+		var btnIniciarDescanso = document.getElementById('btnIniciarDescanso');
+		if (btnIniciarDescanso) btnIniciarDescanso.addEventListener('click', function () {
+			iniciarPausa('DESCANSO', descansoMinutos);
+		});
 
 		function alternarEstadoTurno() {
 			var novoEstado = !turnoAtivo;

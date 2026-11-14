@@ -564,9 +564,14 @@ function processarTelemetriaESP32(p, fonte) {
 // Modo pausa (café, refeição, descanso): sensores e alertas desligados ("mon":0) até o motorista retomar
 const MOTIVOS_PAUSA = { CAFE: 'Café', REFEICAO: 'Refeição', DESCANSO: 'Descanso' };
 
+function formatarMinutos(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  return h ? `${h} h${m ? ` ${m} min` : ''}` : `${m} min`;
+}
+
 function normalizarPausa(p) {
   const motivo = MOTIVOS_PAUSA[p && p.motivo] ? p.motivo : 'DESCANSO';
-  const duracao = Math.min(4 * 3600000, Math.max(60000, Number(p && p.duracao_ms) || 30 * 60000));
+  const duracao = Math.min(12 * 3600000, Math.max(60000, Number(p && p.duracao_ms) || 30 * 60000));
   return { motivo, rotulo: MOTIVOS_PAUSA[motivo], inicio: new Date().toISOString(), duracao_ms: duracao, encerrada: false };
 }
 
@@ -592,7 +597,7 @@ function atualizarTurno(statusViagem, origem, pausa) {
     encerrarAlerta('Alerta encerrado: monitoramento pausado pelo motorista');
   }
   let mensagem = novoStatus === 'EM_VIAGEM' ? 'Viagem iniciada' : 'Monitoramento desativado';
-  if (novoStatus === 'PAUSA') mensagem = `Pausa: ${motorista.pausa.rotulo} (${Math.round(motorista.pausa.duracao_ms / 60000)} min)`;
+  if (novoStatus === 'PAUSA') mensagem = `Pausa: ${motorista.pausa.rotulo} (${formatarMinutos(Math.round(motorista.pausa.duracao_ms / 60000))})`;
   else if (pausaAnterior) mensagem = `Viagem retomada após ${Math.max(1, Math.round((Date.now() - new Date(pausaAnterior.inicio).getTime()) / 60000))} min de pausa`;
   registrarEvento('TURNO_MOTORISTA', `${motorista.nome}: ${mensagem}`, `Origem: ${origem}`);
   broadcast({ tipo: 'STATUS_MOTORISTA', motorista: motorista.nome, status_viagem: novoStatus, estado });

@@ -1074,7 +1074,7 @@
 					if (garciaBtnIcon) garciaBtnIcon.textContent = 'pause_circle';
 					if (garciaBtnText) garciaBtnText.textContent = 'Motorista em Pausa';
 					atualizarContagemPausaGarcia();
-					exibirToastCentral('MOTORISTA EM PAUSA: ' + String(garciaPausa.rotulo || 'Descanso').toUpperCase() + ' (' + Math.round((garciaPausa.duracao_ms || 0) / 60000) + ' MIN)');
+					exibirToastCentral('MOTORISTA EM PAUSA: ' + String(garciaPausa.rotulo || 'Descanso').toUpperCase() + ' (' + formatarMinutosPausa(Math.round((garciaPausa.duracao_ms || 0) / 60000)) + ')');
 				} else if (garciaBadgeStatus) {
 					garciaBadgeStatus.style.borderColor = '';
 					garciaBadgeStatus.style.color = '';
@@ -1087,12 +1087,18 @@
 			}
 		}
 
+		function formatarMinutosPausa(min) {
+			var h = Math.floor(min / 60), m = min % 60;
+			return h ? h + ' H' + (m ? ' ' + m + ' MIN' : '') : m + ' MIN';
+		}
+
 		// Contagem da pausa no card da frota (o motorista retoma pelo app)
 		function atualizarContagemPausaGarcia() {
 			if (!garciaPausa || !garciaTelemetriaStatus) return;
 			var restanteMs = new Date(garciaPausa.inicio).getTime() + (garciaPausa.duracao_ms || 0) - Date.now();
 			var s = Math.floor(Math.abs(restanteMs) / 1000);
-			var relogio = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+			var relogio = String(Math.floor(s / 60) % 60).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+			if (s >= 3600) relogio = Math.floor(s / 3600) + ':' + relogio;
 			garciaTelemetriaStatus.style.color = restanteMs > 0 ? '#ffcc55' : '#ff4b72';
 			garciaTelemetriaStatus.textContent = restanteMs > 0 ? 'PAUSA · RESTAM ' + relogio : 'PAUSA ENCERRADA HÁ ' + relogio;
 		}
