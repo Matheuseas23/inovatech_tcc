@@ -734,7 +734,7 @@
 				if (!avisoFimPausaDado) {
 					avisoFimPausaDado = true;
 					tocarBipDuplo(660, 880);
-					falarAviso('Tempo de pausa encerrado. Quando estiver pronto, toque em retomar viagem.');
+					tocarVoz(vozPausaFimAudio);
 					if (navigator.vibrate) { try { navigator.vibrate([300, 150, 300]); } catch (e) { } }
 				}
 			}
@@ -759,13 +759,19 @@
 			} catch (e) { }
 		}
 
-		function falarAviso(texto) {
+		// Vozes da pausa e da retomada: mesma voz neural (Francisca) do alerta de fadiga
+		var vozPausaInicioAudio = new Audio('alerta-pausa-inicio.mp3');
+		var vozPausaFimAudio = new Audio('alerta-pausa-fim.mp3');
+		var vozRetomarAudio = new Audio('alerta-retomar-viagem.mp3');
+		[vozPausaInicioAudio, vozPausaFimAudio, vozRetomarAudio].forEach(function (a) { a.preload = 'auto'; });
+
+		function tocarVoz(audio) {
 			try {
-				if (!('speechSynthesis' in window)) return;
-				var msg = new SpeechSynthesisUtterance(texto);
-				msg.lang = 'pt-BR';
-				window.speechSynthesis.cancel();
-				window.speechSynthesis.speak(msg);
+				audio.pause();
+				audio.currentTime = 0;
+				audio.playbackRate = 1.05;
+				audio.volume = 1.0;
+				audio.play().catch(function () { });
 			} catch (e) { }
 		}
 
@@ -797,15 +803,20 @@
 					inicioMs: Date.now()
 				});
 				tocarBipDuplo(880, 523.25);
-				falarAviso('Pausa iniciada. Sensores desligados. Bom descanso!');
+				tocarVoz(vozPausaInicioAudio);
 				enviarTurnoAoServidor();
 			});
 		}
 
 		function alternarEstadoTurno() {
 			var novoEstado = !turnoAtivo;
+			var voltandoDaPausa = statusViagem === 'PAUSA';
 			sincronizarEstadoTurnoUI(novoEstado);
-			if (novoEstado) tocarVozInicioViagem();
+			// Retomar depois da pausa: só o lembrete (sem "Conectado à Central Tech")
+			if (novoEstado) {
+				if (voltandoDaPausa) tocarVoz(vozRetomarAudio);
+				else tocarVozInicioViagem();
+			}
 
 			// Feedback sonoro tático de ativação
 			try {
