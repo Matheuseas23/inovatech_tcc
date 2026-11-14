@@ -137,6 +137,11 @@ const unsigned long ALARME_MINIMO_PESCADA_MS = 2000; // Alarme de pescada dura n
 // procurando algo mexendo a cabeça = 44 a 77 °/s. 35 °/s fica no meio, com folga dos dois lados.
 const float LIMIAR_MOVIMENTO_GRAUS_S    = 35.0; // Rotação acima disso = movimento voluntário
 const unsigned long JANELA_MOVIMENTO_MS = 600;  // Depois de mexer, espera a cabeça assentar
+// "Tec" forte em todas as funções (pedido do Matheus, 14/11): quando só um relé muda de estado
+// (aviso, alarme, teste), o outro dá um pulso no mesmo instante, e os dois estalam juntos.
+// "tira o tec duplo" = TEC_DUPLO_EM_TUDO = false
+const bool TEC_DUPLO_EM_TUDO = true;
+const unsigned long PULSO_TEC_MS = 100; // Tempo para a lâmina do relé completar o curso (estalo cheio)
 const unsigned long CONFIRMA_PESCADA_MS = 1200; // Janela depois da queda brusca para a cabeça assentar
 const unsigned long PESCADA_PARADA_MS   = 400;  // ...e ficar PARADA lá embaixo esse tempo (olhada rápida no painel não conta)
 
@@ -331,6 +336,9 @@ void setup() {
   gpio_set_drive_capability((gpio_num_t)PINO_BUZZER, GPIO_DRIVE_CAP_3);
   pinMode(PINO_RELE_1, OUTPUT);
   pinMode(PINO_RELE_2, OUTPUT);
+  // Comando dos relés com a corrente máxima do pino: optoacoplador bem saturado = "tec" firme
+  gpio_set_drive_capability((gpio_num_t)PINO_RELE_1, GPIO_DRIVE_CAP_3);
+  gpio_set_drive_capability((gpio_num_t)PINO_RELE_2, GPIO_DRIVE_CAP_3);
   pinMode(PINO_LED_REDE, OUTPUT);
 
   // LED RGB: perna comum no GND virtual (ou no + se for ânodo comum); cores por PWM com a
@@ -748,10 +756,10 @@ void tocarDespertador() {
 void tecAspas() {
   digitalWrite(PINO_RELE_1, NIVEL_RELE_LIGADO);
   digitalWrite(PINO_RELE_2, NIVEL_RELE_LIGADO);
-  delay(60);
+  delay(PULSO_TEC_MS);
   digitalWrite(PINO_RELE_1, NIVEL_RELE_DESLIGADO);
   digitalWrite(PINO_RELE_2, NIVEL_RELE_DESLIGADO);
-  delay(60);
+  delay(PULSO_TEC_MS);
 }
 
 // Calibra e avisa pelo buzzer: 2 bips curtos = ok; 1 bip longo = falhou (tenta de novo sozinho)
@@ -1020,6 +1028,19 @@ void loop() {
   // "Sinal de vida" (comando CLAUDE:OLA): bip de 0,5 s quando o Claude acessa a placa pela serial
   bool bipOla = bipOlaAteMs && (long)(bipOlaAteMs - agora) > 0;
   aplicarAtuadores(buzzerLigado || bipOla, rele1Ligado, rele2Ligado);
+
+  // Tec duplo: só um relé mudou -> o outro pulsa junto (inverte por um instante e volta ao estado certo)
+  static bool rele1Anterior = false, rele2Anterior = false;
+  bool mudou1 = rele1Ligado != rele1Anterior, mudou2 = rele2Ligado != rele2Anterior;
+  if (TEC_DUPLO_EM_TUDO && mudou1 != mudou2) {
+    uint8_t pinoOutro = mudou1 ? PINO_RELE_2 : PINO_RELE_1;
+    bool outroLigado  = mudou1 ? rele2Ligado : rele1Ligado;
+    digitalWrite(pinoOutro, outroLigado ? NIVEL_RELE_DESLIGADO : NIVEL_RELE_LIGADO);
+    delay(PULSO_TEC_MS);
+    digitalWrite(pinoOutro, outroLigado ? NIVEL_RELE_LIGADO : NIVEL_RELE_DESLIGADO);
+  }
+  rele1Anterior = rele1Ligado;
+  rele2Anterior = rele2Ligado;
 
   // LED RGB (fica na lente, no campo de visão do motorista): vermelho piscando = alarme (estímulo
   // para acordar); roxo piscando = acelerômetro desconectado; amarelo = aviso (1 s); azul piscando =
