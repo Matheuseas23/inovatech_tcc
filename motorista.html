@@ -298,6 +298,79 @@
 			display: flex;
 		}
 
+		/* Modo pausa (café / refeição / descanso) */
+		.btn-pausa {
+			width: 100%;
+			padding: 12px 14px;
+			background: rgba(255, 170, 0, 0.1);
+			border: 1px solid rgba(255, 170, 0, 0.7);
+			border-radius: 10px;
+			color: #ffcc55;
+			font-family: 'Space Mono', monospace;
+			font-size: 10.5px;
+			font-weight: 700;
+			letter-spacing: 0.5px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			cursor: pointer;
+			touch-action: manipulation;
+		}
+
+		.btn-pausa[hidden],
+		.pausa-opcoes[hidden] {
+			display: none;
+		}
+
+		.pausa-opcoes {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 8px;
+		}
+
+		.pausa-opcoes button {
+			padding: 12px 6px;
+			background: rgba(2, 11, 18, 0.7);
+			border: 1px solid rgba(255, 170, 0, 0.6);
+			border-radius: 10px;
+			color: #ffffff;
+			font-family: 'Space Mono', monospace;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 4px;
+			cursor: pointer;
+			touch-action: manipulation;
+		}
+
+		.pausa-opcoes button .g-icon {
+			font-size: 26px;
+			color: #ffcc55;
+		}
+
+		.pausa-opcoes button strong {
+			font-size: 10.5px;
+			letter-spacing: 0.5px;
+		}
+
+		.pausa-opcoes button small {
+			font-size: 10px;
+			color: var(--muted);
+		}
+
+		.btn-toggle-shift.em-pausa {
+			background: linear-gradient(135deg, #ffaa00 0%, #e08a00 100%);
+			border-color: #ffcc55;
+			color: #020b12;
+			box-shadow: 0 0 22px rgba(255, 170, 0, 0.45);
+		}
+
+		.driver-live-card.estado-pausa {
+			border-color: #ffaa00 !important;
+			box-shadow: inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.35), 0 8px 30px rgba(255, 170, 0, 0.3);
+		}
+
 		.painel-chip.warning {
 			border-color: rgba(255, 170, 0, 0.6);
 			background: rgba(255, 170, 0, 0.12);
@@ -442,6 +515,23 @@
 				<span class="material-symbols-outlined g-icon">power_settings_new</span>
 				<span id="shiftBtnText">ATIVAR MONITORAMENTO SEGURO / INICIAR VIAGEM</span>
 			</button>
+
+			<!-- MODO PAUSA: parada para café, refeição ou descanso (sensores e alertas desligados) -->
+			<button class="btn-pausa" id="btnPausar" type="button">
+				<span class="material-symbols-outlined g-icon">pause_circle</span>
+				<span>PAUSAR VIAGEM (CAFÉ · REFEIÇÃO · DESCANSO)</span>
+			</button>
+			<div class="pausa-opcoes" id="pausaOpcoes" hidden>
+				<button type="button" data-motivo="CAFE" data-minutos="15">
+					<span class="material-symbols-outlined g-icon">local_cafe</span><strong>CAFÉ</strong><small>15 min</small>
+				</button>
+				<button type="button" data-motivo="DESCANSO" data-minutos="30">
+					<span class="material-symbols-outlined g-icon">bedtime</span><strong>DESCANSO</strong><small>30 min</small>
+				</button>
+				<button type="button" data-motivo="REFEICAO" data-minutos="60">
+					<span class="material-symbols-outlined g-icon">restaurant</span><strong>REFEIÇÃO</strong><small>60 min</small>
+				</button>
+			</div>
 		</section>
 
 		<!-- CARD PRINCIPAL: ESTADO POSTURAL DO MOTORISTA AO VIVO (TOLERÂNCIA DEFINIDA PELA ESP32) -->
@@ -459,7 +549,7 @@
 			</div>
 
 			<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:6px">
-				<span style="font-size:11px;color:var(--muted)">CRONÔMETRO DE TOLERÂNCIA:</span>
+				<span style="font-size:11px;color:var(--muted)" id="driverTimerLabel">CRONÔMETRO DE TOLERÂNCIA:</span>
 				<div class="driver-timer-large" id="driverTimerCount">0.00s / 1.50s</div>
 			</div>
 
@@ -553,11 +643,44 @@
 			return (Math.max(0, ms) / 1000).toFixed(casas === undefined ? 2 : casas);
 		}
 
-		function sincronizarEstadoTurnoUI(ativo) {
-			turnoAtivo = !!ativo;
-			try { localStorage.setItem('inovatech_turno_matheus_garcia', turnoAtivo ? 'ATIVO' : 'INATIVO'); } catch (e) { }
+		// Situação da viagem: 'EM_VIAGEM' | 'INATIVO' | 'PAUSA' (café, refeição ou descanso)
+		var statusViagem = 'EM_VIAGEM';
+		var pausaAtual = null; // { motivo, rotulo, minutos, inicioMs } enquanto estiver em pausa
+		var avisoFimPausaDado = false;
+		var btnPausar = document.getElementById('btnPausar');
+		var pausaOpcoes = document.getElementById('pausaOpcoes');
+		var driverTimerLabel = document.getElementById('driverTimerLabel');
+		var ROTULOS_PAUSA = { CAFE: 'Café', DESCANSO: 'Descanso', REFEICAO: 'Refeição' };
 
-			if (turnoAtivo) {
+		function sincronizarEstadoTurnoUI(ativo) {
+			definirStatusViagem(ativo ? 'EM_VIAGEM' : 'INATIVO', null);
+		}
+
+		function definirStatusViagem(status, pausa) {
+			statusViagem = status;
+			pausaAtual = status === 'PAUSA' ? pausa : null;
+			turnoAtivo = status === 'EM_VIAGEM';
+			try {
+				localStorage.setItem('inovatech_turno_matheus_garcia', turnoAtivo ? 'ATIVO' : 'INATIVO');
+				localStorage.setItem('inovatech_pausa_matheus_garcia', pausaAtual ? JSON.stringify(pausaAtual) : '');
+			} catch (e) { }
+			if (pausaOpcoes) pausaOpcoes.hidden = true;
+			if (btnPausar) btnPausar.hidden = !turnoAtivo;
+			if (driverTimerLabel) driverTimerLabel.textContent = 'CRONÔMETRO DE TOLERÂNCIA:';
+
+			if (status === 'PAUSA') {
+				btnToggleShift.className = 'btn-toggle-shift em-pausa';
+				shiftStatusBadge.className = 'driver-badge-inactive';
+				shiftStatusBadge.innerHTML = '<span>EM PAUSA</span>';
+				shiftBtnText.textContent = 'RETOMAR VIAGEM';
+				fecharChamadaTelaCheia();
+				anim.status = 'PAUSA';
+				driverLiveCard.className = 'driver-live-card estado-pausa';
+				driverStatusHeadline.style.color = '#ffcc55';
+				driverBarFill.className = 'progresso-bar-fill warning';
+				avisoFimPausaDado = false;
+				atualizarContagemPausa();
+			} else if (turnoAtivo) {
 				btnToggleShift.className = 'btn-toggle-shift active-shift';
 				shiftStatusBadge.className = 'driver-badge-live';
 				shiftStatusBadge.innerHTML = '<span class="pulse-dot"></span><span>OPERANDO</span>';
@@ -565,6 +688,7 @@
 				if (ultimoEstadoRecebido) {
 					atualizarEstadoNoApp(ultimoEstadoRecebido);
 				} else {
+					driverLiveCard.className = 'driver-live-card estado-normal';
 					driverStatusHeadline.style.color = '#08deeb';
 					driverStatusHeadline.textContent = 'NORMAL: CABEÇA ERGUIDA';
 					driverFeedbackMsg.textContent = 'Monitoramento biométrico ativado. Mantenha a atenção constante na rodovia.';
@@ -585,12 +709,96 @@
 			}
 		}
 
+		function formatarRelogio(ms) {
+			var s = Math.floor(Math.abs(ms) / 1000);
+			return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+		}
+
+		// Contagem regressiva da pausa (1x por segundo); ao acabar, avisa uma vez e espera o motorista retomar
+		function atualizarContagemPausa() {
+			if (statusViagem !== 'PAUSA' || !pausaAtual) return;
+			var duracaoMs = pausaAtual.minutos * 60000;
+			var restanteMs = pausaAtual.inicioMs + duracaoMs - Date.now();
+			if (restanteMs > 0) {
+				driverStatusHeadline.textContent = 'EM PAUSA: ' + pausaAtual.rotulo.toUpperCase();
+				if (driverTimerLabel) driverTimerLabel.textContent = 'TEMPO RESTANTE:';
+				driverTimerCount.textContent = formatarRelogio(restanteMs);
+				driverBarFill.style.width = Math.min(100, (restanteMs / duracaoMs) * 100) + '%';
+				driverFeedbackMsg.textContent = 'Sensores e alertas desligados durante a pausa. Toque em RETOMAR VIAGEM quando voltar para a estrada.';
+			} else {
+				driverStatusHeadline.textContent = 'PAUSA ENCERRADA';
+				if (driverTimerLabel) driverTimerLabel.textContent = 'ALÉM DO PREVISTO:';
+				driverTimerCount.textContent = '+' + formatarRelogio(restanteMs);
+				driverBarFill.style.width = '0%';
+				driverFeedbackMsg.textContent = 'O tempo da pausa acabou. Quando estiver pronto, toque em RETOMAR VIAGEM.';
+				if (!avisoFimPausaDado) {
+					avisoFimPausaDado = true;
+					tocarBipDuplo(660, 880);
+					falarAviso('Tempo de pausa encerrado. Quando estiver pronto, toque em retomar viagem.');
+					if (navigator.vibrate) { try { navigator.vibrate([300, 150, 300]); } catch (e) { } }
+				}
+			}
+		}
+		setInterval(atualizarContagemPausa, 1000);
+
+		function tocarBipDuplo(f1, f2) {
+			try {
+				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+				if (audioCtx.state === 'suspended') audioCtx.resume();
+				[f1, f2].forEach(function (f, i) {
+					var t = audioCtx.currentTime + i * 0.2;
+					var osc = audioCtx.createOscillator();
+					var gain = audioCtx.createGain();
+					osc.type = 'sine';
+					osc.frequency.setValueAtTime(f, t);
+					gain.gain.setValueAtTime(0.25, t);
+					gain.gain.linearRampToValueAtTime(0.01, t + 0.18);
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(t); osc.stop(t + 0.18);
+				});
+			} catch (e) { }
+		}
+
+		function falarAviso(texto) {
+			try {
+				if (!('speechSynthesis' in window)) return;
+				var msg = new SpeechSynthesisUtterance(texto);
+				msg.lang = 'pt-BR';
+				window.speechSynthesis.cancel();
+				window.speechSynthesis.speak(msg);
+			} catch (e) { }
+		}
+
 		function enviarTurnoAoServidor() {
 			link.enviar({
 				tipo: 'STATUS_MOTORISTA',
 				motorista: 'Matheus Garcia',
-				status_viagem: turnoAtivo ? 'EM_VIAGEM' : 'INATIVO',
+				status_viagem: statusViagem,
+				pausa: pausaAtual ? { motivo: pausaAtual.motivo, duracao_ms: pausaAtual.minutos * 60000 } : undefined,
 				origem: 'App do Motorista'
+			});
+		}
+
+		// Botão PAUSAR abre as opções; escolher uma desliga sensores e alertas até o motorista retomar
+		if (btnPausar) {
+			btnPausar.addEventListener('click', function () {
+				if (pausaOpcoes) pausaOpcoes.hidden = !pausaOpcoes.hidden;
+			});
+		}
+		if (pausaOpcoes) {
+			pausaOpcoes.addEventListener('click', function (e) {
+				var botao = e.target.closest('button[data-motivo]');
+				if (!botao || statusViagem !== 'EM_VIAGEM') return;
+				var motivo = botao.getAttribute('data-motivo');
+				definirStatusViagem('PAUSA', {
+					motivo: motivo,
+					rotulo: ROTULOS_PAUSA[motivo],
+					minutos: Number(botao.getAttribute('data-minutos')),
+					inicioMs: Date.now()
+				});
+				tocarBipDuplo(880, 523.25);
+				falarAviso('Pausa iniciada. Sensores desligados. Bom descanso!');
+				enviarTurnoAoServidor();
 			});
 		}
 
@@ -939,7 +1147,7 @@
 				var mg = msg.estado.motoristas && msg.estado.motoristas.matheus_garcia;
 				if (!turnoSincronizadoComServidor && mg) {
 					turnoSincronizadoComServidor = true;
-					if ((mg.status === 'EM_VIAGEM') !== turnoAtivo) enviarTurnoAoServidor();
+					if (mg.status !== statusViagem) enviarTurnoAoServidor();
 				}
 				atualizarEstadoNoApp(msg.estado);
 			},
@@ -1102,8 +1310,13 @@
 
 		// Checa se já havia status salvo previamente no navegador (padrão: viagem ativa)
 		var turnoSalvo = null;
-		try { turnoSalvo = localStorage.getItem('inovatech_turno_matheus_garcia'); } catch (e) { }
-		sincronizarEstadoTurnoUI(turnoSalvo !== 'INATIVO');
+		var pausaSalva = null;
+		try {
+			turnoSalvo = localStorage.getItem('inovatech_turno_matheus_garcia');
+			pausaSalva = JSON.parse(localStorage.getItem('inovatech_pausa_matheus_garcia') || 'null');
+		} catch (e) { }
+		if (pausaSalva && pausaSalva.inicioMs) definirStatusViagem('PAUSA', pausaSalva);
+		else sincronizarEstadoTurnoUI(turnoSalvo !== 'INATIVO');
 
 		link.iniciar();
 		iniciarRastreamentoGpsMotorista();

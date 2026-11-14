@@ -273,6 +273,10 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
 - **Segurança**: o servidor não serve `backend/`, `Smart Driver/`, `.git/`, `*.md`, `*.bat` (o firmware e este arquivo contêm senhas de Wi-Fi).
 - **Dia da apresentação**: rodar `iniciar-painel.bat` (libera o firewall UDP 3002/TCP 3001). No celular, abrir `http://IP-DO-PC:3001/motorista.html` (latência mínima; GPS não funciona em HTTP) ou o link da Vercel (GPS funciona; passa pela nuvem).
 - **Testes**: `npm run simulate` (na pasta `backend`) imita o firmware completo, inclusive os comandos.
+
+## 12. Modo Pausa e Central Mais Breve (14 de Novembro de 2026)
+- **Modo pausa no app** (botão "PAUSAR VIAGEM"): Café 15 min · Descanso 30 min · Refeição 60 min. Status `PAUSA` no servidor → `"mon":0` para a ESP32 (sensores e alertas desligados, mesmo caminho do "desativar monitoramento"); um alerta em andamento é encerrado. Ao acabar o tempo, o app avisa (bip + voz) e o servidor registra no log, mas **só o motorista retoma** ("RETOMAR VIAGEM"), para não disparar alarme enquanto ele come de cabeça baixa. A Central mostra "EM PAUSA · CAFÉ" com contagem regressiva no card da frota.
+- **Central mais breve no alerta**: cada fase com título curto e uma frase (Fase 1 "MOTORISTA COM SONO", Fase 2 "MOTORISTA NÃO RESPONDE", Fase 3 "POSSÍVEL ACIDENTE"); o painel SOS é identificado como simulação do procedimento.
 - **Sem cabo (power bank)** — 23/10/2026:
   - O cabo USB só alimenta; toda a comunicação é Wi-Fi. `WiFi.setSleep(false)` mantém o consumo constante (power bank não desliga por carga baixa) e os comandos chegam sem atraso.
   - **LED azul da placa (GPIO 2)**: aceso fixo = falando com o servidor do PC (UDP) · pisca devagar = só pela nuvem (Render) · pisca rápido = sem comunicação.

@@ -657,44 +657,36 @@
 						<span
 							style="font-family:'Space Mono';font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:1px">
 							<span class="material-symbols-outlined g-icon" style="margin-right:4px">bolt</span>
-							PROTOCOLO AUTÔNOMO CENTRAL TECH "SAFE-STOP & RESGATE SOS" ATIVADO AUTOMATICAMENTE:
+							PROTOCOLO SOS ATIVADO
 						</span>
 						<span style="font-family:'Space Mono';font-size:10px;color:#ff4b72;font-weight:700">●
-							INTERVENÇÃO VEICULAR EM CURSO</span>
+							SIMULAÇÃO DO PROCEDIMENTO</span>
 					</div>
 
 					<div class="sos-protocol-grid">
 						<div class="sos-module-card">
-							<span class="sos-module-tag">1. INTERVENÇÃO VEICULAR (RELÉ GPIO 18)</span>
+							<span class="sos-module-tag">1. RELÉS (GPIO 18 / 19)</span>
 							<strong class="sos-module-title"><span class="material-symbols-outlined g-icon"
-									style="color:#ff4b72;margin-right:4px">pan_tool</span> DESACELERAÇÃO
-								SAFE-STOP</strong>
-							<span class="sos-module-val" id="sosVelocidadeVal">Corte gradual de tração ativo ·
-								Reduzindo: 64 km/h -> 0 km/h · Pisca-Alerta e Buzina LIGADOS</span>
+									style="color:#ff4b72;margin-right:4px">pan_tool</span> PARADA SEGURA</strong>
+							<span class="sos-module-val" id="sosVelocidadeVal">Pisca-alerta ligado</span>
 						</div>
 						<div class="sos-module-card">
-							<span class="sos-module-tag">2. RASTREAMENTO DE EMERGÊNCIA</span>
+							<span class="sos-module-tag">2. LOCALIZAÇÃO</span>
 							<strong class="sos-module-title"><span class="material-symbols-outlined g-icon"
-									style="color:var(--cyan);margin-right:4px">location_on</span> TELEMETRIA GPS
-								SOS</strong>
-							<span class="sos-module-val">Rodovia BR-116 · KM 284 (Sentido Sul) · Lat -23.6821° / Lon
-								-46.8754° enviado à Torre</span>
+									style="color:var(--cyan);margin-right:4px">location_on</span> GPS NO MAPA</strong>
+							<span class="sos-module-val">Posição do caminhão em destaque</span>
 						</div>
 						<div class="sos-module-card">
-							<span class="sos-module-tag">3. SOCORRO MÉDICO & RODOVIÁRIO</span>
+							<span class="sos-module-tag">3. SOCORRO</span>
 							<strong class="sos-module-title"><span class="material-symbols-outlined g-icon"
-									style="color:#ff4b72;margin-right:4px">emergency</span> DESPACHO SAMU 192 /
-								PRF</strong>
-							<span class="sos-module-val">Alerta automático de suspeita de Mal Súbito / Colisão
-								transmitido com prioridade máxima</span>
+									style="color:#ff4b72;margin-right:4px">emergency</span> SAMU 192 / PRF</strong>
+							<span class="sos-module-val">Acionado pelo operador da Central</span>
 						</div>
 						<div class="sos-module-card">
-							<span class="sos-module-tag">4. CAIXA-PRETA & AUDITORIA</span>
+							<span class="sos-module-tag">4. REGISTRO</span>
 							<strong class="sos-module-title"><span class="material-symbols-outlined g-icon"
-									style="color:var(--cyan);margin-right:4px">videocam</span> GRAVAÇÃO DE
-								CABINE</strong>
-							<span class="sos-module-val">Vídeo da câmera Linklemo e log biométrico travados na nuvem
-								para perícia e socorro</span>
+									style="color:var(--cyan);margin-right:4px">receipt_long</span> HISTÓRICO</strong>
+							<span class="sos-module-val">Eventos salvos no log da Central</span>
 						</div>
 					</div>
 				</div>
@@ -703,13 +695,12 @@
 					<button type="button" class="btn-tactical danger" id="btnCentralConfirmarResgate"
 						style="display:none;padding:8px 16px;font-size:11px">
 						<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency</span>
-							Confirmar Despacho de Resgate & Contato na Cabine</span>
+							Acionar Resgate</span>
 					</button>
 					<button type="button" class="btn-tactical" id="btnCentralDesativarEscalonamento"
 						style="padding:8px 16px;font-size:11px;border-color:#55ee77;color:#55ee77">
 						<span><span class="material-symbols-outlined g-icon"
-								style="margin-right:5px">check_circle</span> Motorista Confirmou / Desativar
-							Alerta</span>
+								style="margin-right:5px">check_circle</span> Encerrar Alerta</span>
 					</button>
 				</div>
 			</div>
@@ -795,7 +786,7 @@
 					<article class="card gps-tracker-card" id="cardLocalizacaoVeicular">
 						<div class="camera-alerta-banner" id="bannerAlertaAcidente" style="display:none;background:linear-gradient(90deg, #ff1a4b 0%, #b30026 100%);color:#fff;padding:10px 14px;border-radius:8px;font-family:'Space Mono';font-size:11px;font-weight:700;margin-bottom:12px;box-shadow:0 0 20px rgba(255,26,75,0.6)">
 							<span class="material-symbols-outlined g-icon" style="margin-right:6px">emergency</span>
-							POSSÍVEL ACIDENTE (15s SEM RESPOSTA): COORDENADAS GPS ENVIADAS PARA SAMU 192 E PRF!
+							POSSÍVEL ACIDENTE: LOCALIZAÇÃO EM DESTAQUE
 						</div>
 						<div class="card-label">◉ RASTREAMENTO SATELITAL & TELEMETRIA GPS · SCANIA R-450</div>
 						<h3 style="margin-top:6px;display:flex;justify-content:space-between;align-items:center">
@@ -1029,9 +1020,14 @@
 		}
 
 		// O cockpit fica sempre acessível; o card só muda o selo de status da viagem
-		function atualizarEstadoGarciaUI(ativo, comNotificacao) {
-			if (garciaViagemAtiva === !!ativo) return;
+		var garciaPausa = null; // pausa informada pelo app (café, refeição, descanso)
+
+		function atualizarEstadoGarciaUI(ativo, comNotificacao, pausa) {
+			pausa = (!ativo && pausa) ? pausa : null;
+			var mesmaPausa = (garciaPausa ? garciaPausa.inicio : null) === (pausa ? pausa.inicio : null);
+			if (garciaViagemAtiva === !!ativo && mesmaPausa) return;
 			garciaViagemAtiva = !!ativo;
+			garciaPausa = pausa;
 			if (btnAcessarCabineGarcia) {
 				// O monitoramento só abre com a viagem ativada no app do motorista
 				btnAcessarCabineGarcia.className = garciaViagemAtiva ? 'btn-access-cabine' : 'btn-access-disabled';
@@ -1067,6 +1063,22 @@
 				}
 				if (garciaBtnIcon) garciaBtnIcon.textContent = 'lock';
 				if (garciaBtnText) garciaBtnText.textContent = 'Ative o Monitoramento no App';
+				if (garciaPausa) {
+					if (garciaRoleSub) garciaRoleSub.textContent = 'Condutor Titular · Parada programada';
+					if (garciaBadgeStatus) {
+						garciaBadgeStatus.className = 'driver-badge-inactive';
+						garciaBadgeStatus.style.borderColor = '#ffaa00';
+						garciaBadgeStatus.style.color = '#ffcc55';
+						garciaBadgeStatus.innerHTML = '<span class="material-symbols-outlined g-icon" style="font-size:12px;margin-right:2px">pause_circle</span><span>EM PAUSA · ' + escaparHtml(String(garciaPausa.rotulo || 'Descanso').toUpperCase()) + '</span>';
+					}
+					if (garciaBtnIcon) garciaBtnIcon.textContent = 'pause_circle';
+					if (garciaBtnText) garciaBtnText.textContent = 'Motorista em Pausa';
+					atualizarContagemPausaGarcia();
+					exibirToastCentral('MOTORISTA EM PAUSA: ' + String(garciaPausa.rotulo || 'Descanso').toUpperCase() + ' (' + Math.round((garciaPausa.duracao_ms || 0) / 60000) + ' MIN)');
+				} else if (garciaBadgeStatus) {
+					garciaBadgeStatus.style.borderColor = '';
+					garciaBadgeStatus.style.color = '';
+				}
 				// Viagem encerrada com o cockpit aberto: volta para a frota
 				if (cockpitView && cockpitView.classList.contains('active')) {
 					cockpitView.classList.remove('active');
@@ -1074,6 +1086,17 @@
 				}
 			}
 		}
+
+		// Contagem da pausa no card da frota (o motorista retoma pelo app)
+		function atualizarContagemPausaGarcia() {
+			if (!garciaPausa || !garciaTelemetriaStatus) return;
+			var restanteMs = new Date(garciaPausa.inicio).getTime() + (garciaPausa.duracao_ms || 0) - Date.now();
+			var s = Math.floor(Math.abs(restanteMs) / 1000);
+			var relogio = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+			garciaTelemetriaStatus.style.color = restanteMs > 0 ? '#ffcc55' : '#ff4b72';
+			garciaTelemetriaStatus.textContent = restanteMs > 0 ? 'PAUSA · RESTAM ' + relogio : 'PAUSA ENCERRADA HÁ ' + relogio;
+		}
+		setInterval(atualizarContagemPausaGarcia, 1000);
 
 		function abrirCockpit() {
 			if (!garciaViagemAtiva) return;
@@ -1360,20 +1383,20 @@
 
 			if (nivel === 1) {
 				centralEscalationPanel.className = 'central-escalation-panel visible nivel-1-celular';
-				if (centralEscTimer) centralEscTimer.textContent = 'RESPOSTA DO MOTORISTA: ' + seg + 's / ' + formatarSegundos(critico, 1) + 's';
+				if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + seg + 's / ' + formatarSegundos(critico, 0) + 's';
 				if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, (decorridoMs / critico) * 100).toFixed(1) + '%';
 			} else if (nivel === 2) {
 				centralEscalationPanel.className = 'central-escalation-panel visible nivel-2-critico';
-				if (centralEscTimer) centralEscTimer.textContent = 'ALERTA CRÍTICO: ' + seg + 's · POSSÍVEL ACIDENTE EM ' + formatarSegundos(acidente - decorridoMs, 1) + 's';
+				if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + seg + 's · SOS EM ' + formatarSegundos(acidente - decorridoMs, 1) + 's';
 				if (centralEscBarFill) centralEscBarFill.style.width = Math.min(100, ((decorridoMs - critico) / (acidente - critico)) * 100).toFixed(1) + '%';
 			} else {
 				centralEscalationPanel.className = 'central-escalation-panel visible nivel-3-acidente';
-				if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA HÁ: ' + seg + 's · POSSÍVEL ACIDENTE CONFIRMADO';
+				if (centralEscTimer) centralEscTimer.textContent = 'SEM RESPOSTA: ' + seg + 's';
 				if (centralEscBarFill) centralEscBarFill.style.width = '100%';
 				if (sosVelocidadeVal) {
-					// Safe-Stop: desaceleração de 64 km/h até 0 em 8 segundos
+					// Parada segura simulada: de 64 km/h até 0 em 8 segundos
 					var velAtual = Math.max(0, Math.round(64 - ((decorridoMs - acidente) / 1000) * 8));
-					sosVelocidadeVal.textContent = 'Corte gradual de tração ativo · Velocidade: ' + velAtual + ' km/h ' + (velAtual === 0 ? '(VEÍCULO IMOBILIZADO COM SEGURANÇA)' : '(REDUZINDO...)') + ' · Pisca-Alerta LIGADO';
+					sosVelocidadeVal.textContent = velAtual === 0 ? 'Veículo parado · pisca-alerta ligado' : 'Reduzindo: ' + velAtual + ' km/h · pisca-alerta ligado';
 				}
 			}
 
@@ -1382,25 +1405,25 @@
 				var sCritico = formatarSegundos(critico, 0);
 				var sAcidente = formatarSegundos(acidente, 0);
 				if (nivel === 1) {
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · AGUARDANDO MOTORISTA NO CELULAR';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> CHAMADA DE DESCANSO ATIVA NO CELULAR DO MOTORISTA';
-					if (centralEscDesc) centralEscDesc.textContent = 'O alerta físico (Buzzer/Relés) e a chamada no celular foram disparados. Se o condutor não confirmar nem mantiver a cabeça erguida por 3s, a Central entra em ALERTA CRÍTICO aos ' + sCritico + 's e em POSSÍVEL ACIDENTE aos ' + sAcidente + 's.';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">smartphone</span> FASE 1 · ALERTA';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">local_cafe</span> MOTORISTA COM SONO';
+					if (centralEscDesc) centralEscDesc.textContent = 'Óculos e celular alertando o motorista.';
 					if (satelliteMapContainer) satelliteMapContainer.style.display = 'none';
 					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
 					if (bannerAlertaAcidente) bannerAlertaAcidente.style.display = 'none';
 				} else if (nivel === 2) {
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · ALERTA CRÍTICO NA CENTRAL (' + sCritico + 's SEM RESPOSTA)';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> MOTORISTA NÃO RESPONDE: LOCALIZAÇÃO SATELITAL TRANSMITIDA!';
-					if (centralEscDesc) centralEscDesc.textContent = 'ATENÇÃO OPERADOR: o motorista não respondeu em ' + sCritico + ' segundos! Localização do Scania R-450 em destaque. Sem resposta até ' + sAcidente + 's, o protocolo Safe-Stop & Resgate SOS será executado.';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency_home</span> FASE 2 · CRÍTICO';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">warning</span> MOTORISTA NÃO RESPONDE';
+					if (centralEscDesc) centralEscDesc.textContent = sCritico + 's sem resposta. Localização em destaque no mapa.';
 					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
 					if (sosProtocolBoard) sosProtocolBoard.style.display = 'none';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'none';
 					tocarAudioVoz(vozCritico10sAudio);
 				} else {
-					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · EMERGÊNCIA MÁXIMA: POSSÍVEL ACIDENTE (' + sAcidente + 's)';
-					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> PROTOCOLO SAFE-STOP & RESGATE SOS ACIONADO!';
-					if (centralEscDesc) centralEscDesc.textContent = 'EMERGÊNCIA NA FROTA: condutor sem resposta por ' + sAcidente + ' segundos! Desaceleração assistida (Relé 1 · GPIO 18), Pisca-Alerta (Relé 2 · GPIO 19) e coordenadas enviadas ao Resgate SAMU 192 / PRF.';
+					if (centralEscBadgeText) centralEscBadgeText.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:5px">car_crash</span> FASE 3 · SOS';
+					if (centralEscTitle) centralEscTitle.innerHTML = '<span class="material-symbols-outlined g-icon" style="margin-right:6px">car_crash</span> POSSÍVEL ACIDENTE';
+					if (centralEscDesc) centralEscDesc.textContent = sAcidente + 's sem resposta. Protocolo SOS iniciado (simulação).';
 					if (satelliteMapContainer) satelliteMapContainer.style.display = 'block';
 					if (sosProtocolBoard) sosProtocolBoard.style.display = 'block';
 					if (btnCentralConfirmarResgate) btnCentralConfirmarResgate.style.display = 'inline-flex';
@@ -1423,7 +1446,7 @@
 				btnCentralConfirmarResgate.style.display = 'none';
 				btnCentralConfirmarResgate.style.background = '';
 				btnCentralConfirmarResgate.style.borderColor = '';
-				btnCentralConfirmarResgate.innerHTML = '<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency</span> Confirmar Despacho de Resgate & Contato na Cabine</span>';
+				btnCentralConfirmarResgate.innerHTML = '<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">emergency</span> Acionar Resgate</span>';
 			}
 			[vozCritico10sAudio, vozAcidente20sAudio].forEach(function (a) { try { a.pause(); a.currentTime = 0; } catch (e) { } });
 		}
@@ -1462,7 +1485,7 @@
 				// Claro só com o monitoramento ativado no app; desativado fica cinza como os outros motoristas
 				var emViagem = mg.status === 'EM_VIAGEM';
 				var mudou = garciaViagemAtiva !== null && garciaViagemAtiva !== emViagem;
-				atualizarEstadoGarciaUI(emViagem, mudou && emViagem);
+				atualizarEstadoGarciaUI(emViagem, mudou && emViagem, mg.status === 'PAUSA' ? mg.pausa : null);
 				try { localStorage.setItem('inovatech_turno_matheus_garcia', mg.status === 'EM_VIAGEM' ? 'ATIVO' : 'INATIVO'); } catch (e) { }
 			}
 			if (estado.gps) atualizarLocalizacaoGpsUI(estado.gps);
@@ -1507,17 +1530,17 @@
 				if (statusMotoristaTexto) {
 					statusMotoristaTexto.style.color = '#ff2a55';
 					var origem = estado.origem_alerta === 'TESTE_REMOTO' ? ' (TESTE REMOTO)' : (estado.origem_alerta === 'SIMULACAO' ? ' (SIMULAÇÃO)' : '');
-					statusMotoristaTexto.textContent = 'PERIGO: CABEÇA BAIXA · ALERTA ATIVADO' + origem;
+					statusMotoristaTexto.textContent = 'ALERTA: CABEÇA BAIXA' + origem;
 				}
 				if (barraProgressoTempo) barraProgressoTempo.className = 'progresso-bar-fill danger';
 				renderizarCronometro(anim.limiarMs);
 			}
 
 			if (descricaoEstadoCondutor) {
-				if (recuperando) descricaoEstadoCondutor.textContent = 'Cabeça erguida detectada. Mantendo por ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + 's o alerta é encerrado automaticamente.';
-				else if (status === 'ALARME_ATIVADO') descricaoEstadoCondutor.textContent = 'Alarme ativo: buzzer contínuo nos óculos, relés acionados e chamada de descanso no celular do motorista.';
-				else if (status === 'PRE_ALERTA') descricaoEstadoCondutor.textContent = 'Cabeça baixa detectada: bip de aviso nos óculos e pisca-alerta armado (Relé 2). Alarme contínuo em seguida.';
-				else descricaoEstadoCondutor.textContent = 'Condutor em postura ereta e campo de visão direcionado à pista. Tolerância de ' + formatarSegundos(anim.limiarMs).replace('.', ',') + 's para evitar alarmes falsos ao checar painel e espelhos.';
+				if (recuperando) descricaoEstadoCondutor.textContent = 'Cabeça erguida: o alerta encerra sozinho em ' + formatarSegundos(anim.recuperacaoLimiteMs, 0) + 's.';
+				else if (status === 'ALARME_ATIVADO') descricaoEstadoCondutor.textContent = 'Buzzer, relés e celular alertando.';
+				else if (status === 'PRE_ALERTA') descricaoEstadoCondutor.textContent = 'Cabeça baixa: bip de aviso nos óculos.';
+				else descricaoEstadoCondutor.textContent = 'Postura normal. Tolerância de ' + formatarSegundos(anim.limiarMs).replace('.', ',') + 's para olhar painel e espelhos.';
 			}
 
 			// Painel de escalonamento (Fase 1 -> 2 -> 3) com o tempo exato do servidor
@@ -1655,8 +1678,8 @@
 
 		if (btnCentralConfirmarResgate) {
 			btnCentralConfirmarResgate.addEventListener('click', function () {
-				adicionarLogLocal('COMANDO_CENTRAL', 'Operador da Central confirmou despacho de Resgate SAMU 192 / PRF e corte seguro.');
-				btnCentralConfirmarResgate.innerHTML = '<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RESGATE SAMU 192 / FROTA CONFIRMADO COM SUCESSO</span>';
+				adicionarLogLocal('COMANDO_CENTRAL', 'Operador acionou o resgate (simulação).');
+				btnCentralConfirmarResgate.innerHTML = '<span><span class="material-symbols-outlined g-icon" style="margin-right:5px">check_circle</span> RESGATE ACIONADO</span>';
 				btnCentralConfirmarResgate.style.background = '#10b981';
 				btnCentralConfirmarResgate.style.borderColor = '#55ee77';
 			});

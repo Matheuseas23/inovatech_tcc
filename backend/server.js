@@ -393,7 +393,7 @@ setInterval(() => {
     estado.nivel_escalonamento = 2;
     mudouNivel = true;
     registrarEvento('ALARME_ATIVADO',
-      `ALERTA CRÍTICO NA CENTRAL (${ESCALONAMENTO.critico_ms / 1000}s SEM RESPOSTA): Motorista não confirmou o alerta no celular!`,
+      `Fase 2 · Crítico: motorista não responde há ${ESCALONAMENTO.critico_ms / 1000}s`,
       `Protocolo de Possível Acidente em ${(ESCALONAMENTO.acidente_ms - ESCALONAMENTO.critico_ms) / 1000}s.`);
     dispararChamadaCelularADB();
   }
@@ -402,7 +402,7 @@ setInterval(() => {
     estado.nivel_escalonamento = 3;
     mudouNivel = true;
     registrarEvento('ALARME_ATIVADO',
-      `POSSÍVEL ACIDENTE (${ESCALONAMENTO.acidente_ms / 1000}s SEM RESPOSTA)! GPS enviado ao Resgate SAMU 192 e Safe-Stop acionado!`,
+      `Fase 3 · SOS: possível acidente (${ESCALONAMENTO.acidente_ms / 1000}s sem resposta)`,
       'Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192.');
   }
 
@@ -551,7 +551,7 @@ function processarTelemetriaESP32(p, fonte) {
     }
     estado.estado = estadoEsp;
     if (anterior !== 'PRE_ALERTA' && estadoEsp === 'PRE_ALERTA') {
-      registrarEvento('PRE_ALERTA', 'Aviso: Cabeça baixa detectada (contagem de segurança iniciada)',
+      registrarEvento('PRE_ALERTA', 'Cabeça baixa detectada',
         `Tolerância: ${(estado.limiar_seguranca_ms / 1000).toFixed(1)}s com 1 bip de aviso e pisca-alerta armado.`);
     } else if (anterior === 'PRE_ALERTA' && estadoEsp === 'NORMAL') {
       registrarEvento('NORMAL', 'Cabeça erguida antes do disparo do alarme', 'Pré-alerta cancelado pelo próprio motorista.');
@@ -561,22 +561,40 @@ function processarTelemetriaESP32(p, fonte) {
   transmitirEstado();
 }
 
-function atualizarTurno(statusViagem, origem) {
-  const novoStatus = statusViagem === 'INATIVO' ? 'INATIVO' : 'EM_VIAGEM';
+// Modo pausa (café, refeição, descanso): sensores e alertas desligados ("mon":0) até o motorista retomar
+const MOTIVOS_PAUSA = { CAFE: 'Café', REFEICAO: 'Refeição', DESCANSO: 'Descanso' };
+
+function normalizarPausa(p) {
+  const motivo = MOTIVOS_PAUSA[p && p.motivo] ? p.motivo : 'DESCANSO';
+  const duracao = Math.min(4 * 3600000, Math.max(60000, Number(p && p.duracao_ms) || 30 * 60000));
+  return { motivo, rotulo: MOTIVOS_PAUSA[motivo], inicio: new Date().toISOString(), duracao_ms: duracao, encerrada: false };
+}
+
+function atualizarTurno(statusViagem, origem, pausa) {
+  const novoStatus = ['INATIVO', 'PAUSA'].includes(statusViagem) ? statusViagem : 'EM_VIAGEM';
   const motorista = estado.motoristas.matheus_garcia;
   motorista.atualizadoEm = new Date().toISOString();
   if (motorista.status === novoStatus) {
     broadcast({ tipo: 'STATUS_MOTORISTA', motorista: motorista.nome, status_viagem: novoStatus, estado });
     return;
   }
+  const pausaAnterior = motorista.status === 'PAUSA' ? motorista.pausa : null;
   motorista.status = novoStatus;
+  motorista.pausa = novoStatus === 'PAUSA' ? normalizarPausa(pausa) : null;
   if (modoEspelhoAtivo()) {
     // O servidor local registra o evento e devolve pelo espelho (evita log duplicado)
-    comandosParaLocal.push({ tipo: 'STATUS_MOTORISTA', status_viagem: novoStatus, origem });
+    comandosParaLocal.push({ tipo: 'STATUS_MOTORISTA', status_viagem: novoStatus, pausa, origem });
     broadcast({ tipo: 'STATUS_MOTORISTA', motorista: motorista.nome, status_viagem: novoStatus, estado });
     return;
   }
-  registrarEvento('TURNO_MOTORISTA', `Condutor ${motorista.nome}: Viagem ${novoStatus === 'EM_VIAGEM' ? 'Iniciada' : 'Pausada'}`, `Origem: ${origem}`);
+  // Motorista parou: um alerta em andamento não faz mais sentido
+  if (novoStatus !== 'EM_VIAGEM' && (estado.alerta_travado || simulacao.ativa)) {
+    encerrarAlerta('Alerta encerrado: monitoramento pausado pelo motorista');
+  }
+  let mensagem = novoStatus === 'EM_VIAGEM' ? 'Viagem iniciada' : 'Monitoramento desativado';
+  if (novoStatus === 'PAUSA') mensagem = `Pausa: ${motorista.pausa.rotulo} (${Math.round(motorista.pausa.duracao_ms / 60000)} min)`;
+  else if (pausaAnterior) mensagem = `Viagem retomada após ${Math.max(1, Math.round((Date.now() - new Date(pausaAnterior.inicio).getTime()) / 60000))} min de pausa`;
+  registrarEvento('TURNO_MOTORISTA', `${motorista.nome}: ${mensagem}`, `Origem: ${origem}`);
   broadcast({ tipo: 'STATUS_MOTORISTA', motorista: motorista.nome, status_viagem: novoStatus, estado });
   espelharParaNuvem(true);
   persistirEmDisco();
@@ -705,7 +723,7 @@ function processarPacote(payload, fonte) {
     return IS_RENDER_CLOUD ? { comandos_para_local: aplicarEspelho(p) } : {};
   }
   if (p.tipo === 'STATUS_MOTORISTA' || p.status_viagem !== undefined) {
-    atualizarTurno(p.status_viagem || (p.ativo === false ? 'INATIVO' : 'EM_VIAGEM'), p.origem || `App do Motorista (${fonte})`);
+    atualizarTurno(p.status_viagem || (p.ativo === false ? 'INATIVO' : 'EM_VIAGEM'), p.origem || `App do Motorista (${fonte})`, p.pausa);
     return {};
   }
   if (p.gps && !ehPacoteESP32(p)) {
@@ -724,6 +742,17 @@ function processarPacote(payload, fonte) {
   }
   return {};
 }
+
+// Pausa passou do tempo escolhido: avisa a Central (só o motorista retoma, pelo app)
+setInterval(() => {
+  const mg = estado.motoristas.matheus_garcia;
+  if (modoEspelhoAtivo() || mg.status !== 'PAUSA' || !mg.pausa || mg.pausa.encerrada) return;
+  if (Date.now() - new Date(mg.pausa.inicio).getTime() >= mg.pausa.duracao_ms) {
+    mg.pausa.encerrada = true;
+    registrarEvento('PRE_ALERTA', `Tempo de pausa (${mg.pausa.rotulo}) encerrado: aguardando o motorista retomar`);
+    transmitirEstado();
+  }
+}, 2000);
 
 // Watchdog: ESP32 offline se não enviar nada por 6s
 setInterval(() => {
@@ -816,7 +845,7 @@ function espelharParaNuvem(forcarImediato = false) {
 function executarMensagemDaNuvem(msg) {
   if (!msg || typeof msg !== 'object') return;
   if (msg.tipo === 'COMANDO') executarComando(msg.comando, `${msg.origem || 'INTERNET'} via nuvem`, msg.extras || {});
-  else if (msg.tipo === 'STATUS_MOTORISTA') atualizarTurno(msg.status_viagem, `${msg.origem || 'App do Motorista'} via nuvem`);
+  else if (msg.tipo === 'STATUS_MOTORISTA') atualizarTurno(msg.status_viagem, `${msg.origem || 'App do Motorista'} via nuvem`, msg.pausa);
   else if (msg.tipo === 'GPS_UPDATE') atualizarGps(msg.gps, 'CELULAR_MOTORISTA (via nuvem)');
   else if (msg.tipo === 'TELEMETRIA_ESP32' && msg.pacote && ehPacoteESP32(msg.pacote)) processarTelemetriaESP32(msg.pacote, 'NUVEM');
 }
@@ -871,8 +900,8 @@ app.get('/api/telemetry', (req, res) => {
 });
 
 app.post(['/api/driver/shift', '/api/driver/status'], (req, res) => {
-  const { status_viagem = 'EM_VIAGEM', origem } = req.body || {};
-  atualizarTurno(status_viagem, origem || 'App do Motorista (REST)');
+  const { status_viagem = 'EM_VIAGEM', origem, pausa } = req.body || {};
+  atualizarTurno(status_viagem, origem || 'App do Motorista (REST)', pausa);
   return res.json({ sucesso: true, motoristas: estado.motoristas });
 });
 
@@ -941,7 +970,7 @@ wss.on('connection', (ws, req) => {
     } else if (parsed.tipo === 'GPS_UPDATE' && parsed.gps) {
       atualizarGps(parsed.gps, 'CELULAR_MOTORISTA');
     } else if (parsed.tipo === 'STATUS_MOTORISTA') {
-      atualizarTurno(parsed.status_viagem || (parsed.ativo === false ? 'INATIVO' : 'EM_VIAGEM'), parsed.origem || 'App do Motorista (WS)');
+      atualizarTurno(parsed.status_viagem || (parsed.ativo === false ? 'INATIVO' : 'EM_VIAGEM'), parsed.origem || 'App do Motorista (WS)', parsed.pausa);
     } else if (parsed.tipo === 'PING') {
       ws.send(JSON.stringify({ tipo: 'PONG', t: Date.now() }));
     }
