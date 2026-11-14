@@ -28,7 +28,7 @@ const path = require('path');
 const fs = require('fs');
 const dgram = require('dgram');
 const { execFile, spawn } = require('child_process');
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') }); // Acha o .env de qualquer pasta
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -323,9 +323,9 @@ function dispararChamadaCelularADB() {
 // O número fica em NUMERO_EMERGENCIA no backend/.env (fora do git). Sem ele, só abre o discador com o 192.
 // ATENÇÃO: em testes e na apresentação use o celular de alguém da equipe. Trote para 190/191/192/193 é crime.
 const NUMERO_EMERGENCIA = String(process.env.NUMERO_EMERGENCIA || '').replace(/[^\d+]/g, '');
-// Desligada a pedido do Matheus (14/11): na banca não haverá ligação automática.
-// "volta a ligação automática" = LIGACAO_AUTOMATICA = true
-const LIGACAO_AUTOMATICA = false;
+// Liga SÓ quando o possível acidente é confirmado (fase 3), para o contato de emergência da equipe.
+// Um alerta retomado por "não" já na fase 3 não liga de novo. "desliga a ligação automática" = false
+const LIGACAO_AUTOMATICA = true;
 
 function ligarEmergenciaADB() {
   if (!LIGACAO_AUTOMATICA || IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH)) return;
