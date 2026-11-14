@@ -44,6 +44,9 @@ const LIMIAR_PADRAO_MS = 1500;           // Tolerância da ESP32 (sobrescrita pe
 const LIMIAR_SIMULACAO_MS = 1500;        // Botão "Simular Alerta" (modo rápido de demonstração)
 const RECUPERACAO_MS = 3000;             // Cabeça erguida por 3s encerra o alerta automaticamente
 const ESCALONAMENTO = { critico_ms: 9000, acidente_ms: 15000 };
+// Depois de um possível acidente (fase 3), cabeça erguida não encerra o alerta: o celular pergunta
+// por voz "Você está bem?" e só o "sim" encerra. "desliga a pergunta por voz" = false (volta a encerrar em 3 s)
+const PERGUNTA_POR_VOZ_APOS_ACIDENTE = true;
 const COOLDOWN_NORMALIZACAO_MS = 2500;   // Evita re-disparo imediato logo após normalizar
 const TIMEOUT_ESP32_MS = 10000; // Pela nuvem o envio às vezes atrasa ~6 s (medido no power bank em 14/11)
 const TIMEOUT_ESPELHO_MS = 5000;
@@ -351,6 +354,8 @@ function dispararAlerta(origem, mensagem, detalhes) {
   estado.nivel_escalonamento = 1;
   estado.tempo_sem_resposta_ms = 0;
   estado.tempo_recuperacao_ms = 0;
+  estado.aguardando_resposta_voz = false;
+  estado.resposta_motorista = null;
   inicioSemRespostaMs = Date.now();
   inicioRecuperacaoMs = 0;
   estado.contadores.totalAlarmesSessao++;
@@ -372,6 +377,8 @@ function encerrarAlerta(mensagem, detalhes = '') {
   estado.nivel_escalonamento = 0;
   estado.tempo_sem_resposta_ms = 0;
   estado.tempo_recuperacao_ms = 0;
+  estado.aguardando_resposta_voz = false;
+  estado.resposta_motorista = null;
   estado.estado = 'NORMAL';
   estado.tempo_cabeca_baixa_ms = 0;
   estado.limiar_seguranca_ms = limiarEsp32Ms;
@@ -395,7 +402,13 @@ setInterval(() => {
   // Recuperação automática: cabeça erguida (ESP32 em NORMAL) por 3s seguidos
   if (inicioRecuperacaoMs) {
     estado.tempo_recuperacao_ms = agora - inicioRecuperacaoMs;
-    if (estado.tempo_recuperacao_ms >= RECUPERACAO_MS) {
+    if (estado.tempo_recuperacao_ms >= RECUPERACAO_MS && PERGUNTA_POR_VOZ_APOS_ACIDENTE && estado.nivel_escalonamento >= 3) {
+      if (!estado.aguardando_resposta_voz && !estado.resposta_motorista) {
+        estado.aguardando_resposta_voz = true;
+        registrarEvento('ALARME_ATIVADO', 'Motorista ergueu a cabeça após o possível acidente: perguntando por voz se está bem');
+        transmitirEstado('ESCALONAMENTO_EMERGENCIA');
+      }
+    } else if (estado.tempo_recuperacao_ms >= RECUPERACAO_MS) {
       encerrarAlerta('Recuperação automática: motorista manteve a cabeça erguida por 3s',
         'Alarmes físicos, chamada no celular e escalonamento encerrados.');
       return;
@@ -653,7 +666,7 @@ function atualizarGps(gps, origem) {
 function executarComando(comando, origem = 'CENTRAL', extras = {}) {
   const cmd = String(comando || '').toUpperCase();
   const normalizar = ['SILENCIAR_ALARME', 'RESET', 'NORMALIZAR'].includes(cmd);
-  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2', 'MODO_EXIBICAO', 'DESLIGAR_OCULOS', 'LIGAR_OCULOS'];
+  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2', 'MODO_EXIBICAO', 'DESLIGAR_OCULOS', 'LIGAR_OCULOS', 'RESPOSTA_VOZ'];
   if (!normalizar && !conhecidos.includes(cmd)) return { ok: false, mensagem: `Comando desconhecido: ${comando}` };
 
   // Na nuvem em modo espelho, quem executa é o servidor local (a nuvem só repassa)
@@ -675,6 +688,21 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
   if (normalizar) {
     encerrarAlerta(`Alerta desativado (${origem})`, 'Confirmação recebida: alarmes físicos e virtuais encerrados.');
     return { ok: true, mensagem: 'Alerta encerrado.' };
+  }
+
+  // Resposta falada do motorista à pergunta "Você está bem?" (depois do possível acidente)
+  if (cmd === 'RESPOSTA_VOZ') {
+    const resposta = String(extras.resposta || '').toUpperCase();
+    if (resposta === 'BEM') {
+      encerrarAlerta('Motorista respondeu por voz: está bem', 'Alerta encerrado sem tocar no celular.');
+    } else if (estado.alerta_travado) {
+      estado.aguardando_resposta_voz = false;
+      estado.resposta_motorista = resposta === 'SOCORRO' ? 'SOCORRO' : 'SEM_RESPOSTA';
+      registrarEvento('ALARME_ATIVADO', estado.resposta_motorista === 'SOCORRO'
+        ? 'MOTORISTA PEDIU SOCORRO POR VOZ' : 'Motorista não respondeu à pergunta por voz: emergência mantida');
+      transmitirEstado('ESCALONAMENTO_EMERGENCIA');
+    }
+    return { ok: true, mensagem: `Resposta do motorista: ${resposta}` };
   }
 
   if (MAPA_COMANDOS_ESP32[cmd]) enfileirarComandoESP32(MAPA_COMANDOS_ESP32[cmd]);
@@ -708,7 +736,8 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
 const CAMPOS_ESPELHO = ['dispositivo', 'online', 'ultimoVisto', 'fonte_conexao', 'sensor_ir', 'ir_confiavel', 'tempo_cabeca_baixa_ms',
   'limiar_seguranca_ms', 'estado', 'buzzer', 'rele', 'rele_2', 'alarme_teste', 'acelerometro', 'wifi', 'alerta_travado',
   'chamada_celular_ativa', 'origem_alerta', 'tempo_sem_resposta_ms', 'nivel_escalonamento', 'tempo_recuperacao_ms',
-  'recuperacao_limite_ms', 'escalonamento', 'simulacao_ativa', 'contadores', 'motoristas', 'gps', 'modo_exibicao', 'oculos_ligados'];
+  'recuperacao_limite_ms', 'escalonamento', 'simulacao_ativa', 'contadores', 'motoristas', 'gps', 'modo_exibicao', 'oculos_ligados',
+  'aguardando_resposta_voz', 'resposta_motorista'];
 const CAMPOS_ALERTA = ['estado', 'alerta_travado', 'chamada_celular_ativa', 'nivel_escalonamento', 'tempo_sem_resposta_ms'];
 
 function aplicarEspelho(p) {

@@ -353,6 +353,44 @@
 			color: #ffffff;
 		}
 
+		.driver-voz-status {
+			padding: 8px;
+			border-radius: 8px;
+			background: rgba(2, 11, 18, 0.75);
+			color: #ffdd66;
+			font-family: 'Space Mono', monospace;
+			font-size: 11px;
+			font-weight: 700;
+		}
+
+		.driver-voz-status[hidden],
+		.driver-voz-botoes[hidden] {
+			display: none;
+		}
+
+		.driver-voz-botoes {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 8px;
+		}
+
+		.driver-voz-botoes button {
+			padding: 12px 6px;
+			border-radius: 10px;
+			border: 1px solid #ffffff;
+			background: rgba(2, 11, 18, 0.75);
+			color: #ffffff;
+			font-family: 'Space Mono', monospace;
+			font-size: 10.5px;
+			font-weight: 700;
+			cursor: pointer;
+		}
+
+		.driver-voz-botoes button#btnRespostaBem {
+			border-color: #55ee77;
+			color: #55ee77;
+		}
+
 		/* Modo pausa (café / refeição / descanso) */
 		.btn-pausa {
 			width: 100%;
@@ -578,6 +616,12 @@
 					<a href="tel:191"><span class="material-symbols-outlined g-icon">local_police</span>PRF 191</a>
 				</div>
 				<small>A Central já recebeu sua localização. Toque para abrir o discador.</small>
+				<!-- Pergunta por voz depois que o motorista ergue a cabeça (mãos livres) -->
+				<div class="driver-voz-status" id="driverVozStatus" hidden></div>
+				<div class="driver-voz-botoes" id="driverVozBotoes" hidden>
+					<button type="button" id="btnRespostaBem">ESTOU BEM</button>
+					<button type="button" id="btnRespostaSocorro">PRECISO DE SOCORRO</button>
+				</div>
 			</div>
 		</div>
 
@@ -902,7 +946,8 @@
 		// Uma voz por vez: antes de falar, interrompe qualquer outra que esteja tocando
 		function pararTodasAsVozes(exceto) {
 			[vozCafeAudio, vozInicioAudio, vozPausaInicioAudio, vozPausaFimAudio, vozRetomarAudio,
-				vozCriticoMotoristaAudio, vozAcidenteMotoristaAudio].forEach(function (a) {
+				vozCriticoMotoristaAudio, vozAcidenteMotoristaAudio, vozPerguntaBemAudio,
+				vozRespostaBemAudio, vozRespostaSocorroAudio].forEach(function (a) {
 				if (a === exceto) return;
 				try { a.pause(); a.currentTime = 0; } catch (e) { }
 			});
@@ -997,6 +1042,7 @@
 			sincronizarEstadoTurnoUI(novoEstado);
 			// Retomar depois da pausa: só o lembrete (sem "Conectado à Central Tech")
 			if (novoEstado) {
+				pedirPermissaoMicrofone();
 				if (voltandoDaPausa) tocarVoz(vozRetomarAudio);
 				else tocarVozInicioViagem();
 			}
@@ -1156,6 +1202,157 @@
 			tocarVoz(nivel === 3 ? vozAcidenteMotoristaAudio : vozCriticoMotoristaAudio);
 		}
 
+		// ------------------------------------------------------------------------------
+		// COMANDO DE VOZ (mãos livres: o CTB proíbe segurar ou manusear o celular dirigindo)
+		// Fases 1 e 2: dizer "estou acordado" desliga o alerta.
+		// Fase 3 + cabeça erguida: pergunta "Você está bem?" e ouve "sim" ou "não / socorro".
+		// "desliga o comando de voz" = COMANDO_DE_VOZ_ATIVO = false
+		// ------------------------------------------------------------------------------
+		var COMANDO_DE_VOZ_ATIVO = true;
+		var ReconhecimentoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
+		// O Chrome só libera o microfone em site seguro (link da Vercel / HTTPS)
+		var vozDisponivel = COMANDO_DE_VOZ_ATIVO && !!ReconhecimentoVoz && window.isSecureContext;
+		var vozPerguntaBemAudio = new Audio('alerta-pergunta-bem.mp3');
+		var vozRespostaBemAudio = new Audio('alerta-resposta-bem.mp3');
+		var vozRespostaSocorroAudio = new Audio('alerta-resposta-socorro.mp3');
+		// "Não" vem antes: "não estou bem" é pedido de socorro (na dúvida, fica do lado seguro)
+		var PALAVRAS_SOCORRO = /(^|\s)(n[aã]o|socorro|ajuda|me ajud|machucad|ferid)/;
+		var PALAVRAS_BEM = /(^|\s)(sim(?=$|[\s.,!?])|estou bem|t[oô] bem|tudo bem|tudo certo|estou acordad|t[oô] acordad)/;
+		var PALAVRAS_ACORDADO = /(estou acordad|t[oô] acordad|estou bem|t[oô] bem|estou alerta)/;
+		var escuta = null;
+		var modoEscuta = '';           // 'ACORDADO' (fases 1 e 2) | 'PERGUNTA' (fase 3)
+		var perguntaEmAndamento = false;
+		var tentativasPergunta = 0;
+		var driverVozStatus = document.getElementById('driverVozStatus');
+		var driverVozBotoes = document.getElementById('driverVozBotoes');
+
+		// Pedido com um toque (ao iniciar a viagem): no alerta o microfone já abre sozinho
+		function pedirPermissaoMicrofone() {
+			if (!vozDisponivel || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+			navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+				s.getTracks().forEach(function (t) { t.stop(); });
+			}).catch(function () { });
+		}
+
+		function mostrarStatusVoz(texto) {
+			if (!driverVozStatus) return;
+			driverVozStatus.hidden = !texto;
+			driverVozStatus.textContent = texto || '';
+		}
+
+		function pararEscuta() {
+			modoEscuta = '';
+			var r = escuta;
+			escuta = null;
+			if (r) { try { r.abort(); } catch (e) { } }
+		}
+
+		// Ouve até entender uma resposta ou acabar o tempo (o Chrome para no silêncio, então recomeça)
+		function ouvir(modo, duracaoMs, aoEntender, aoAcabarTempo) {
+			if (!vozDisponivel) { if (aoAcabarTempo) aoAcabarTempo(); return; }
+			pararEscuta();
+			modoEscuta = modo;
+			var fimMs = Date.now() + duracaoMs;
+			function iniciar() {
+				if (modoEscuta !== modo) return;
+				if (Date.now() >= fimMs) { pararEscuta(); if (aoAcabarTempo) aoAcabarTempo(); return; }
+				var r = new ReconhecimentoVoz();
+				escuta = r;
+				r.lang = 'pt-BR';
+				r.interimResults = true;
+				r.maxAlternatives = 3;
+				r.onresult = function (ev) {
+					for (var i = ev.resultIndex; i < ev.results.length; i++) {
+						for (var j = 0; j < ev.results[i].length; j++) {
+							if (aoEntender(ev.results[i][j].transcript.toLowerCase())) { pararEscuta(); return; }
+						}
+					}
+				};
+				r.onerror = function (ev) {
+					// Microfone negado: desliga a voz e segue pelos botões / cabeça erguida
+					if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+						vozDisponivel = false;
+						modoEscuta = '';
+						if (aoAcabarTempo) aoAcabarTempo();
+					}
+				};
+				r.onend = function () { if (escuta === r) { escuta = null; setTimeout(iniciar, 250); } };
+				try { r.start(); } catch (e) { setTimeout(iniciar, 500); }
+			}
+			iniciar();
+		}
+
+		function responderPergunta(resposta) {
+			pararEscuta();
+			perguntaEmAndamento = false;
+			tocarVoz(resposta === 'BEM' ? vozRespostaBemAudio : vozRespostaSocorroAudio);
+			mostrarStatusVoz(resposta === 'BEM' ? 'Resposta: está bem. Encerrando o alerta...' :
+				resposta === 'SOCORRO' ? 'Pedido de socorro enviado à Central.' : 'Sem resposta: o socorro continua a caminho.');
+			if (driverVozBotoes) driverVozBotoes.hidden = resposta === 'BEM';
+			if (link.conectado()) link.comando('RESPOSTA_VOZ', { resposta: resposta });
+			else if (resposta === 'BEM') simuladorLocal.parar();
+		}
+
+		function fazerPerguntaBem() {
+			perguntaEmAndamento = true;
+			tentativasPergunta++;
+			pararEscuta();
+			// Silêncio no toque de chamada para o microfone ouvir o motorista
+			if (callRingtoneTimer) { clearInterval(callRingtoneTimer); callRingtoneTimer = null; }
+			if (driverVozBotoes) driverVozBotoes.hidden = false;
+			mostrarStatusVoz('Pergunta: você está bem?');
+			vozPerguntaBemAudio.onended = function () {
+				vozPerguntaBemAudio.onended = null;
+				if (!perguntaEmAndamento) return;
+				mostrarStatusVoz(vozDisponivel ? 'Ouvindo... diga SIM ou NÃO' : 'Microfone indisponível: use os botões abaixo');
+				ouvir('PERGUNTA', 8000, function (texto) {
+					if (PALAVRAS_SOCORRO.test(texto)) { responderPergunta('SOCORRO'); return true; }
+					if (PALAVRAS_BEM.test(texto)) { responderPergunta('BEM'); return true; }
+					return false;
+				}, function () {
+					if (!perguntaEmAndamento) return;
+					if (tentativasPergunta < 2) fazerPerguntaBem();
+					else responderPergunta('SEM_RESPOSTA');
+				});
+			};
+			tocarVoz(vozPerguntaBemAudio);
+		}
+
+		// Chamada a cada estado do servidor: decide se ouve "estou acordado" ou faz a pergunta
+		function atualizarEscutaPorVoz(estado) {
+			if (!COMANDO_DE_VOZ_ATIVO) return;
+			var nivel = estado.alerta_travado ? (estado.nivel_escalonamento || 1) : 0;
+			if (estado.aguardando_resposta_voz) {
+				if (!perguntaEmAndamento) { tentativasPergunta = 0; fazerPerguntaBem(); }
+				return;
+			}
+			if (!estado.alerta_travado) {
+				perguntaEmAndamento = false;
+				if (driverVozBotoes) driverVozBotoes.hidden = true;
+				mostrarStatusVoz('');
+			}
+			var chamadaAberta = driverFullscreenCall.classList.contains('active');
+			if (nivel >= 1 && nivel < 3 && chamadaAberta) {
+				if (modoEscuta !== 'ACORDADO') {
+					ouvir('ACORDADO', 600000, function (texto) {
+						if (PALAVRAS_ACORDADO.test(texto)) { confirmarAlertaMotorista(); return true; }
+						return false;
+					});
+				}
+			} else if (modoEscuta === 'ACORDADO') {
+				pararEscuta();
+			}
+		}
+
+		var btnRespostaBem = document.getElementById('btnRespostaBem');
+		var btnRespostaSocorro = document.getElementById('btnRespostaSocorro');
+		if (btnRespostaBem) btnRespostaBem.addEventListener('click', function () { responderPergunta('BEM'); });
+		if (btnRespostaSocorro) btnRespostaSocorro.addEventListener('click', function () { responderPergunta('SOCORRO'); });
+		if (vozDisponivel) {
+			var subChamada = document.getElementById('driverCallEscalationSub');
+			if (subChamada) subChamada.textContent = 'Erga a cabeça por 3 segundos ou diga "ESTOU ACORDADO": o alerta desliga sozinho, sem tocar no celular.';
+		}
+
 		function fecharChamadaTelaCheia() {
 			// Só limpa se a chamada estiver aberta (evita cortar a voz de "boa viagem" a cada pacote)
 			if (!driverFullscreenCall || !driverFullscreenCall.classList.contains('active')) return;
@@ -1167,8 +1364,9 @@
 				driverCallEscalationTimer.textContent = '0.0s';
 			}
 			if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
-			pararTodasAsVozes();
+			pararTodasAsVozes(vozRespostaBemAudio); // deixa terminar o "Que bom! Alerta encerrado"
 			aplicarFaseNoCelular(0);
+			pararEscuta();
 		}
 
 		// O motorista confirmou o alerta na tela (descansar ou "estou alerta")
@@ -1328,6 +1526,7 @@
 			} else if (!estado.alerta_travado) {
 				fecharChamadaTelaCheia();
 			}
+			atualizarEscutaPorVoz(estado);
 		}
 
 		// ------------------------------------------------------------------------------
