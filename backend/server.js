@@ -323,9 +323,12 @@ function dispararChamadaCelularADB() {
 // O número fica em NUMERO_EMERGENCIA no backend/.env (fora do git). Sem ele, só abre o discador com o 192.
 // ATENÇÃO: em testes e na apresentação use o celular de alguém da equipe. Trote para 190/191/192/193 é crime.
 const NUMERO_EMERGENCIA = String(process.env.NUMERO_EMERGENCIA || '').replace(/[^\d+]/g, '');
+// Desligada a pedido do Matheus (14/11): na banca não haverá ligação automática.
+// "volta a ligação automática" = LIGACAO_AUTOMATICA = true
+const LIGACAO_AUTOMATICA = false;
 
 function ligarEmergenciaADB() {
-  if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH)) return;
+  if (!LIGACAO_AUTOMATICA || IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH)) return;
   const automatica = Boolean(NUMERO_EMERGENCIA);
   const numero = NUMERO_EMERGENCIA || '192';
   const acao = automatica ? 'android.intent.action.CALL' : 'android.intent.action.DIAL';

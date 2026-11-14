@@ -623,13 +623,13 @@
 			</div>
 			<!-- Fase 3 (possível acidente): socorro. Pelo cabo USB o celular liga sozinho; aqui ficam os atalhos -->
 			<div class="driver-emergencia-box" id="driverEmergenciaBox" hidden>
-				<strong><span class="material-symbols-outlined g-icon" style="margin-right:6px">emergency</span>POSSÍVEL ACIDENTE · CHAMANDO SOCORRO</strong>
+				<strong><span class="material-symbols-outlined g-icon" style="margin-right:6px">emergency</span>POSSÍVEL ACIDENTE · CENTRAL AVISADA</strong>
 				<div class="driver-emergencia-botoes">
 					<a href="tel:192"><span class="material-symbols-outlined g-icon">ambulance</span>SAMU 192</a>
 					<a href="tel:193"><span class="material-symbols-outlined g-icon">fire_truck</span>BOMBEIROS 193</a>
 					<a href="tel:191"><span class="material-symbols-outlined g-icon">local_police</span>PRF 191</a>
 				</div>
-				<small>A Central já recebeu sua localização. Toque para abrir o discador.</small>
+				<small>A Central já recebeu sua localização. Se precisar, toque para ligar.</small>
 			</div>
 		</div>
 
@@ -1059,7 +1059,6 @@
 			sincronizarEstadoTurnoUI(novoEstado);
 			// Retomar depois da pausa: só o lembrete (sem "Conectado à Central Tech")
 			if (novoEstado) {
-				pedirPermissaoMicrofone();
 				if (voltandoDaPausa) tocarVoz(vozRetomarAudio);
 				else tocarVozInicioViagem();
 			}
@@ -1228,6 +1227,7 @@
 		// "desliga o comando de voz" = COMANDO_DE_VOZ_ATIVO = false
 		// ------------------------------------------------------------------------------
 		var COMANDO_DE_VOZ_ATIVO = true;
+		var ESPERA_ANTES_DA_PERGUNTA_MS = 3000; // Microfone abre, espera o bip do Android sumir, aí ela pergunta
 		var ReconhecimentoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
 		// O Chrome só libera o microfone em site seguro (link da Vercel / HTTPS)
 		var vozDisponivel = COMANDO_DE_VOZ_ATIVO && !!ReconhecimentoVoz && window.isSecureContext;
@@ -1245,14 +1245,6 @@
 		var driverVozStatus = document.getElementById('driverVozStatus');
 		var driverVozBotoes = document.getElementById('driverVozBotoes');
 		var driverPerguntaBox = document.getElementById('driverPerguntaBox');
-
-		// Pedido com um toque (ao iniciar a viagem): no alerta o microfone já abre sozinho
-		function pedirPermissaoMicrofone() {
-			if (!vozDisponivel || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-			navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
-				s.getTracks().forEach(function (t) { t.stop(); });
-			}).catch(function () { });
-		}
 
 		function mostrarStatusVoz(texto) {
 			if (driverPerguntaBox) driverPerguntaBox.hidden = !texto;
@@ -1329,7 +1321,7 @@
 			mostrarStatusVoz(vozDisponivel ? 'Microfone aberto · Pergunta: você está bem?' : 'Pergunta: você está bem? (use os botões abaixo)');
 			// Ordem igual a uma ligação: o microfone abre (bip do Android), ela pergunta e o motorista responde.
 			// O microfone também ouve a pergunta dela: as palavras da pergunta são descontadas antes de interpretar.
-			ouvir('PERGUNTA', 11000, function (texto) {
+			ouvir('PERGUNTA', 14000, function (texto) {
 				var resposta = semEcoDaPergunta(texto);
 				if (PALAVRAS_SOCORRO.test(resposta)) { responderPergunta('SOCORRO'); return true; }
 				if (PALAVRAS_BEM.test(resposta)) { responderPergunta('BEM'); return true; }
@@ -1343,8 +1335,8 @@
 				vozPerguntaBemAudio.onended = null;
 				if (perguntaEmAndamento && vozDisponivel) mostrarStatusVoz('Ouvindo... diga SIM ou NÃO');
 			};
-			// Espera o bip do microfone terminar antes de falar
-			setTimeout(function () { if (perguntaEmAndamento) tocarVoz(vozPerguntaBemAudio); }, vozDisponivel ? 700 : 0);
+			// Espera 3 s o som do microfone do Android sair antes de a voz perguntar (pedido do Matheus)
+			setTimeout(function () { if (perguntaEmAndamento) tocarVoz(vozPerguntaBemAudio); }, vozDisponivel ? ESPERA_ANTES_DA_PERGUNTA_MS : 0);
 		}
 
 		// Tira da transcrição o que a própria voz da pergunta falou ("Você está bem? Responda sim ou não")
