@@ -45,7 +45,7 @@ const LIMIAR_SIMULACAO_MS = 1500;        // Botão "Simular Alerta" (modo rápid
 const RECUPERACAO_MS = 3000;             // Cabeça erguida por 3s encerra o alerta automaticamente
 const ESCALONAMENTO = { critico_ms: 9000, acidente_ms: 15000 };
 const COOLDOWN_NORMALIZACAO_MS = 2500;   // Evita re-disparo imediato logo após normalizar
-const TIMEOUT_ESP32_MS = 6000;
+const TIMEOUT_ESP32_MS = 10000; // Pela nuvem o envio às vezes atrasa ~6 s (medido no power bank em 14/11)
 const TIMEOUT_ESPELHO_MS = 5000;
 
 // Configuração para suporte a proxies reversos do Render / Nginx
@@ -314,6 +314,24 @@ function dispararChamadaCelularADB() {
   execFile(ADB_PATH, ['shell', cmdShell], { timeout: 7000 }, () => { });
 }
 
+// Fase 3 (possível acidente): o celular do motorista liga sozinho para o socorro, pelo cabo USB (ADB).
+// O número fica em NUMERO_EMERGENCIA no backend/.env (fora do git). Sem ele, só abre o discador com o 192.
+// ATENÇÃO: em testes e na apresentação use o celular de alguém da equipe. Trote para 190/191/192/193 é crime.
+const NUMERO_EMERGENCIA = String(process.env.NUMERO_EMERGENCIA || '').replace(/[^\d+]/g, '');
+
+function ligarEmergenciaADB() {
+  if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH)) return;
+  const automatica = Boolean(NUMERO_EMERGENCIA);
+  const numero = NUMERO_EMERGENCIA || '192';
+  const acao = automatica ? 'android.intent.action.CALL' : 'android.intent.action.DIAL';
+  const cmdShell = `input keyevent 224 ; wm dismiss-keyguard ; am start -a ${acao} -d tel:${numero}`;
+  execFile(ADB_PATH, ['shell', cmdShell], { timeout: 7000 }, (err) => {
+    if (err) registrarEvento('COMANDO_CENTRAL', 'Ligação de emergência: celular não encontrado no cabo USB', 'Use os botões de socorro na tela do celular.');
+    else registrarEvento('COMANDO_CENTRAL', automatica ? `Celular ligando para o socorro (${numero})` : 'Discador do celular aberto com o 192',
+      automatica ? 'Ligação automática pelo cabo USB.' : 'Sem NUMERO_EMERGENCIA no .env: o motorista só precisa apertar ligar.');
+  });
+}
+
 // Quando o motorista confirma o alerta, retorna automaticamente para o app da câmera Linklemo
 function voltarParaLinklemoCelularADB() {
   if (IS_RENDER_CLOUD || !fs.existsSync(ADB_PATH) || !chamadaCelularAbertaViaAdb) return;
@@ -404,6 +422,7 @@ setInterval(() => {
     registrarEvento('ALARME_ATIVADO',
       `Fase 3 · SOS: possível acidente (${ESCALONAMENTO.acidente_ms / 1000}s sem resposta)`,
       'Desaceleração veicular via Relé 1 (GPIO 18), Pisca-Alerta via Relé 2 (GPIO 19) e coordenadas GPS para Resgate/SAMU 192.');
+    ligarEmergenciaADB();
   }
 
   transmitirEstado(mudouNivel ? 'ESCALONAMENTO_EMERGENCIA' : 'TELEMETRIA_UPDATE');
