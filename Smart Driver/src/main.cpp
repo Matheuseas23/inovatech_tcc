@@ -223,6 +223,10 @@ volatile int8_t monitoramentoServidor = -1;
 // Modo exibição ligado no app do motorista ("exib":1): o display mostra olhos piscando e olhando em volta
 volatile int8_t modoExibicaoServidor = 0;
 volatile bool semContatoServidor = false; // Escrito pelo Core 0 (à prova de falha)
+// Alarme que ainda não chegou ao servidor: se ele acabar antes do envio (nuvem lenta), é reportado assim mesmo
+volatile bool alarmePendenteEnvio = false;
+volatile unsigned long alarmePendenteDesdeMs = 0;
+const unsigned long VALIDADE_ALARME_PENDENTE_MS = 10000;
 
 // Modo checagem (comando serial DIAG:1 / DIAG:0): bip de monitor cardíaco a cada 1 s e sensores
 // suspensos (nada de alarme). Desliga sozinho em 15 min por segurança.
@@ -281,6 +285,7 @@ float gRefX = 0, gRefY = 0, gRefZ = 1;     // Vetor de referência (cabeça ergu
 float rotRef[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}; // Leva a postura calibrada para o eixo Z
 float historicoInclinacao[10] = {0};       // 10 amostras x 10 ms = janela de 100 ms
 uint8_t indiceHistorico = 0;
+bool reiniciarFiltroMpu = false;           // Depois de reconectar: recomeça filtro e histórico (evita "pescada" falsa)
 float biasGx = 0, biasGy = 0, biasGz = 0;  // Desvio de fábrica do giroscópio (medido na calibração)
 float giroFiltrado = 0;                    // °/s
 bool cabecaInclinada               = false; // Ângulo além do limite (com histerese)
@@ -776,6 +781,7 @@ LeituraMPU lerMPU6050(unsigned long agora) {
     giroDesligado = false;
     if (!inicializarMPU6050()) return r;
     Serial.println(F("[MPU-6050] Modulo detectado."));
+    reiniciarFiltroMpu = true;
     // Sem referência ainda: calibra com aviso. Se já tinha, mantém (o sensor segue preso no óculos)
     if (!mpuCalibrado && !calibracaoAgendadaMs) calibracaoAgendadaMs = agora + 1000;
   }
@@ -788,6 +794,9 @@ LeituraMPU lerMPU6050(unsigned long agora) {
     return r;
   }
   tentativasMpu = 0;
+
+  // Voltou de uma falha: o filtro parte da leitura atual, não do valor de antes da falha
+  if (reiniciarFiltroMpu) { gFiltX = ax; gFiltY = ay; gFiltZ = az; }
 
   // Filtro passa-baixas leve (70% anterior + 30% atual): suave sem atrasar a pescada
   gFiltX = gFiltX * 0.7 + ax * 0.3;
@@ -817,6 +826,11 @@ LeituraMPU lerMPU6050(unsigned long agora) {
   r.roll  = atan2(py, pz) * RAD_TO_DEG;
 
   // Detecção de "Pescada" de Sono: queda angular brusca dentro de 100 ms
+  // (depois de uma reconexão, o histórico recomeça na posição atual: o salto da falha não conta como queda)
+  if (reiniciarFiltroMpu) {
+    for (uint8_t i = 0; i < 10; i++) historicoInclinacao[i] = r.inclinacao;
+    reiniciarFiltroMpu = false;
+  }
   float inclinacao100msAtras = historicoInclinacao[indiceHistorico];
   historicoInclinacao[indiceHistorico] = r.inclinacao;
   indiceHistorico = (indiceHistorico + 1) % 10;
@@ -977,6 +991,13 @@ void loop() {
   }
 
   bool alarmeGeral = alarmeAtivo || testeAlarmeAtivo;
+  // Marca o começo de cada alarme até o servidor confirmar que recebeu (nenhum alarme curto se perde)
+  static bool alarmeGeralAnterior = false;
+  if (alarmeGeral && !alarmeGeralAnterior) {
+    alarmePendenteDesdeMs = millis();
+    alarmePendenteEnvio = true;
+  }
+  alarmeGeralAnterior = alarmeGeral;
   // Relé 2 (pisca-alerta) arma já no bip de aviso; o Relé 1 (safe-stop) só no alarme contínuo.
   // Cada mudança de estado de um relé é um "tec" audível no módulo.
   bool avisoPiscaAlerta = cabecaEstavaBaixa && tempoDecorridoMs >= BIP_AVISO_INICIO_MS;
@@ -1915,6 +1936,14 @@ void taskTelemetria(void *pvParameters) {
     snap = dadosGlobais;
     portEXIT_CRITICAL(&mutexDados);
 
+    // Alarme que começou e já acabou sem chegar ao servidor (envio travado): reporta agora,
+    // desde que seja recente (um alarme antigo não pode aparecer quando o Wi-Fi volta)
+    if (alarmePendenteEnvio && millis() - alarmePendenteDesdeMs > VALIDADE_ALARME_PENDENTE_MS) alarmePendenteEnvio = false;
+    if (alarmePendenteEnvio && strcmp(snap.estado, "NORMAL") == 0) {
+      strncpy(snap.estado, "ALARME_ATIVADO", sizeof(snap.estado) - 1);
+    }
+    bool enviandoAlarme = strcmp(snap.estado, "ALARME_ATIVADO") == 0;
+
     int tamanho = montarPayload(snap, seq++, payload, sizeof(payload));
     if (tamanho <= 0 || tamanho >= (int)sizeof(payload)) tamanho = 0;
 
@@ -1950,6 +1979,7 @@ void taskTelemetria(void *pvParameters) {
           }
           ipServidor = udp.remoteIP();
           servidorConhecido = true;
+          if (enviandoAlarme) alarmePendenteEnvio = false;
           ultimoContatoServidor = millis();
           interpretarComandosTexto(resposta);
         }
@@ -1976,6 +2006,7 @@ void taskTelemetria(void *pvParameters) {
           int codigo = httpNuvem.POST((uint8_t*)payload, tamanho);
           if (codigo == 200) {
             ultimoSucessoNuvem = millis();
+            if (enviandoAlarme) alarmePendenteEnvio = false;
             String corpo = httpNuvem.getString();
             interpretarComandosTexto(corpo.c_str());
           }
