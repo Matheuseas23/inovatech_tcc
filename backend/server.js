@@ -232,11 +232,13 @@ function inserirEvento(evento) {
   broadcast({ tipo: 'NOVO_EVENTO', evento });
 }
 
-function registrarEvento(tipo, mensagem, detalhes = '') {
+// quandoMs: hora em que o evento aconteceu (padrão: agora; eventos gravados offline pela ESP32 vêm com a hora antiga)
+function registrarEvento(tipo, mensagem, detalhes = '', quandoMs = Date.now()) {
+  const quando = new Date(quandoMs);
   const novoEvento = {
     id: 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    timestamp: new Date().toISOString(),
-    horaFormatada: new Date().toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+    timestamp: quando.toISOString(),
+    horaFormatada: quando.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
     tipo,
     mensagem,
     detalhes
@@ -811,6 +813,62 @@ function aplicarEspelho(p) {
   return pendentes;
 }
 
+// ------------------------------------------------------------------------------
+// EVENTOS GRAVADOS PELA ESP32 SEM CONEXÃO (sugestão do professor, 16/11/2026)
+// Sem servidor, a ESP32 guarda os eventos na memória com a "idade" (ms desde que aconteceram).
+// Quando volta, manda em "offline":[{id,t,v,idade}] + "boot" (número sorteado a cada ligada).
+// O servidor registra cada um com a hora real em que aconteceu e responde "ack" (maior id
+// recebido): a ESP32 só apaga da memória o que foi confirmado. Repetidos são ignorados.
+// "tira o registro offline" = REGISTRO_OFFLINE = false no main.cpp
+// ------------------------------------------------------------------------------
+const TEXTOS_EVENTO_OFFLINE = {
+  1: () => ['DESCONEXAO', 'ESP32 sem conexão: gravando os eventos na memória dos óculos'],
+  2: (v) => ['ALARME_ATIVADO', v === 1 ? 'PERIGO: PESCADA DE SONO DETECTADA PELO ACELERÔMETRO!' : `PERIGO: CABEÇA BAIXA POR ${(limiarEsp32Ms / 1000).toFixed(1)}s!`],
+  3: (v) => ['NORMAL', `Cabeça erguida: alarme encerrado nos óculos (cabeça baixa por ${(v / 10).toFixed(1)} s)`],
+  4: () => ['NORMAL', 'Cabeça erguida antes do disparo do alarme'],
+  5: () => ['DESCONEXAO', 'Acelerômetro desconectado'],
+  6: () => ['CONEXAO', 'Acelerômetro reconectado'],
+  7: () => ['PRE_ALERTA', 'Sem contato com o servidor há 15 s: os óculos seguem protegendo sozinhos (sensores ligados)']
+};
+const eventosOfflineVistos = new Set(); // "boot:id" já registrados (a ESP32 pode reenviar antes do ack)
+
+// Lê "offline" do pacote: devolve os eventos novos (com a hora absoluta) e o ack para a placa
+function extrairEventosOffline(p) {
+  if (!Array.isArray(p.offline) || !p.offline.length) return { novos: [], ack: undefined };
+  const agora = Date.now();
+  const boot = String(p.boot || '0');
+  let ack = 0;
+  const novos = [];
+  p.offline.slice(0, 40).forEach((ev) => {
+    const id = Number(ev && ev.id);
+    const tipo = Number(ev && ev.t);
+    const idade = Number(ev && ev.idade);
+    if (!Number.isFinite(id) || id <= 0) return;
+    ack = Math.max(ack, id);
+    const chave = `${boot}:${id}`;
+    if (eventosOfflineVistos.has(chave) || !TEXTOS_EVENTO_OFFLINE[tipo]) return;
+    if (!Number.isFinite(idade) || idade < 0 || idade > 24 * 3600000) return;
+    eventosOfflineVistos.add(chave);
+    novos.push({ chave, tipo, valor: Number(ev.v) || 0, quando: agora - idade });
+  });
+  if (eventosOfflineVistos.size > 1000) eventosOfflineVistos.clear();
+  return { novos, ack: ack || undefined };
+}
+
+function registrarEventosOffline(eventos) {
+  if (!Array.isArray(eventos) || !eventos.length) return;
+  // Do mais antigo para o mais novo: na Central o mais recente fica em cima
+  eventos.slice().sort((a, b) => a.quando - b.quando).forEach((ev) => {
+    const texto = TEXTOS_EVENTO_OFFLINE[ev.tipo];
+    if (!texto || !Number.isFinite(ev.quando)) return;
+    if (ev.chave) eventosOfflineVistos.add(ev.chave);
+    const [tipo, mensagem] = texto(ev.valor);
+    if (ev.tipo === 2) estado.contadores.totalAlarmesSessao++;
+    registrarEvento(tipo, `[OFFLINE] ${mensagem}`, 'Gravado nos óculos sem conexão e enviado à Central quando a ESP32 voltou a ficar online.', ev.quando);
+  });
+  transmitirEstado();
+}
+
 // Ponto único de entrada para pacotes vindos de qualquer canal
 function processarPacote(payload, fonte) {
   const p = payload && typeof payload === 'object' ? payload : {};
@@ -827,13 +885,18 @@ function processarPacote(payload, fonte) {
   }
   if (ehPacoteESP32(p) && modoEspelhoAtivo()) {
     // ESP32 sem acesso ao PC (outra rede ou firewall): a nuvem repassa a telemetria ao servidor local
+    const offline = extrairEventosOffline(p);
+    if (offline.novos.length) comandosParaLocal.push({ tipo: 'EVENTOS_OFFLINE_ESP32', eventos: offline.novos });
     comandosParaLocal = comandosParaLocal.filter((c) => c.tipo !== 'TELEMETRIA_ESP32');
     comandosParaLocal.push({ tipo: 'TELEMETRIA_ESP32', pacote: p });
-    return respostaESP32();
+    return { ...respostaESP32(), ack: offline.ack };
   }
   if (ehPacoteESP32(p)) {
+    // Eventos gravados offline entram antes do "ESP32 conectada" (aconteceram antes da volta)
+    const offline = extrairEventosOffline(p);
+    registrarEventosOffline(offline.novos);
     processarTelemetriaESP32(p, fonte);
-    return respostaESP32();
+    return { ...respostaESP32(), ack: offline.ack };
   }
   return {};
 }
@@ -942,6 +1005,7 @@ function executarMensagemDaNuvem(msg) {
   if (msg.tipo === 'COMANDO') executarComando(msg.comando, `${msg.origem || 'INTERNET'} via nuvem`, msg.extras || {});
   else if (msg.tipo === 'STATUS_MOTORISTA') atualizarTurno(msg.status_viagem, `${msg.origem || 'App do Motorista'} via nuvem`, msg.pausa);
   else if (msg.tipo === 'GPS_UPDATE') atualizarGps(msg.gps, 'CELULAR_MOTORISTA (via nuvem)');
+  else if (msg.tipo === 'EVENTOS_OFFLINE_ESP32') registrarEventosOffline((msg.eventos || []).filter((ev) => !eventosOfflineVistos.has(ev.chave)));
   else if (msg.tipo === 'TELEMETRIA_ESP32' && msg.pacote && ehPacoteESP32(msg.pacote)) processarTelemetriaESP32(msg.pacote, 'NUVEM');
 }
 
@@ -981,7 +1045,7 @@ app.post('/api/telemetry', (req, res) => {
   const resultado = processarPacote(req.body, 'HTTP');
   if (resultado.cmds) {
     // Resposta enxuta para a ESP32 (o firmware procura os nomes dos comandos no texto)
-    return res.status(200).json({ sucesso: true, srv: 'INOVATECH', cmds: resultado.cmds, mon: resultado.mon, exib: resultado.exib, pwr: resultado.pwr });
+    return res.status(200).json({ sucesso: true, srv: 'INOVATECH', cmds: resultado.cmds, mon: resultado.mon, exib: resultado.exib, pwr: resultado.pwr, ack: resultado.ack });
   }
   return res.status(200).json({ sucesso: true, estado_processado: estado.estado, ...resultado });
 });
@@ -1099,7 +1163,7 @@ udpServer.on('message', (msg, rinfo) => {
 
   const resultado = processarPacote(dados, 'UDP');
   // A resposta ensina o IP do servidor para a ESP32 e entrega os comandos da Central
-  const resposta = Buffer.from(JSON.stringify({ srv: 'INOVATECH', cmds: resultado.cmds || [], mon: resultado.mon, exib: resultado.exib, pwr: resultado.pwr }));
+  const resposta = Buffer.from(JSON.stringify({ srv: 'INOVATECH', cmds: resultado.cmds || [], mon: resultado.mon, exib: resultado.exib, pwr: resultado.pwr, ack: resultado.ack }));
   udpServer.send(resposta, rinfo.port, rinfo.address, () => { });
 });
 
