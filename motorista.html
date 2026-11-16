@@ -298,6 +298,44 @@
 			display: flex;
 		}
 
+		/* Aviso de 1º toque (libera som e vibração no Chrome) */
+		.driver-ativar-overlay {
+			position: fixed;
+			inset: 0;
+			z-index: 999990;
+			background: rgba(2, 11, 18, 0.94);
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 12px;
+			color: #ffffff;
+			text-align: center;
+			cursor: pointer;
+			font-family: 'Space Mono', monospace;
+		}
+
+		.driver-ativar-overlay[hidden] {
+			display: none;
+		}
+
+		.driver-ativar-overlay .g-icon {
+			font-size: 72px;
+			color: var(--cyan);
+			animation: bordaNeonAlarme 1s infinite alternate;
+		}
+
+		.driver-ativar-overlay strong {
+			font-family: 'Barlow Condensed', sans-serif;
+			font-size: 26px;
+			letter-spacing: 1.5px;
+		}
+
+		.driver-ativar-overlay span:last-child {
+			font-size: 12px;
+			color: var(--muted);
+		}
+
 		/* Fase 3 na chamada do celular: atalhos de socorro */
 		.driver-emergencia-box {
 			margin-top: 12px;
@@ -604,6 +642,13 @@
 		<div class="driver-bg-overlay"></div>
 	</div>
 
+	<!-- O Chrome só libera vibração e som depois do 1º toque na página: este aviso garante esse toque -->
+	<div class="driver-ativar-overlay" id="driverAtivarOverlay" hidden>
+		<span class="material-symbols-outlined g-icon">touch_app</span>
+		<strong>TOQUE NA TELA PARA ATIVAR</strong>
+		<span>Som, voz e vibração dos alertas</span>
+	</div>
+
 	<!-- Modo Tela Apagada no Celular (Toque duplo para sair) -->
 	<div class="driver-black-screen" id="driverBlackScreen">
 		<span style="font-size:9px;color:rgba(255,255,255,0.15);letter-spacing:2px">● MONITORAMENTO ATIVO · TOQUE PARA
@@ -776,6 +821,12 @@
 			</p>
 
 			<!-- Pergunta por voz "Você está bem?" depois que o alerta se encerra pela postura (mãos livres) -->
+			<!-- Fim do descanso: o despertador toca até o motorista desligar (ou retomar a viagem) -->
+			<button type="button" class="btn-pausa" id="btnPararDespertador" hidden>
+				<span class="material-symbols-outlined g-icon">alarm_off</span>
+				<span>DESLIGAR DESPERTADOR</span>
+			</button>
+
 			<!-- Demonstração na banca: mostra o que acontece quando o tempo de descanso acaba -->
 			<button type="button" class="btn-pausa" id="btnZerarPausa" hidden>
 				<span class="material-symbols-outlined g-icon">timer_off</span>
@@ -897,8 +948,11 @@
 			if (pausaOpcoes) pausaOpcoes.hidden = true;
 			if (descansoSeletor) descansoSeletor.hidden = true;
 			if (btnZerarPausa && status !== 'PAUSA') btnZerarPausa.hidden = true;
-			// Saiu da pausa: para a vibração do fim do descanso
-			if (status !== 'PAUSA' && navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
+			// Saiu da pausa: para o despertador e a vibração do fim do descanso
+			if (status !== 'PAUSA') {
+				if (typeof desligarDespertador === 'function') desligarDespertador();
+				if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
+			}
 			if (btnPausar) btnPausar.hidden = !turnoAtivo;
 			if (driverTimerLabel) driverTimerLabel.textContent = 'CRONÔMETRO DE TOLERÂNCIA:';
 
@@ -972,14 +1026,120 @@
 				driverFeedbackMsg.textContent = 'O tempo da pausa acabou. Quando estiver pronto, toque em RETOMAR VIAGEM.';
 				if (!avisoFimPausaDado) {
 					avisoFimPausaDado = true;
-					tocarBipDuplo(660, 880);
-					tocarVoz(vozPausaFimAudio);
+					avisarFimDaPausa(pausaAtual);
 				}
-				// Vibração forte repetida a cada 6 s até o motorista tocar em RETOMAR VIAGEM
-				if (navigator.vibrate && Date.now() - ultimaVibracaoFimPausaMs >= 6000) {
+				// Café / refeição: vibração forte a cada 6 s até retomar (o despertador do descanso vibra sozinho)
+				if (pausaAtual.motivo !== 'DESCANSO' && navigator.vibrate && Date.now() - ultimaVibracaoFimPausaMs >= 6000) {
 					ultimaVibracaoFimPausaMs = Date.now();
 					try { navigator.vibrate([800, 200, 800, 200, 800]); } catch (e) { }
 				}
+			}
+		}
+
+		// ------------------------------------------------------------------------------
+		// 1º TOQUE: o Chrome bloqueia vibração e som até a pessoa tocar na página uma vez.
+		// Como o motorista não deve mexer no celular dirigindo, o app pede esse toque ao abrir.
+		// ------------------------------------------------------------------------------
+		var driverAtivarOverlay = document.getElementById('driverAtivarOverlay');
+		var jaAtivado = navigator.userActivation && navigator.userActivation.hasBeenActive;
+		if (driverAtivarOverlay && !jaAtivado) driverAtivarOverlay.hidden = false;
+
+		function liberarSomEVibracao() {
+			if (driverAtivarOverlay) driverAtivarOverlay.hidden = true;
+			try {
+				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+				if (audioCtx.state === 'suspended') audioCtx.resume();
+			} catch (e) { }
+			// (Depois deste toque o Chrome também libera as vozes .mp3 sozinho)
+			if (navigator.vibrate) { try { navigator.vibrate(120); } catch (e) { } } // Confirma: vibração liberada
+			document.removeEventListener('pointerdown', liberarSomEVibracao, true);
+		}
+		document.addEventListener('pointerdown', liberarSomEVibracao, true);
+
+		// ------------------------------------------------------------------------------
+		// FIM DA PAUSA: notificação do Android (todas) + despertador no descanso
+		// ------------------------------------------------------------------------------
+		var swRegistro = null;
+		if ('serviceWorker' in navigator && window.isSecureContext) {
+			navigator.serviceWorker.register('sw.js').then(function (r) { swRegistro = r; }).catch(function () { });
+		}
+
+		// Pedido com um toque (ao escolher a pausa): no fim dela a notificação já pode aparecer
+		function pedirPermissaoNotificacao() {
+			try {
+				if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+			} catch (e) { }
+		}
+
+		function notificar(titulo, corpo) {
+			try {
+				if (!('Notification' in window) || Notification.permission !== 'granted') return;
+				var opcoes = { body: corpo, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'fim-pausa', renotify: true,
+					requireInteraction: true, vibrate: [800, 200, 800, 200, 800] };
+				// No Android só funciona pelo service worker; no computador vale o jeito direto
+				if (swRegistro && swRegistro.showNotification) swRegistro.showNotification(titulo, opcoes);
+				else new Notification(titulo, opcoes);
+			} catch (e) { }
+		}
+
+		var despertadorTimer = null;
+		var btnPararDespertador = document.getElementById('btnPararDespertador');
+
+		// "Bip-bip-bip-bip" de despertador digital
+		function tocarDespertadorUmaVez() {
+			try {
+				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+				if (audioCtx.state === 'suspended') audioCtx.resume();
+				for (var i = 0; i < 4; i++) {
+					var t = audioCtx.currentTime + i * 0.16;
+					var osc = audioCtx.createOscillator();
+					var gain = audioCtx.createGain();
+					osc.type = 'square';
+					osc.frequency.setValueAtTime(1000, t);
+					gain.gain.setValueAtTime(0.35, t);
+					gain.gain.setValueAtTime(0, t + 0.09);
+					osc.connect(gain); gain.connect(audioCtx.destination);
+					osc.start(t); osc.stop(t + 0.1);
+				}
+			} catch (e) { }
+		}
+
+		function ligarDespertador() {
+			if (despertadorTimer) return;
+			if (btnPararDespertador) btnPararDespertador.hidden = false;
+			function tocar() {
+				tocarDespertadorUmaVez();
+				if (navigator.vibrate) { try { navigator.vibrate([700, 150, 700]); } catch (e) { } }
+			}
+			tocar();
+			despertadorTimer = setInterval(tocar, 1600);
+		}
+
+		function desligarDespertador() {
+			if (despertadorTimer) { clearInterval(despertadorTimer); despertadorTimer = null; }
+			if (btnPararDespertador) btnPararDespertador.hidden = true;
+			if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
+		}
+
+		if (btnPararDespertador) {
+			btnPararDespertador.addEventListener('click', function () {
+				desligarDespertador();
+				tocarVoz(vozPausaFimAudio); // "Tempo de pausa encerrado. Quando estiver pronto, toque em retomar viagem."
+			});
+		}
+
+		function avisarFimDaPausa(pausa) {
+			var textos = {
+				CAFE: 'Sua pausa para o café acabou. Quando estiver pronto, toque em Retomar viagem.',
+				REFEICAO: 'Seu horário de refeição acabou. Quando estiver pronto, toque em Retomar viagem.',
+				DESCANSO: 'Seu descanso acabou! Hora de acordar. Toque em Retomar viagem quando estiver pronto.'
+			};
+			notificar('Smart Driver · Pausa encerrada', textos[pausa.motivo] || textos.DESCANSO);
+			if (pausa.motivo === 'DESCANSO') {
+				ligarDespertador();
+			} else {
+				tocarBipDuplo(660, 880);
+				tocarVoz(vozPausaFimAudio);
 			}
 		}
 
@@ -1075,6 +1235,7 @@
 		function iniciarPausa(motivo, minutos) {
 			if (statusViagem !== 'EM_VIAGEM') return;
 			if (descansoSeletor) descansoSeletor.hidden = true;
+			pedirPermissaoNotificacao();
 			definirStatusViagem('PAUSA', { motivo: motivo, rotulo: ROTULOS_PAUSA[motivo], minutos: minutos, inicioMs: Date.now() });
 			tocarBipDuplo(880, 523.25);
 			tocarVoz(vozPausaInicioAudio);
