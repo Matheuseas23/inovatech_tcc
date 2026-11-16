@@ -691,7 +691,7 @@ function atualizarGps(gps, origem) {
 function executarComando(comando, origem = 'CENTRAL', extras = {}) {
   const cmd = String(comando || '').toUpperCase();
   const normalizar = ['SILENCIAR_ALARME', 'RESET', 'NORMALIZAR'].includes(cmd);
-  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2', 'MODO_EXIBICAO', 'DESLIGAR_OCULOS', 'LIGAR_OCULOS', 'RESPOSTA_VOZ'];
+  const conhecidos = ['DISPARAR_TESTE', 'SIMULAR_ALERTA', 'CALIBRAR_MPU', 'TOGGLE_RELE1', 'TOGGLE_RELE2', 'MODO_EXIBICAO', 'DESLIGAR_OCULOS', 'LIGAR_OCULOS', 'RESPOSTA_VOZ', 'ZERAR_PAUSA'];
   if (!normalizar && !conhecidos.includes(cmd)) return { ok: false, mensagem: `Comando desconhecido: ${comando}` };
 
   // Na nuvem em modo espelho, quem executa é o servidor local (a nuvem só repassa)
@@ -713,6 +713,15 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
   if (normalizar) {
     encerrarAlerta(`Alerta desativado (${origem})`, 'Confirmação recebida: alarmes físicos e virtuais encerrados.');
     return { ok: true, mensagem: 'Alerta encerrado.' };
+  }
+
+  // Demonstração na banca: zera o tempo de descanso para mostrar o fim da pausa na hora
+  if (cmd === 'ZERAR_PAUSA') {
+    const mg = estado.motoristas.matheus_garcia;
+    if (mg.status !== 'PAUSA' || !mg.pausa) return { ok: false, mensagem: 'O motorista não está em pausa.' };
+    mg.pausa.inicio = new Date(Date.now() - mg.pausa.duracao_ms).toISOString();
+    transmitirEstado(); // O laço de 2 s registra "tempo de pausa encerrado" e a Central mostra em vermelho
+    return { ok: true, mensagem: 'Tempo de descanso zerado.' };
   }
 
   // Resposta falada do motorista à pergunta "Você está bem?" (depois do possível acidente)

@@ -776,6 +776,12 @@
 			</p>
 
 			<!-- Pergunta por voz "Você está bem?" depois que o alerta se encerra pela postura (mãos livres) -->
+			<!-- Demonstração na banca: mostra o que acontece quando o tempo de descanso acaba -->
+			<button type="button" class="btn-pausa" id="btnZerarPausa" hidden>
+				<span class="material-symbols-outlined g-icon">timer_off</span>
+				<span>ZERAR TEMPO DE DESCANSO (DEMONSTRAÇÃO)</span>
+			</button>
+
 			<div class="driver-pergunta-box" id="driverPerguntaBox" hidden>
 				<div class="driver-voz-status" id="driverVozStatus"></div>
 				<div class="driver-voz-botoes" id="driverVozBotoes">
@@ -856,6 +862,7 @@
 		var turnoSincronizadoComServidor = false;
 		var ultimoEstadoRecebido = null;
 		var chamadaSilenciadaAte = 0;
+		var vibrouPreAlerta = false;
 
 		// Iniciar turno / Ativar Óculos
 		var btnToggleShift = document.getElementById('btnToggleShift');
@@ -889,6 +896,9 @@
 			} catch (e) { }
 			if (pausaOpcoes) pausaOpcoes.hidden = true;
 			if (descansoSeletor) descansoSeletor.hidden = true;
+			if (btnZerarPausa && status !== 'PAUSA') btnZerarPausa.hidden = true;
+			// Saiu da pausa: para a vibração do fim do descanso
+			if (status !== 'PAUSA' && navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
 			if (btnPausar) btnPausar.hidden = !turnoAtivo;
 			if (driverTimerLabel) driverTimerLabel.textContent = 'CRONÔMETRO DE TOLERÂNCIA:';
 
@@ -940,10 +950,14 @@
 		}
 
 		// Contagem regressiva da pausa (1x por segundo); ao acabar, avisa uma vez e espera o motorista retomar
+		var btnZerarPausa = document.getElementById('btnZerarPausa');
+		var ultimaVibracaoFimPausaMs = 0;
+
 		function atualizarContagemPausa() {
 			if (statusViagem !== 'PAUSA' || !pausaAtual) return;
 			var duracaoMs = pausaAtual.minutos * 60000;
 			var restanteMs = pausaAtual.inicioMs + duracaoMs - Date.now();
+			if (btnZerarPausa) btnZerarPausa.hidden = restanteMs <= 0;
 			if (restanteMs > 0) {
 				driverStatusHeadline.textContent = 'EM PAUSA: ' + pausaAtual.rotulo.toUpperCase();
 				if (driverTimerLabel) driverTimerLabel.textContent = 'TEMPO RESTANTE:';
@@ -960,9 +974,25 @@
 					avisoFimPausaDado = true;
 					tocarBipDuplo(660, 880);
 					tocarVoz(vozPausaFimAudio);
-					if (navigator.vibrate) { try { navigator.vibrate([300, 150, 300]); } catch (e) { } }
+				}
+				// Vibração forte repetida a cada 6 s até o motorista tocar em RETOMAR VIAGEM
+				if (navigator.vibrate && Date.now() - ultimaVibracaoFimPausaMs >= 6000) {
+					ultimaVibracaoFimPausaMs = Date.now();
+					try { navigator.vibrate([800, 200, 800, 200, 800]); } catch (e) { }
 				}
 			}
+		}
+
+		// Botão de demonstração: o tempo de descanso acaba na hora (celular e Central)
+		if (btnZerarPausa) {
+			btnZerarPausa.addEventListener('click', function () {
+				if (statusViagem !== 'PAUSA' || !pausaAtual) return;
+				pausaAtual.inicioMs = Date.now() - pausaAtual.minutos * 60000;
+				try { localStorage.setItem('inovatech_pausa_matheus_garcia', JSON.stringify(pausaAtual)); } catch (e) { }
+				ultimaVibracaoFimPausaMs = 0;
+				atualizarContagemPausa();
+				if (link.conectado()) link.comando('ZERAR_PAUSA');
+			});
 		}
 		setInterval(atualizarContagemPausa, 1000);
 
@@ -1548,8 +1578,14 @@
 				driverBarFill.className = 'progresso-bar-fill';
 				renderizarCronometro(0);
 				driverFeedbackMsg.textContent = 'Postura correta e olhar voltado à rodovia. Mantenha a atenção constante na pista.';
+				vibrouPreAlerta = false;
 			} else if (status === 'PRE_ALERTA') {
 				fecharChamadaTelaCheia();
+				// Cabeça começou a cair: uma vibração curta de aviso (o alarme vibra forte e repetido)
+				if (!vibrouPreAlerta && navigator.vibrate) {
+					vibrouPreAlerta = true;
+					try { navigator.vibrate(400); } catch (e) { }
+				}
 				driverLiveCard.className = 'driver-live-card estado-pre-alerta';
 				driverStatusHeadline.style.color = '#ffaa00';
 				driverStatusHeadline.textContent = estado.simulacao_ativa ? 'PRÉ-ALERTA: CABEÇA BAIXA (SIMULAÇÃO)' : 'PRÉ-ALERTA: CABEÇA BAIXA';
