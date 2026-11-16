@@ -50,7 +50,7 @@ const ESCALONAMENTO = { critico_ms: 9000, acidente_ms: 15000 };
 const PERGUNTA_POR_VOZ_APOS_ALERTA = true;
 // O app retoma o alerta 10 s depois da pergunta sem resposta (pedido do Matheus, 16/11). Este prazo é a
 // reserva do servidor (celular fechado/sem internet): sem resposta nenhuma, o alerta volta sozinho.
-const PRAZO_RESPOSTA_VOZ_MS = 30000;
+const PRAZO_RESPOSTA_VOZ_MS = 45000; // Folga: a voz do alerta termina + 3 s + pergunta + 10 s cabem com sobra
 const COOLDOWN_NORMALIZACAO_MS = 2500;   // Evita re-disparo imediato logo após normalizar
 const TIMEOUT_ESP32_MS = 10000; // Pela nuvem o envio às vezes atrasa ~6 s (medido no power bank em 14/11)
 const TIMEOUT_ESPELHO_MS = 5000;

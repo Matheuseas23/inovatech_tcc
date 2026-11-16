@@ -1840,20 +1840,29 @@
 			}, function () {
 				if (perguntaEmAndamento) responderPergunta('SEM_RESPOSTA');
 			});
+			// Os 10 s só começam quando ela TERMINA de perguntar (pedido do Matheus, 16/11)
+			function iniciarPrazoResposta() {
+				clearTimeout(timerPrazoResposta);
+				timerPrazoResposta = setTimeout(function () {
+					if (perguntaEmAndamento) responderPergunta('SEM_RESPOSTA');
+				}, PRAZO_RESPOSTA_MS);
+			}
 			vozPerguntaBemAudio.onended = function () {
 				vozPerguntaBemAudio.onended = null;
-				if (perguntaEmAndamento && vozDisponivel) mostrarStatusVoz('Ouvindo... diga SIM ou NÃO');
+				if (!perguntaEmAndamento) return;
+				if (vozDisponivel) mostrarStatusVoz('Ouvindo... diga SIM ou NÃO');
+				iniciarPrazoResposta();
 			};
 			// Espera 3 s o som do microfone do Android sair antes de a voz perguntar (pedido do Matheus)
 			setTimeout(function () {
 				if (!perguntaEmAndamento) return;
 				tocarVoz(vozPerguntaBemAudio);
-				// Sem resposta em 10 s depois que ela termina de perguntar: o alerta volta (como no "não")
+				// Reserva: se o "fim da voz" não chegar (som bloqueado), conta a partir do fim previsto
 				var duracaoPerguntaMs = isFinite(vozPerguntaBemAudio.duration) ? vozPerguntaBemAudio.duration * 1000 : 4000;
 				clearTimeout(timerPrazoResposta);
 				timerPrazoResposta = setTimeout(function () {
-					if (perguntaEmAndamento) responderPergunta('SEM_RESPOSTA');
-				}, duracaoPerguntaMs + PRAZO_RESPOSTA_MS);
+					if (perguntaEmAndamento && vozPerguntaBemAudio.onended) { vozPerguntaBemAudio.onended = null; iniciarPrazoResposta(); }
+				}, duracaoPerguntaMs + 1500);
 			}, vozDisponivel ? ESPERA_ANTES_DA_PERGUNTA_MS : 0);
 		}
 
