@@ -1082,7 +1082,8 @@
 					return audioCtx.currentTime - v.inicioCtx;
 				},
 				set currentTime(x) {
-					try { reserva.currentTime = x; } catch (e) { }
+					// Só mexe no <audio> de reserva se ele estiver em uso (evita downloads à toa a cada voz)
+					if (v.usandoReserva) { try { reserva.currentTime = x; } catch (e) { } }
 				},
 				play: function () {
 					v.pause();

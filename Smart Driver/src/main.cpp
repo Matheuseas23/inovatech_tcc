@@ -1046,7 +1046,7 @@ void loop() {
   // para acordar); roxo piscando = acelerômetro desconectado; amarelo = aviso (1 s); azul piscando =
   // calibrando; monitorando = acende verde ao ativar e apaga devagar, depois fica APAGADO para não
   // atrapalhar a visão; azul fixo = aguardando o servidor; azul "respirando" = monitoramento
-  // desligado; branco piscando com o "batimento" = modo checagem
+  // desligado; branco piscando com o "batimento" = modo checagem; ciano piscando devagar = modo exibição
   bool calibrando = calibracaoAgendadaMs != 0;
   if (arcoIrisAteMs && agora < arcoIrisAteMs) {
     // Teste do LED (comando ARCOIRIS): passeia por todas as cores a cada 2 s
