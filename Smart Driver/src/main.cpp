@@ -298,6 +298,53 @@ bool cabecaInclinada               = false; // Ângulo além do limite (com hist
 unsigned long ultimoMovimentoMs    = 0;     // Última vez que a cabeça se mexeu de propósito
 unsigned long pescadaCandidataMs   = 0;     // Queda brusca aguardando a cabeça assentar
 
+// ------------------------------------------------------------------------------
+// REGISTRO OFFLINE (sugestão do professor, 16/11/2026)
+// Sem conexão com nenhum servidor, os óculos continuam protegendo e GRAVAM os eventos na
+// memória (até 30; cheio, sai o mais antigo). Quando a ESP32 volta a ficar online, eles vão
+// junto com a telemetria ("offline":[...]) e aparecem na Central com a hora em que aconteceram.
+// Cada evento leva a "idade" (ms desde que aconteceu): a ESP32 não tem relógio, o servidor faz a conta.
+// Só apaga da memória o que o servidor confirmou ("ack"). "tira o registro offline" = false.
+// ------------------------------------------------------------------------------
+const bool REGISTRO_OFFLINE = true;
+const uint8_t MAX_EVENTOS_OFFLINE = 30;
+const uint8_t MAX_EVENTOS_POR_PACOTE = 12;
+const uint8_t EV_SEM_REDE = 1, EV_ALARME = 2, EV_FIM_ALARME = 3, EV_PRE_CANCELADO = 4,
+              EV_MPU_DESCONECTADO = 5, EV_MPU_RECONECTADO = 6, EV_MODO_OFFLINE = 7;
+struct EventoOffline { uint32_t id; uint8_t tipo; uint16_t valor; unsigned long ms; };
+EventoOffline eventosOffline[MAX_EVENTOS_OFFLINE];
+uint8_t qtdEventosOffline = 0;
+uint32_t proximoIdEventoOffline = 1;
+uint32_t idBoot = 0; // Sorteado a cada ligada: o servidor não confunde eventos de antes e depois de reiniciar
+portMUX_TYPE mutexEventos = portMUX_INITIALIZER_UNLOCKED;
+
+// Grava um evento se estiver sem comunicação (Core 0 e Core 1 chamam; protegido pelo mutex)
+void registrarEventoOffline(uint8_t tipo, uint16_t valor) {
+  if (!REGISTRO_OFFLINE || statusRede != REDE_SEM_COMUNICACAO) return;
+  portENTER_CRITICAL(&mutexEventos);
+  if (qtdEventosOffline >= MAX_EVENTOS_OFFLINE) {
+    memmove(&eventosOffline[0], &eventosOffline[1], sizeof(EventoOffline) * (MAX_EVENTOS_OFFLINE - 1));
+    qtdEventosOffline--;
+  }
+  EventoOffline &e = eventosOffline[qtdEventosOffline++];
+  e.id = proximoIdEventoOffline++;
+  e.tipo = tipo;
+  e.valor = valor;
+  e.ms = millis();
+  portEXIT_CRITICAL(&mutexEventos);
+}
+
+// O servidor confirmou ("ack":N): apaga da memória os eventos com id até N
+void confirmarEventosOffline(uint32_t ack) {
+  portENTER_CRITICAL(&mutexEventos);
+  uint8_t manter = 0;
+  for (uint8_t i = 0; i < qtdEventosOffline; i++) {
+    if (eventosOffline[i].id > ack) eventosOffline[manter++] = eventosOffline[i];
+  }
+  qtdEventosOffline = manter;
+  portEXIT_CRITICAL(&mutexEventos);
+}
+
 // Protótipos de Funções
 void aplicarAtuadores(bool buzzer, bool rele1, bool rele2);
 void processarComandosSerial();
@@ -328,6 +375,7 @@ void taskDisplay(void *pvParameters);
 // ------------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);
+  idBoot = esp_random() % 1000000000UL;
 
   // Configuração dos pinos com pull-up interno no sensor
   pinMode(PINO_SENSOR_IR, INPUT_PULLUP);
@@ -985,6 +1033,7 @@ void loop() {
       bool disparoPescada = PESCADA_DISPARA_ALARME && pescadaSono;
       if (tempoDecorridoMs >= LIMIAR_CABECA_BAIXA_MS || disparoPescada) {
         alarmeAtivo = true;
+        registrarEventoOffline(EV_ALARME, disparoPescada ? 1 : 0);
         if (disparoPescada) {
           alarmeMinimoAte = agora + ALARME_MINIMO_PESCADA_MS;
           Serial.printf(">>> PESCADA DE SONO DETECTADA (%.0f graus)! Alarme imediato.\n", mpu.inclinacao);
@@ -1000,12 +1049,24 @@ void loop() {
     // Cabeça erguida: encerra o alarme (respeitando o tempo mínimo da pescada)
     if (!alarmeAtivo || agora >= alarmeMinimoAte) {
       if (alarmeAtivo) Serial.println(F("Postura Normalizada: Cabeca Erguida (Alarmes cessados)."));
+      // Offline: fim do alarme (com quanto tempo a cabeça ficou baixa, em décimos de s) ou
+      // pré-alerta cancelado (só se chegou ao bip de aviso: olhadas rápidas não enchem a memória)
+      unsigned long baixaMs = agora - tempoInicioCabecaBaixa;
+      if (alarmeAtivo) registrarEventoOffline(EV_FIM_ALARME, (uint16_t)min(baixaMs / 100, 60000UL));
+      else if (baixaMs >= BIP_AVISO_INICIO_MS) registrarEventoOffline(EV_PRE_CANCELADO, 0);
       alarmeAtivo = false;
       cabecaEstavaBaixa = false;
       tempoInicioCabecaBaixa = 0;
     } else {
       tempoDecorridoMs = agora - tempoInicioCabecaBaixa;
     }
+  }
+
+  // Offline: acelerômetro desconectou ou voltou
+  static bool mpuAnteriorOffline = true;
+  if (mpuDetectado != mpuAnteriorOffline) {
+    registrarEventoOffline(mpuDetectado ? EV_MPU_RECONECTADO : EV_MPU_DESCONECTADO, 0);
+    mpuAnteriorOffline = mpuDetectado;
   }
 
   bool alarmeGeral = alarmeAtivo || testeAlarmeAtivo;
@@ -1159,6 +1220,9 @@ void interpretarComandosTexto(const char* texto) {
   if (mon) monitoramentoServidor = (mon[6] == '1') ? 1 : 0;
   const char* exib = strstr(texto, "\"exib\":");
   if (exib) modoExibicaoServidor = (exib[7] == '1') ? 1 : 0;
+  // Servidor confirmou os eventos gravados offline até este id
+  const char* ack = strstr(texto, "\"ack\":");
+  if (ack && ack[6] >= '0' && ack[6] <= '9') confirmarEventosOffline(strtoul(ack + 6, NULL, 10));
   // Comandos de diagnóstico (só pela serial USB)
   if (strstr(texto, "DIAG:1")) {
     modoDiagnostico = true;
@@ -1354,7 +1418,7 @@ int montarPayload(const DadosTelemetria &d, uint32_t seq, char *buf, size_t cap)
   const char* statusMpu = !d.mpuOnline ? "AGUARDANDO MODULO"
                         : (d.mpuCalibrado ? "ONLINE (MPU-6050 ATIVO)" : "ONLINE (SEM CALIBRACAO)");
 
-  return snprintf(buf, cap,
+  int n = snprintf(buf, cap,
     "{\"dispositivo\":\"ESP32_SMART_DRIVER_01\",\"seq\":%lu,\"uptime_ms\":%lu,"
     "\"sensor_ir\":%d,\"ir_confiavel\":%s,\"monitorando\":%s,\"diagnostico\":%s,\"tempo_cabeca_baixa_ms\":%lu,\"limiar_ms\":%lu,"
     "\"buzzer\":%d,\"rele\":%d,\"rele_1\":%d,\"rele_2\":%d,\"alarme_teste\":%d,"
@@ -1373,6 +1437,27 @@ int montarPayload(const DadosTelemetria &d, uint32_t seq, char *buf, size_t cap)
     d.pescadaDetectada ? "true" : "false", d.mpuOnline ? "true" : "false",
     d.mpuCalibrado ? "true" : "false", statusMpu,
     ssid.c_str(), conectado ? WiFi.RSSI() : 0, ip.c_str());
+  if (n <= 0 || n >= (int)cap) return n;
+
+  // Eventos gravados sem conexão (os mais antigos primeiro, até 12 por pacote)
+  EventoOffline copia[MAX_EVENTOS_POR_PACOTE];
+  uint8_t qtd = 0;
+  portENTER_CRITICAL(&mutexEventos);
+  qtd = min(qtdEventosOffline, MAX_EVENTOS_POR_PACOTE);
+  for (uint8_t i = 0; i < qtd; i++) copia[i] = eventosOffline[i];
+  portEXIT_CRITICAL(&mutexEventos);
+  if (!qtd) return n;
+
+  int pos = n - 1; // Reabre o JSON (tira o "}" final)
+  pos += snprintf(buf + pos, cap - pos, ",\"boot\":%lu,\"offline\":[", (unsigned long)idBoot);
+  unsigned long agoraMs = millis();
+  for (uint8_t i = 0; i < qtd && pos < (int)cap - 80; i++) {
+    pos += snprintf(buf + pos, cap - pos, "%s{\"id\":%lu,\"t\":%u,\"v\":%u,\"idade\":%lu}", i ? "," : "",
+                    (unsigned long)copia[i].id, copia[i].tipo, copia[i].valor, agoraMs - copia[i].ms);
+  }
+  if (pos >= (int)cap - 3) return cap; // Não coube: o chamador descarta (não acontece com 1400 bytes)
+  pos += snprintf(buf + pos, cap - pos, "]}");
+  return pos;
 }
 
 // ------------------------------------------------------------------------------
@@ -1921,7 +2006,7 @@ void taskTelemetria(void *pvParameters) {
   unsigned long ultimoSucessoNuvem = 0;
   char estadoEnviadoNuvem[24] = "";
   uint32_t seq = 0;
-  char payload[700];
+  char payload[1400]; // Telemetria (~500) + até 12 eventos gravados offline
   char resposta[256];
 
   for (;;) {
@@ -2051,9 +2136,15 @@ void taskTelemetria(void *pvParameters) {
     semContatoServidor = millis() - max(ultimoContatoServidor, ultimoSucessoNuvem) > FAILSAFE_SEM_CONTATO_MS;
 
     bool nuvemRespondendo = ultimoSucessoNuvem && millis() - ultimoSucessoNuvem < TIMEOUT_SERVIDOR_LOCAL_MS;
+    uint8_t statusRedeAnterior = statusRede;
     statusRede = !conectado ? REDE_SEM_COMUNICACAO
                : servidorConhecido ? REDE_SERVIDOR_LOCAL
                : nuvemRespondendo ? REDE_NUVEM : REDE_SEM_COMUNICACAO;
+    // Registro offline: marca quando a conexão caiu e quando os óculos passaram a se proteger sozinhos
+    if (statusRede == REDE_SEM_COMUNICACAO && statusRedeAnterior != REDE_SEM_COMUNICACAO) registrarEventoOffline(EV_SEM_REDE, 0);
+    static bool semContatoAnterior = false;
+    if (semContatoServidor && !semContatoAnterior) registrarEventoOffline(EV_MODO_OFFLINE, 0);
+    semContatoAnterior = semContatoServidor;
 
 
     bool emAlerta = strcmp(snap.estado, "NORMAL") != 0;
