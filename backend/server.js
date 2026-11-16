@@ -48,7 +48,9 @@ const ESCALONAMENTO = { critico_ms: 9000, acidente_ms: 15000 };
 // "Você está bem?" e ouve a resposta. "Não/socorro" reabre a emergência direto na fase 3 (com ligação).
 // "desliga a pergunta por voz" = false
 const PERGUNTA_POR_VOZ_APOS_ALERTA = true;
-const PRAZO_RESPOSTA_VOZ_MS = 30000; // Pergunta sem resposta fecha sozinha (a Central é avisada)
+// O app retoma o alerta 10 s depois da pergunta sem resposta (pedido do Matheus, 16/11). Este prazo é a
+// reserva do servidor (celular fechado/sem internet): sem resposta nenhuma, o alerta volta sozinho.
+const PRAZO_RESPOSTA_VOZ_MS = 30000;
 const COOLDOWN_NORMALIZACAO_MS = 2500;   // Evita re-disparo imediato logo após normalizar
 const TIMEOUT_ESP32_MS = 10000; // Pela nuvem o envio às vezes atrasa ~6 s (medido no power bank em 14/11)
 const TIMEOUT_ESPELHO_MS = 5000;
@@ -411,9 +413,26 @@ function abrirPerguntaBemEstar() {
   registrarEvento('NORMAL', 'Perguntando por voz ao motorista se está bem');
   transmitirEstado('PERGUNTA_BEM_ESTAR');
   clearTimeout(timerPerguntaBemEstar);
+  // Reserva: o app conta 10 s depois da pergunta; se o app nem responder (celular fechado), o servidor
+  // retoma o alerta sozinho quando o prazo acabar
   timerPerguntaBemEstar = setTimeout(() => {
-    if (fecharPerguntaBemEstar()) registrarEvento('PRE_ALERTA', 'Motorista não respondeu à pergunta "Você está bem?"');
+    if (fecharPerguntaBemEstar()) retomarAlertaAposPergunta('SEM_RESPOSTA');
   }, PRAZO_RESPOSTA_VOZ_MS);
+}
+
+// "Não" ou sem resposta em 10 s: o alerta volta de onde parou (mesmo tempo e mesma fase; não liga de novo
+// se já ligou). Não se encerra mais pela cabeça erguida: só a Central ou o motorista (botão) encerram.
+function retomarAlertaAposPergunta(resposta) {
+  const anterior = alertaAntesDaPergunta || { decorridoMs: 0, nivel: 1 };
+  pararSimulacao();
+  dispararAlerta('SOCORRO_VOZ',
+    resposta === 'SOCORRO' ? 'Motorista respondeu NÃO: alerta retomado' : 'Motorista não respondeu em 10 s à pergunta "Você está bem?": alerta retomado',
+    'O alerta continua de onde parou.');
+  inicioSemRespostaMs = Date.now() - anterior.decorridoMs;
+  estado.tempo_sem_resposta_ms = anterior.decorridoMs;
+  estado.nivel_escalonamento = Math.max(1, anterior.nivel);
+  estado.resposta_motorista = resposta;
+  transmitirEstado('ESCALONAMENTO_EMERGENCIA');
 }
 
 function fecharPerguntaBemEstar() {
@@ -729,22 +748,13 @@ function executarComando(comando, origem = 'CENTRAL', extras = {}) {
   // Resposta falada do motorista à pergunta "Você está bem?" (depois do possível acidente)
   if (cmd === 'RESPOSTA_VOZ') {
     const resposta = String(extras.resposta || '').toUpperCase();
-    fecharPerguntaBemEstar();
+    // Pergunta já fechada (ex.: o prazo do servidor acabou e o alerta já voltou): não retoma de novo
+    if (!fecharPerguntaBemEstar() && resposta !== 'BEM') return { ok: true, mensagem: 'Pergunta já encerrada.' };
     if (resposta === 'BEM') {
       registrarEvento('NORMAL', 'Motorista respondeu por voz: está bem');
-    } else if (resposta === 'SOCORRO') {
-      // Respondeu "não": o alerta volta de onde parou (mesmo tempo e mesma fase; não liga de novo se já ligou).
-      // Não se encerra mais pela cabeça erguida: só a Central ou o motorista (botão) encerram.
-      const anterior = alertaAntesDaPergunta || { decorridoMs: 0, nivel: 1 };
-      pararSimulacao();
-      dispararAlerta('SOCORRO_VOZ', 'Motorista respondeu NÃO: alerta retomado', 'O alerta continua de onde parou.');
-      inicioSemRespostaMs = Date.now() - anterior.decorridoMs;
-      estado.tempo_sem_resposta_ms = anterior.decorridoMs;
-      estado.nivel_escalonamento = Math.max(1, anterior.nivel);
-      estado.resposta_motorista = 'SOCORRO';
-      transmitirEstado('ESCALONAMENTO_EMERGENCIA');
     } else {
-      registrarEvento('PRE_ALERTA', 'Motorista não respondeu à pergunta "Você está bem?"');
+      // "Não" (SOCORRO) ou ficou 10 s sem responder (SEM_RESPOSTA): o alerta volta
+      retomarAlertaAposPergunta(resposta === 'SOCORRO' ? 'SOCORRO' : 'SEM_RESPOSTA');
     }
     return { ok: true, mensagem: `Resposta do motorista: ${resposta}` };
   }

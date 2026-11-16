@@ -1805,15 +1805,19 @@
 			iniciar();
 		}
 
+		var PRAZO_RESPOSTA_MS = 10000; // Sem resposta em 10 s depois da pergunta = o alerta volta
+		var timerPrazoResposta = null;
+
 		function responderPergunta(resposta) {
 			if (!perguntaEmAndamento) return;
+			clearTimeout(timerPrazoResposta);
 			pararEscuta();
 			perguntaEmAndamento = false;
 			if (driverVozBotoes) driverVozBotoes.hidden = true;
 			// "Socorro": o servidor reabre a emergência e a voz da fase 3 fala ("Chamando o socorro agora")
 			if (resposta === 'BEM') tocarVoz(vozRespostaBemAudio);
 			mostrarStatusVoz(resposta === 'BEM' ? 'OK. Pare para descansar, se for necessário.' :
-				resposta === 'SOCORRO' ? 'Resposta: não. O alerta voltou.' : 'Sem resposta: a Central foi avisada.');
+				resposta === 'SOCORRO' ? 'Resposta: não. O alerta voltou.' : 'Sem resposta em 10 s: o alerta voltou.');
 			esconderPerguntaDepois(6000);
 			if (link.conectado()) link.comando('RESPOSTA_VOZ', { resposta: resposta });
 		}
@@ -1827,22 +1831,30 @@
 			mostrarStatusVoz(vozDisponivel ? 'Microfone aberto · Pergunta: você está bem?' : 'Pergunta: você está bem? (use os botões abaixo)');
 			// Ordem igual a uma ligação: o microfone abre (bip do Android), ela pergunta e o motorista responde.
 			// O microfone também ouve a pergunta dela: as palavras da pergunta são descontadas antes de interpretar.
-			ouvir('PERGUNTA', 14000, function (texto) {
+			// O microfone fica aberto até a resposta; o prazo de 10 s é contado a partir do fim da pergunta
+			ouvir('PERGUNTA', 60000, function (texto) {
 				var resposta = semEcoDaPergunta(texto);
 				if (PALAVRAS_SOCORRO.test(resposta)) { responderPergunta('SOCORRO'); return true; }
 				if (PALAVRAS_BEM.test(resposta)) { responderPergunta('BEM'); return true; }
 				return false;
 			}, function () {
-				if (!perguntaEmAndamento) return;
-				if (tentativasPergunta < 2) fazerPerguntaBem();
-				else responderPergunta('SEM_RESPOSTA');
+				if (perguntaEmAndamento) responderPergunta('SEM_RESPOSTA');
 			});
 			vozPerguntaBemAudio.onended = function () {
 				vozPerguntaBemAudio.onended = null;
 				if (perguntaEmAndamento && vozDisponivel) mostrarStatusVoz('Ouvindo... diga SIM ou NÃO');
 			};
 			// Espera 3 s o som do microfone do Android sair antes de a voz perguntar (pedido do Matheus)
-			setTimeout(function () { if (perguntaEmAndamento) tocarVoz(vozPerguntaBemAudio); }, vozDisponivel ? ESPERA_ANTES_DA_PERGUNTA_MS : 0);
+			setTimeout(function () {
+				if (!perguntaEmAndamento) return;
+				tocarVoz(vozPerguntaBemAudio);
+				// Sem resposta em 10 s depois que ela termina de perguntar: o alerta volta (como no "não")
+				var duracaoPerguntaMs = isFinite(vozPerguntaBemAudio.duration) ? vozPerguntaBemAudio.duration * 1000 : 4000;
+				clearTimeout(timerPrazoResposta);
+				timerPrazoResposta = setTimeout(function () {
+					if (perguntaEmAndamento) responderPergunta('SEM_RESPOSTA');
+				}, duracaoPerguntaMs + PRAZO_RESPOSTA_MS);
+			}, vozDisponivel ? ESPERA_ANTES_DA_PERGUNTA_MS : 0);
 		}
 
 		// Tira da transcrição o que a própria voz da pergunta falou ("Você está bem? Responda sim ou não")
@@ -1868,6 +1880,7 @@
 			} else if (perguntaEmAndamento && (!p || !p.aberta || estado.alerta_travado)) {
 				// Respondida em outro lugar, prazo esgotado ou alerta novo: para de perguntar
 				perguntaEmAndamento = false;
+				clearTimeout(timerPrazoResposta);
 				pararEscuta();
 				try { vozPerguntaBemAudio.pause(); } catch (e) { }
 				mostrarStatusVoz('');

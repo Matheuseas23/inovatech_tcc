@@ -1561,6 +1561,9 @@
 				if (centralEscDesc && estado.resposta_motorista === 'SOCORRO') {
 					centralEscDesc.textContent = 'Motorista respondeu NÃO à pergunta "Você está bem?". Alerta retomado.';
 				}
+				if (centralEscDesc && estado.resposta_motorista === 'SEM_RESPOSTA') {
+					centralEscDesc.textContent = 'Motorista não respondeu em 10 s à pergunta "Você está bem?". Alerta retomado.';
+				}
 			} else {
 				esconderPainelEscalonamento();
 			}
