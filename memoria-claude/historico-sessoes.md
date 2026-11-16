@@ -80,3 +80,22 @@ Conversa completa: [conversas/sessao-3-2026-10-23-a-26.md](conversas/sessao-3-20
 
 - `index.html`: a caixinha de acesso (`#portalAccessModal`) **não abre mais sozinha** ao entrar no site. Ela abre pelo botão **"Central / App do Motorista"** (cadeado) nos botões da Home. Ficaram só 2 opções (Central e App, com a senha); a opção "Apresentação do Projeto" e a flag `MOSTRAR_PORTAL_SELETOR` saíram. Fecha pelo X, Esc ou clique fora. `GEMINI.md` atualizado.
 - **Logo:** o C e o H de "TECH" estavam grudados no próprio PNG (a haste do H cobria as pontas do C). Corrigido em `logo_inovatech.png` e `image.png` (são o mesmo arquivo, usado no site, na Central, no app e no manifest): as pontas do C foram reconstruídas, o H foi afastado 56 px, a linha neon foi estendida e o brilho foi recalculado. A imagem passou de 1024×237 para 1080×237. Versão antiga no git (antes do commit desta correção).
+
+## Sessão 5 — 14/11/2026 a 16/11/2026 (véspera e dia da banca)
+
+**App do motorista:**
+- Modo pausa (café 15 min, refeição 60 min, descanso com tempo escolhido de 30 min a 11 h), vozes da Francisca na pausa e na retomada, fim da pausa com notificação (café/refeição) ou despertador (descanso), botão "zerar tempo de descanso" para a demonstração.
+- Fases 2 e 3 no celular com voz e vibração; quadro de emergência com SAMU 192 / Bombeiros 193 / PRF 191. **Sem ligação automática** (decisão final dele).
+- Pergunta "Você está bem?" depois que o alerta acaba pela postura: o microfone abre e ela pergunta 3 s depois. "Sim" = "OK. Pare para descansar, se for necessário."; "não" ou **10 s sem resposta** = o alerta volta de onde parou.
+- Abertura animada (caminhão na estrada, batimento e ícone do óculos) terminando em "TOQUE PARA COMEÇAR", que libera som, vibração e notificação. Ícone do atalho voltou a ser o óculos com olho e batimento.
+- Voz cortada no Android ("Aten… rista"): as vozes passaram a tocar pelo Web Audio, no mesmo mixer do toque de chamada; os sons do alerta tocam junto com a voz (pedido dele) e nenhuma frase é cortada no meio.
+- Vibração: com o app em segundo plano, quem vibra é a notificação do alerta (sw.js). O Chrome não vibra no modo silencioso.
+
+**Central:** textos das fases mais curtos, sem vozes (só a sirene), pausa no card da frota, "Baixar Relatório (.JSON)" com o registro de eventos.
+
+**ESP32:**
+- Relés com "tec" duplo em todas as funções, cores novas dos fios do LED (pinagem-completa.md), LED ciano piscando devagar no modo exibição.
+- **Registro offline** (sugestão do professor): sem conexão, a placa grava até 30 eventos (alarme, pescada, fim do alarme, acelerômetro, modo offline) e, ao voltar online, eles aparecem na Central com a hora real e o prefixo [OFFLINE]. Testado com a ESP de verdade em 16/11.
+- Em 16/11 o acelerômetro chegou a cair e voltar a cada 2 a 5 s ("energia fraca"): conferir os fios (D23, GND, D21, D22) se repetir.
+
+**Testes automáticos** em `I:\ferramentas-claude` (servidor, app no Chrome, vozes, registro offline): todos passando em 16/11. O professor aprovou o projeto.
