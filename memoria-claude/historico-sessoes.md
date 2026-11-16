@@ -99,3 +99,8 @@ Conversa completa: [conversas/sessao-3-2026-10-23-a-26.md](conversas/sessao-3-20
 - Em 16/11 o acelerômetro chegou a cair e voltar a cada 2 a 5 s ("energia fraca"): conferir os fios (D23, GND, D21, D22) se repetir.
 
 **Testes automáticos** em `I:\ferramentas-claude` (servidor, app no Chrome, vozes, registro offline): todos passando em 16/11. O professor aprovou o projeto.
+
+## Sessão 6 — 16/11/2026 (depois da revisão final, esperando a banca)
+
+- **Site, Ecossistema de segurança:** a lista de componentes aparecia como texto solto porque as classes `tech-item-card`, `ecosystem-grid-*` etc. não tinham CSS nenhum. Ganhou cards de vidro no padrão Dark-Tech (4 colunas no físico, 5 no software, 1 coluna no celular, modo claro em vidro branco) e o roxo dos Softwares virou ciano. A foto do final virou `oculos_prototipo.jpg` (foto nova enviada pelo Matheus, 75 KB) num card grande com o texto ao lado. Conferido no Edge (desktop 1440, celular 390 e modo claro), sem erros de JS. `GEMINI.md` atualizado.
+- O card "Display OLED 0,96"" saiu (o OLED não faz mais parte do projeto, confirmado pelo Matheus) e os outros foram renumerados (7 componentes; o último ocupa 2 espaços na grade). O texto do Manual de operações também deixou de citar o display OLED. "Fios Jumper & Resistores" ficou como estava.

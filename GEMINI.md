@@ -102,9 +102,8 @@ Este arquivo serve como memória persistente e base de treinamento do assistente
    - Especificação técnica da unidade central INOVATECH-500.
    - 4 passos operacionais numerados (`01` Conexão, `02` Configuração, `03` Calibração, `04` Monitoramento HUD).
 4. **`#ecosystem` (Ecossistema de Segurança)**:
-   - Card de resultado final com o protótipo real dos óculos montados (`oculos.png`).
-   - Tabela técnica de componentes (óculos, Arduino/ESP32, webcam, sensor ultrassônico/IR, fiação, buzzer).
-   - Modal interativo para adicionar novo item e cálculo dinâmico de custo total em tempo real com botão de exclusão.
+   - Dois grupos de cards (`.tech-item-card`, vidro escuro, ícone em caixa ciano, número em Space Mono, título em Barlow Condensed, traço ciano no topo que cresce no hover): **Componentes Físicos** (7 itens desde 16/11/2026, sem o display OLED; grade de 4 colunas, o último card ocupa 2 espaços) e **Softwares & Plataformas** (5 itens, grade de 5 colunas). Tudo em ciano, sem roxo; 2 colunas até 900 px e lista de 1 coluna no celular (até 520 px). CSS em `index.html`, bloco "ECOSSISTEMA: grupos e cards de componentes".
+   - No final, o card **Resultado final do projeto** (`.eco-result`) com a foto real do protótipo (`oculos_prototipo.jpg`, 1376×768, trocada em 16/11/2026) ao lado do texto; empilha abaixo de 900 px. O `oculos.png` antigo não é mais usado.
 5. **`#about` (Quem Somos)**:
    - Apresentação visual da equipe técnica multidisciplinar.
    - **Redes Sociais**: Apenas o botão estilizado do Instagram (`.btn-instagram`), com link direto para cada membro:

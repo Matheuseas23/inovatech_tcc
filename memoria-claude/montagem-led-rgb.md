@@ -23,3 +23,7 @@ LED RGB de 4 pernas (segurando com as pernas para baixo, a mais comprida é a 2�
 | Sensor IR | **removido** (se voltar: VCC no D23, OUT no D32) |
 
 **Lição:** o acelerômetro "parava" porque o fio **GND estava com mau contato** — respondia dormindo, mas travava ao acordar (consumo maior). Diagnóstico pela serial: comando `I2C`.
+
+## Mudança de 11/11/2026
+
+O display OLED saiu do projeto. O LED RGB foi para o lugar dele nos óculos e foi prolongado com jumpers macho-fêmea até a ESP32, **nos mesmos pinos de sempre** (D26 R, D14 comum, D4 G, D27 B), **sem resistor**: os fios vão direto na ESP32. Desenho: https://claude.ai/artifact/Kvy3tgDUSrpNG2rtc1uZ2Q Os pinos antigos do display (D23, D15, D5, TX2) não servem para o LED: o firmware ainda deixa o D23 em HIGH e o D15 em LOW.
