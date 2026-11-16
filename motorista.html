@@ -1271,8 +1271,6 @@
 
 		// "Bip-bip-bip-bip" de despertador digital
 		function tocarDespertadorUmaVez() {
-			if (algumaVozTocando()) return; // Espera a voz terminar
-			somCurtoAteMs = Date.now() + 700;
 			try {
 				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 				if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -1343,8 +1341,6 @@
 		setInterval(atualizarContagemPausa, 1000);
 
 		function tocarBipDuplo(f1, f2) {
-			if (algumaVozTocando()) return; // Não fala por cima dela
-			somCurtoAteMs = Date.now() + 450;
 			try {
 				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 				if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -1375,14 +1371,6 @@
 				vozRespostaBemAudio, vozRespostaSocorroAudio].filter(Boolean);
 		}
 
-		// Nada pode tocar por cima da voz dela (pedido do Matheus): toque de chamada, bipes e
-		// despertador consultam isto e esperam a fala terminar
-		function algumaVozTocando() {
-			return listaDeVozes().some(function (a) { return !a.paused && !a.ended; });
-		}
-
-		var somCurtoAteMs = 0; // Até quando um bip curto (antes de uma voz) ainda está tocando
-
 		function pararTodasAsVozes(exceto) {
 			listaDeVozes().forEach(function (a) {
 				if (a === exceto) return;
@@ -1392,9 +1380,6 @@
 		}
 
 		function tocarVoz(audio) {
-			// Se um bip acabou de tocar, a voz entra logo depois dele (nunca junto)
-			var espera = somCurtoAteMs - Date.now();
-			if (espera > 0) { setTimeout(function () { tocarVoz(audio); }, espera + 50); return; }
 			try {
 				pararTodasAsVozes(audio);
 				audio.pause();
@@ -1495,7 +1480,6 @@
 				var osc = audioCtx.createOscillator();
 				var gain = audioCtx.createGain();
 				osc.type = 'sine';
-				somCurtoAteMs = Date.now() + 300; // A voz de início espera o bip acabar
 				osc.frequency.setValueAtTime(novoEstado ? 523.25 : 392, now);
 				osc.frequency.exponentialRampToValueAtTime(novoEstado ? 1046.5 : 220, now + 0.22);
 				gain.gain.setValueAtTime(0.25, now);
@@ -1524,9 +1508,6 @@
 		}
 
 		function tocarToqueChamada() {
-			// O toque de chamada se cala enquanto a voz fala (fases 1, 2 e 3) e volta depois
-			if (algumaVozTocando()) return;
-			somCurtoAteMs = Date.now() + 950; // Uma voz que chegar agora espera o toque acabar
 			try {
 				if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 				if (audioCtx.state === 'suspended') audioCtx.resume();

@@ -1081,10 +1081,9 @@ void loop() {
   } else if (emRepouso) {
     corLed(0, 0, 0); // Desligado pelo app
   } else if (modoExibicaoServidor == 1) {
-    // Modo exibição: passa suavemente de branco para azul e volta (ciclo de 4 s)
-    float f = 0.5f - 0.5f * cosf(2 * PI * (agora % 4000) / 4000.0f);
-    uint8_t rg = (uint8_t)(220 * (1 - f));
-    corLed(rg, rg, 255);
+    // Modo exibição: ciano INOVATECH (#08DEEB) piscando devagar, acende e apaga suave (ciclo de 2,4 s)
+    float f = 0.5f - 0.5f * cosf(2 * PI * (agora % 2400) / 2400.0f);
+    corLed((uint8_t)(8 * f), (uint8_t)(222 * f), (uint8_t)(235 * f));
   } else if (sensoresAtivos) {
     // Verde ao ativar o monitoramento, depois apaga devagar e fica apagado
     unsigned long dt = agora - verdeAtivadoMs;
