@@ -323,7 +323,13 @@ void registrarEventoOffline(uint8_t tipo, uint16_t valor) {
   if (!REGISTRO_OFFLINE || statusRede != REDE_SEM_COMUNICACAO) return;
   portENTER_CRITICAL(&mutexEventos);
   if (qtdEventosOffline >= MAX_EVENTOS_OFFLINE) {
-    memmove(&eventosOffline[0], &eventosOffline[1], sizeof(EventoOffline) * (MAX_EVENTOS_OFFLINE - 1));
+    // Memória cheia: sai o aviso mais antigo que não seja alarme (alarmes são os mais importantes);
+    // se só houver alarmes, sai o mais antigo
+    uint8_t sai = 0;
+    for (uint8_t i = 0; i < qtdEventosOffline; i++) {
+      if (eventosOffline[i].tipo != EV_ALARME && eventosOffline[i].tipo != EV_FIM_ALARME) { sai = i; break; }
+    }
+    memmove(&eventosOffline[sai], &eventosOffline[sai + 1], sizeof(EventoOffline) * (qtdEventosOffline - sai - 1));
     qtdEventosOffline--;
   }
   EventoOffline &e = eventosOffline[qtdEventosOffline++];
@@ -1062,11 +1068,19 @@ void loop() {
     }
   }
 
-  // Offline: acelerômetro desconectou ou voltou
-  static bool mpuAnteriorOffline = true;
-  if (mpuDetectado != mpuAnteriorOffline) {
-    registrarEventoOffline(mpuDetectado ? EV_MPU_RECONECTADO : EV_MPU_DESCONECTADO, 0);
-    mpuAnteriorOffline = mpuDetectado;
+  // Offline: acelerômetro desconectou ou voltou (só conta se durar 3 s: falhas de 1 s com
+  // fio frouxo encheriam a memória e empurrariam os alarmes para fora)
+  static bool mpuRegistradoOnline = true;
+  static unsigned long mpuMudouDesdeMs = 0;
+  if (mpuDetectado != mpuRegistradoOnline) {
+    if (!mpuMudouDesdeMs) mpuMudouDesdeMs = agora;
+    if (agora - mpuMudouDesdeMs >= 3000) {
+      registrarEventoOffline(mpuDetectado ? EV_MPU_RECONECTADO : EV_MPU_DESCONECTADO, 0);
+      mpuRegistradoOnline = mpuDetectado;
+      mpuMudouDesdeMs = 0;
+    }
+  } else {
+    mpuMudouDesdeMs = 0;
   }
 
   bool alarmeGeral = alarmeAtivo || testeAlarmeAtivo;
