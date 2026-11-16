@@ -1630,7 +1630,32 @@
 			padraoVibracaoChamada = VIBRACAO_FASE[nivel] || VIBRACAO_FASE[1];
 			if (!subiu || nivel < 2) return;
 			if (navigator.vibrate) { try { navigator.vibrate(padraoVibracaoChamada); } catch (e) { } }
-			tocarVoz(nivel === 3 ? vozAcidenteMotoristaAudio : vozCriticoMotoristaAudio);
+			tocarVozDoAlerta(nivel === 3 ? vozAcidenteMotoristaAudio : vozCriticoMotoristaAudio);
+		}
+
+		// A voz do alerta nunca é cortada no meio da frase: se a fase mudar enquanto ela fala
+		// (ex.: "você não respondeu ao alerta" ainda tocando quando chega a fase 3), a próxima
+		// frase espera esta terminar. Os sons do alerta continuam tocando junto com a voz.
+		var timerProximaVozAlerta = null;
+		function vozDoAlertaTocando() {
+			return [vozCafeAudio, vozCriticoMotoristaAudio, vozAcidenteMotoristaAudio].filter(function (a) {
+				return a && !a.paused && !a.ended;
+			})[0] || null;
+		}
+		function msRestantesDaVoz(a) {
+			if (!a || !isFinite(a.duration)) return 0;
+			return Math.max(0, (a.duration - a.currentTime) / (a.playbackRate || 1) * 1000);
+		}
+		function tocarVozDoAlerta(audio) {
+			clearTimeout(timerProximaVozAlerta);
+			var atual = vozDoAlertaTocando();
+			if (atual && atual !== audio) {
+				timerProximaVozAlerta = setTimeout(function () {
+					if (driverFullscreenCall.classList.contains('active')) tocarVoz(audio);
+				}, msRestantesDaVoz(atual) + 250);
+				return;
+			}
+			tocarVoz(audio);
 		}
 
 		// ------------------------------------------------------------------------------
@@ -1765,7 +1790,13 @@
 			if (p && p.aberta && p.id !== ultimaPerguntaId) {
 				ultimaPerguntaId = p.id;
 				tentativasPergunta = 0;
-				fazerPerguntaBem();
+				// Se a voz do alerta ainda está terminando a frase, o microfone só abre depois dela
+				// (no Android, abrir o microfone abaixa o som e a deixaria muda)
+				var esperaVoz = msRestantesDaVoz(vozDoAlertaTocando());
+				if (esperaVoz > 0) {
+					perguntaEmAndamento = true;
+					setTimeout(function () { if (perguntaEmAndamento) fazerPerguntaBem(); }, esperaVoz + 300);
+				} else fazerPerguntaBem();
 			} else if (perguntaEmAndamento && (!p || !p.aberta || estado.alerta_travado)) {
 				// Respondida em outro lugar, prazo esgotado ou alerta novo: para de perguntar
 				perguntaEmAndamento = false;
@@ -1791,7 +1822,8 @@
 				driverCallEscalationTimer.textContent = '0.0s';
 			}
 			if (navigator.vibrate) { try { navigator.vibrate(0); } catch (e) { } }
-			pararTodasAsVozes(vozRespostaBemAudio); // deixa terminar o "Que bom! Alerta encerrado"
+			// Não corta a voz no meio da frase: a fala do alerta termina sozinha. Só cancela a próxima da fila.
+			clearTimeout(timerProximaVozAlerta);
 			aplicarFaseNoCelular(0);
 			pararEscuta();
 		}
