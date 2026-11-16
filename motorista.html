@@ -1056,12 +1056,78 @@
 		var LIMIAR_PADRAO_MS = 1500;
 		var LIMIAR_SIMULACAO_RAPIDA_MS = 1500;
 		var audioCtx = null;
+		try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { }
 		var callRingtoneTimer = null;
 		var callVibrationTimer = null;
-		var vozCafeAudio = new Audio('alerta-cafe-voz.mp3');
-		vozCafeAudio.preload = 'auto';
-		var vozInicioAudio = new Audio('alerta-inicio-viagem.mp3');
-		vozInicioAudio.preload = 'auto';
+
+		// ------------------------------------------------------------------------------
+		// VOZES PELO MESMO "MIXER" DO TOQUE DE CHAMADA (Web Audio)
+		// Com a voz num tocador <audio> e o toque no Web Audio, o Android abaixava a voz por ~1 s
+		// sempre que o toque começava ("Aten... rista"). Agora as vozes ficam decodificadas na
+		// memória e tocam no mesmo AudioContext do toque: os dois se misturam, nenhum cala o outro.
+		// Se a decodificação falhar (ou o som ainda não estiver liberado), usa o <audio> de reserva.
+		// ------------------------------------------------------------------------------
+		function criarVoz(url) {
+			var reserva = new Audio(url);
+			reserva.preload = 'auto';
+			var v = {
+				buffer: null, fonte: null, inicioCtx: 0, usandoReserva: false,
+				_parado: true, _fim: false, playbackRate: 1, volume: 1, onended: null,
+				get paused() { return v.usandoReserva ? reserva.paused : v._parado; },
+				get ended() { return v.usandoReserva ? reserva.ended : v._fim; },
+				get duration() { return v.buffer ? v.buffer.duration : reserva.duration; },
+				get currentTime() {
+					if (v.usandoReserva) return reserva.currentTime;
+					if (v._parado || !audioCtx) return 0;
+					return audioCtx.currentTime - v.inicioCtx;
+				},
+				set currentTime(x) {
+					try { reserva.currentTime = x; } catch (e) { }
+				},
+				play: function () {
+					v.pause();
+					if (v.buffer && audioCtx && audioCtx.state === 'running') {
+						v.usandoReserva = false;
+						var f = audioCtx.createBufferSource();
+						f.buffer = v.buffer; // velocidade normal (no Web Audio acelerar deixaria a voz fina)
+						var g = audioCtx.createGain();
+						g.gain.value = v.volume;
+						f.connect(g); g.connect(audioCtx.destination);
+						f.onended = function () {
+							if (v.fonte !== f) return; // parada de propósito (pause)
+							v.fonte = null; v._parado = true; v._fim = true;
+							if (v.onended) v.onended();
+						};
+						v.fonte = f; v._parado = false; v._fim = false;
+						v.inicioCtx = audioCtx.currentTime;
+						f.start();
+						return Promise.resolve();
+					}
+					// Reserva: <audio> comum (som ainda bloqueado ou voz não decodificada)
+					if (audioCtx && audioCtx.state === 'suspended') { try { audioCtx.resume(); } catch (e) { } }
+					v.usandoReserva = true;
+					reserva.playbackRate = v.playbackRate;
+					reserva.volume = v.volume;
+					reserva.onended = function () { if (v.onended) v.onended(); };
+					return reserva.play();
+				},
+				pause: function () {
+					if (v.fonte) { var f = v.fonte; v.fonte = null; try { f.stop(); } catch (e) { } }
+					v._parado = true;
+					try { reserva.pause(); } catch (e) { }
+				}
+			};
+			// Baixa e decodifica uma vez (o AudioContext decodifica mesmo antes do 1º toque)
+			if (audioCtx && window.fetch) {
+				fetch(url).then(function (r) { return r.arrayBuffer(); }).then(function (dados) {
+					return new Promise(function (ok, falha) { audioCtx.decodeAudioData(dados, ok, falha); });
+				}).then(function (buf) { v.buffer = buf; }).catch(function () { });
+			}
+			return v;
+		}
+
+		var vozCafeAudio = criarVoz('alerta-cafe-voz.mp3');
+		var vozInicioAudio = criarVoz('alerta-inicio-viagem.mp3');
 
 		var driverLiveCard = document.getElementById('driverLiveCard');
 		var driverStatusHeadline = document.getElementById('driverStatusHeadline');
@@ -1359,9 +1425,9 @@
 		}
 
 		// Vozes da pausa e da retomada: mesma voz neural (Francisca) do alerta de fadiga
-		var vozPausaInicioAudio = new Audio('alerta-pausa-inicio.mp3');
-		var vozPausaFimAudio = new Audio('alerta-pausa-fim.mp3');
-		var vozRetomarAudio = new Audio('alerta-retomar-viagem.mp3');
+		var vozPausaInicioAudio = criarVoz('alerta-pausa-inicio.mp3');
+		var vozPausaFimAudio = criarVoz('alerta-pausa-fim.mp3');
+		var vozRetomarAudio = criarVoz('alerta-retomar-viagem.mp3');
 		[vozPausaInicioAudio, vozPausaFimAudio, vozRetomarAudio].forEach(function (a) { a.preload = 'auto'; });
 
 		// Uma voz por vez: antes de falar, interrompe qualquer outra que esteja tocando
@@ -1615,8 +1681,8 @@
 		};
 		var padraoVibracaoChamada = VIBRACAO_FASE[1];
 		var nivelChamadaApp = 0;
-		var vozCriticoMotoristaAudio = new Audio('alerta-motorista-critico.mp3');
-		var vozAcidenteMotoristaAudio = new Audio('alerta-motorista-acidente.mp3');
+		var vozCriticoMotoristaAudio = criarVoz('alerta-motorista-critico.mp3');
+		var vozAcidenteMotoristaAudio = criarVoz('alerta-motorista-acidente.mp3');
 		var driverEmergenciaBox = document.getElementById('driverEmergenciaBox');
 
 		function aplicarFaseNoCelular(nivel) {
@@ -1644,7 +1710,8 @@
 		}
 		function msRestantesDaVoz(a) {
 			if (!a || !isFinite(a.duration)) return 0;
-			return Math.max(0, (a.duration - a.currentTime) / (a.playbackRate || 1) * 1000);
+			var velocidade = a.usandoReserva ? (a.playbackRate || 1) : 1; // no Web Audio toca em velocidade normal
+			return Math.max(0, (a.duration - a.currentTime) / velocidade * 1000);
 		}
 		function tocarVozDoAlerta(audio) {
 			clearTimeout(timerProximaVozAlerta);
@@ -1669,9 +1736,9 @@
 		var ReconhecimentoVoz = window.SpeechRecognition || window.webkitSpeechRecognition;
 		// O Chrome só libera o microfone em site seguro (link da Vercel / HTTPS)
 		var vozDisponivel = COMANDO_DE_VOZ_ATIVO && !!ReconhecimentoVoz && window.isSecureContext;
-		var vozPerguntaBemAudio = new Audio('alerta-pergunta-bem.mp3');
-		var vozRespostaBemAudio = new Audio('alerta-resposta-bem.mp3');
-		var vozRespostaSocorroAudio = new Audio('alerta-resposta-socorro.mp3');
+		var vozPerguntaBemAudio = criarVoz('alerta-pergunta-bem.mp3');
+		var vozRespostaBemAudio = criarVoz('alerta-resposta-bem.mp3');
+		var vozRespostaSocorroAudio = criarVoz('alerta-resposta-socorro.mp3');
 		// "Não" vem antes: "não estou bem" é pedido de socorro (na dúvida, fica do lado seguro)
 		var PALAVRAS_SOCORRO = /(^|\s)(n[aã]o|socorro|ajuda|me ajud|machucad|ferid)/;
 		var PALAVRAS_BEM = /(^|\s)(sim(?=$|[\s.,!?])|estou bem|t[oô] bem|t[aá] bem|tudo bem|tudo certo|estou acordad|t[oô] acordad)/;
